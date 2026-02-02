@@ -4,9 +4,19 @@ import path from "node:path";
 import { git, normalizeLineEndings } from "./git.js";
 
 export async function getRepoRoot(repoPath?: string): Promise<string> {
-  const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
-  const { stdout } = await git(["rev-parse", "--show-toplevel"], { cwd });
-  return normalizeLineEndings(stdout).trim();
+  // Priority: 1) explicit repoPath, 2) SWARM_REPO_PATH env, 3) process.cwd()
+  const envPath = process.env.SWARM_REPO_PATH;
+  const cwd = repoPath 
+    ? path.resolve(repoPath) 
+    : (envPath ? path.resolve(envPath) : process.cwd());
+  
+  try {
+    const { stdout } = await git(["rev-parse", "--show-toplevel"], { cwd });
+    return normalizeLineEndings(stdout).trim();
+  } catch {
+    // Not a git repo - return cwd as-is
+    return cwd;
+  }
 }
 
 export async function getNormalizedOrigin(repoRoot: string): Promise<string> {
