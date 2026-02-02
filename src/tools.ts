@@ -103,6 +103,21 @@ import {
   listDebugSessions,
   checkRedFlags,
 } from "./workflows/systematicDebugging.js";
+// v0.8 Orchestrator & Agent Mail
+import {
+  tryBecomeOrchestrator,
+  getOrchestratorInfo,
+  orchestratorHeartbeat,
+  resignOrchestrator,
+  listExecutors,
+  executorHeartbeat,
+  sendAgentMessage,
+  fetchAgentInbox,
+  acknowledgeMessage,
+  replyToMessage,
+  searchMessages,
+  getThreadMessages,
+} from "./workflows/orchestrator.js";
 
 export const agentRegisterTool = [
   "agent_register",
@@ -4167,6 +4182,339 @@ export const getToolClusterSummaryTool = [
   },
   async (input: { repoPath?: string }) => {
     const out = await getToolClusterSummary(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+// ============ v0.8 ORCHESTRATOR & AGENT MESSAGING ============
+
+export const tryBecomeOrchestratorTool = [
+  "orchestrator_elect",
+  {
+    title: "Orchestrator Election",
+    description: "Try to become the orchestrator. First agent wins. Orchestrator runs in infinite loop mode and coordinates all other agents.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      agentId: z.string().min(1).describe("Your unique agent ID"),
+      agentName: z.string().min(1).describe("Your agent name (e.g., RadiantWolf)"),
+      platform: z.string().min(1).describe("Platform identifier (e.g., claude, cursor, windsurf)"),
+    }).strict(),
+    outputSchema: z.object({
+      role: z.enum(["orchestrator", "executor", "unknown"]),
+      isOrchestrator: z.boolean(),
+      orchestratorName: z.string().nullable(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; agentId: string; agentName: string; platform: string }) => {
+    const out = await tryBecomeOrchestrator(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getOrchestratorInfoTool = [
+  "orchestrator_info",
+  {
+    title: "Get Orchestrator Info",
+    description: "Get information about the current orchestrator including status, loop mode, and executor count.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.object({
+      hasOrchestrator: z.boolean(),
+      orchestratorName: z.string().nullable(),
+      orchestratorPlatform: z.string().nullable(),
+      isAlive: z.boolean(),
+      electedAt: z.number().nullable(),
+      executorCount: z.number(),
+      loopMode: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string }) => {
+    const out = await getOrchestratorInfo(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const orchestratorHeartbeatTool = [
+  "orchestrator_heartbeat",
+  {
+    title: "Orchestrator Heartbeat",
+    description: "Send heartbeat to confirm orchestrator is alive. Must be called regularly to maintain orchestrator status.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      agentId: z.string().min(1).describe("Your agent ID (must be the orchestrator)"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      isOrchestrator: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; agentId: string }) => {
+    const out = await orchestratorHeartbeat(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const resignOrchestratorTool = [
+  "orchestrator_resign",
+  {
+    title: "Resign as Orchestrator",
+    description: "Voluntarily resign as orchestrator. Next agent to call orchestrator_elect will become the new orchestrator.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      agentId: z.string().min(1).describe("Your agent ID (must be the orchestrator)"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; agentId: string }) => {
+    const out = await resignOrchestrator(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const listExecutorsTool = [
+  "executor_list",
+  {
+    title: "List Executors",
+    description: "List all executor agents registered with the orchestrator.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.object({
+      executors: z.array(z.object({
+        agentId: z.string(),
+        agentName: z.string(),
+        platform: z.string(),
+        registeredAt: z.number(),
+        lastSeen: z.number(),
+        status: z.enum(["active", "idle", "dead"]),
+        currentTask: z.string().nullable(),
+      })),
+      activeCount: z.number(),
+      deadCount: z.number(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string }) => {
+    const out = await listExecutors(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const executorHeartbeatTool = [
+  "executor_heartbeat",
+  {
+    title: "Executor Heartbeat",
+    description: "Send heartbeat as an executor to confirm you are still active.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      agentId: z.string().min(1).describe("Your agent ID"),
+      currentTask: z.string().optional().describe("Current task you are working on"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; agentId: string; currentTask?: string }) => {
+    const out = await executorHeartbeat(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const sendAgentMessageTool = [
+  "agent_message_send",
+  {
+    title: "Send Agent Message",
+    description: "Send a message to another agent or broadcast to all agents. Use '*' as recipient for broadcast.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      from: z.string().min(1).describe("Your agent name"),
+      to: z.union([z.string(), z.array(z.string())]).describe("Recipient agent name(s) or '*' for broadcast"),
+      subject: z.string().min(1).describe("Message subject"),
+      body: z.string().min(1).describe("Message body (Markdown supported)"),
+      importance: z.enum(["low", "normal", "high", "urgent"]).optional().default("normal"),
+      threadId: z.string().optional().describe("Thread ID for replies"),
+      replyTo: z.string().optional().describe("Message ID being replied to"),
+      ackRequired: z.boolean().optional().default(false).describe("Require acknowledgement"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      messageId: z.string(),
+      deliveredTo: z.array(z.string()),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: {
+    repoPath?: string;
+    from: string;
+    to: string | string[];
+    subject: string;
+    body: string;
+    importance?: "low" | "normal" | "high" | "urgent";
+    threadId?: string;
+    replyTo?: string;
+    ackRequired?: boolean;
+  }) => {
+    const out = await sendAgentMessage(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const fetchAgentInboxTool = [
+  "agent_inbox_fetch",
+  {
+    title: "Fetch Agent Inbox",
+    description: "Fetch messages from your inbox. Includes unread count.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      agentName: z.string().min(1).describe("Your agent name"),
+      limit: z.number().optional().default(20).describe("Max messages to return"),
+      urgentOnly: z.boolean().optional().default(false).describe("Only high/urgent messages"),
+      sinceTs: z.number().optional().describe("Only messages after this timestamp"),
+    }).strict(),
+    outputSchema: z.object({
+      messages: z.array(z.object({
+        id: z.string(),
+        from: z.string(),
+        to: z.string(),
+        subject: z.string(),
+        body: z.string(),
+        importance: z.enum(["low", "normal", "high", "urgent"]),
+        threadId: z.string().nullable(),
+        replyTo: z.string().nullable(),
+        ts: z.number(),
+        ackRequired: z.boolean(),
+        acknowledged: z.boolean(),
+        attachments: z.array(z.string()),
+      })),
+      total: z.number(),
+      unread: z.number(),
+    }).strict(),
+  },
+  async (input: {
+    repoPath?: string;
+    agentName: string;
+    limit?: number;
+    urgentOnly?: boolean;
+    sinceTs?: number;
+  }) => {
+    const out = await fetchAgentInbox(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const acknowledgeMessageTool = [
+  "agent_message_ack",
+  {
+    title: "Acknowledge Message",
+    description: "Mark a message as acknowledged/read.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      agentName: z.string().min(1).describe("Your agent name"),
+      messageId: z.string().min(1).describe("Message ID to acknowledge"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; agentName: string; messageId: string }) => {
+    const out = await acknowledgeMessage(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const replyToMessageTool = [
+  "agent_message_reply",
+  {
+    title: "Reply to Message",
+    description: "Reply to a specific message. Creates a thread if one doesn't exist.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      from: z.string().min(1).describe("Your agent name"),
+      messageId: z.string().min(1).describe("Message ID to reply to"),
+      body: z.string().min(1).describe("Reply body"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      replyId: z.string(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; from: string; messageId: string; body: string }) => {
+    const out = await replyToMessage(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const searchMessagesTool = [
+  "agent_message_search",
+  {
+    title: "Search Messages",
+    description: "Search through all messages by subject or body content.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      query: z.string().min(1).describe("Search query"),
+      limit: z.number().optional().default(50).describe("Max results"),
+    }).strict(),
+    outputSchema: z.object({
+      messages: z.array(z.object({
+        id: z.string(),
+        from: z.string(),
+        to: z.string(),
+        subject: z.string(),
+        body: z.string(),
+        importance: z.enum(["low", "normal", "high", "urgent"]),
+        threadId: z.string().nullable(),
+        replyTo: z.string().nullable(),
+        ts: z.number(),
+        ackRequired: z.boolean(),
+        acknowledged: z.boolean(),
+        attachments: z.array(z.string()),
+      })),
+      total: z.number(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; query: string; limit?: number }) => {
+    const out = await searchMessages(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getThreadMessagesTool = [
+  "agent_thread_get",
+  {
+    title: "Get Thread Messages",
+    description: "Get all messages in a conversation thread.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      threadId: z.string().min(1).describe("Thread ID"),
+    }).strict(),
+    outputSchema: z.object({
+      messages: z.array(z.object({
+        id: z.string(),
+        from: z.string(),
+        to: z.string(),
+        subject: z.string(),
+        body: z.string(),
+        importance: z.enum(["low", "normal", "high", "urgent"]),
+        threadId: z.string().nullable(),
+        replyTo: z.string().nullable(),
+        ts: z.number(),
+        ackRequired: z.boolean(),
+        acknowledged: z.boolean(),
+        attachments: z.array(z.string()),
+      })),
+      participants: z.array(z.string()),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; threadId: string }) => {
+    const out = await getThreadMessages(input);
     return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
   },
 ] as const;

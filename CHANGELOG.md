@@ -7,6 +7,72 @@
 
 ---
 
+## [0.8.0] - 2026-02-02
+
+### Добавлено
+- **Orchestrator Election** (6 tools) — первый агент становится оркестратором
+  - `orchestrator_elect` — выбор оркестратора (first-come-first-served)
+  - `orchestrator_info` — информация об оркестраторе
+  - `orchestrator_heartbeat` — heartbeat оркестратора
+  - `orchestrator_resign` — отставка оркестратора
+  - `executor_list` — список всех исполнителей
+  - `executor_heartbeat` — heartbeat исполнителя
+  
+- **Agent Messaging** (6 tools) — полная система обмена сообщениями между агентами
+  - `agent_message_send` — отправить сообщение (direct или broadcast)
+  - `agent_inbox_fetch` — получить входящие сообщения
+  - `agent_message_ack` — подтвердить получение
+  - `agent_message_reply` — ответить на сообщение
+  - `agent_message_search` — поиск по сообщениям
+  - `agent_thread_get` — получить тред сообщений
+
+- **Infinite Loop Mode** — оркестратор работает бесконечно
+  - Companion daemon с автоматическим orchestrator election
+  - Оркестратор НЕ останавливается по API — только пользователем
+  - Исполнители регистрируются у оркестратора
+  - Heartbeat система для мониторинга "живости"
+
+### Изменено
+- **companion.ts** — полностью переписан для Orchestrator mode
+- **Installer** — обновлён до v0.8.0 (168+ tools, 14 категорий)
+
+### Архитектура
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    FIRST AGENT                       │
+│                   (ORCHESTRATOR)                     │
+│  - Elected automatically (first-come-first-served)  │
+│  - Runs in INFINITE LOOP                            │
+│  - Only user can stop (stdin)                       │
+│  - Coordinates all executors                        │
+└────────────────────────┬────────────────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         ▼               ▼               ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  EXECUTOR 1 │  │  EXECUTOR 2 │  │  EXECUTOR N │
+│  (Claude)   │  │  (Cursor)   │  │  (Windsurf) │
+│ - Registers │  │ - Registers │  │ - Registers │
+│ - Gets tasks│  │ - Gets tasks│  │ - Gets tasks│
+│ - Heartbeat │  │ - Heartbeat │  │ - Heartbeat │
+└─────────────┘  └─────────────┘  └─────────────┘
+```
+
+### Хранение данных
+
+```
+.swarm/
+├── ORCHESTRATOR.json     # Состояние оркестратора
+├── messages/             # Canonical сообщения
+│   └── msg-*.json
+└── inbox/                # Inbox каждого агента
+    ├── RadiantWolf/
+    └── SilentFox/
+```
+
+---
+
 ## [0.7.0] - 2026-02-02
 
 ### Добавлено

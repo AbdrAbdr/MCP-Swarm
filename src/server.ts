@@ -194,11 +194,24 @@ import {
   addToolToClusterTool,
   createToolClusterTool,
   getToolClusterSummaryTool,
+  // v0.8 Orchestrator & Agent Messaging
+  tryBecomeOrchestratorTool,
+  getOrchestratorInfoTool,
+  orchestratorHeartbeatTool,
+  resignOrchestratorTool,
+  listExecutorsTool,
+  executorHeartbeatTool,
+  sendAgentMessageTool,
+  fetchAgentInboxTool,
+  acknowledgeMessageTool,
+  replyToMessageTool,
+  searchMessagesTool,
+  getThreadMessagesTool,
 } from "./tools.js";
 
 const server = new McpServer({
   name: "mcp-swarm",
-  version: "0.7.0",
+  version: "0.8.0",
 });
 
 server.registerTool(...agentRegisterTool);
@@ -406,6 +419,20 @@ server.registerTool(...findToolClusterTool);
 server.registerTool(...addToolToClusterTool);
 server.registerTool(...createToolClusterTool);
 server.registerTool(...getToolClusterSummaryTool);
+
+// v0.8 Orchestrator Election & Agent Messaging
+server.registerTool(...tryBecomeOrchestratorTool);
+server.registerTool(...getOrchestratorInfoTool);
+server.registerTool(...orchestratorHeartbeatTool);
+server.registerTool(...resignOrchestratorTool);
+server.registerTool(...listExecutorsTool);
+server.registerTool(...executorHeartbeatTool);
+server.registerTool(...sendAgentMessageTool);
+server.registerTool(...fetchAgentInboxTool);
+server.registerTool(...acknowledgeMessageTool);
+server.registerTool(...replyToMessageTool);
+server.registerTool(...searchMessagesTool);
+server.registerTool(...getThreadMessagesTool);
 
 server.registerTool(
   "health_check",

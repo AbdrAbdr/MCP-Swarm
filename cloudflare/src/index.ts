@@ -49,7 +49,7 @@ export default {
     if (url.pathname === "/github/webhook") return stub.fetch(request);
     if (url.pathname.startsWith("/api/")) return stub.fetch(request);
 
-    return new Response("MCP Swarm Hub v0.4", { status: 200 });
+    return new Response("MCP Swarm Hub v0.7", { status: 200 });
   },
 };
 

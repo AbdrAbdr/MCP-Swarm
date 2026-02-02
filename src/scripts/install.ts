@@ -263,6 +263,9 @@ function getStandardInstallPaths(ideName: string): string[] {
       case "Claude Desktop":
         paths.push("/Applications/Claude.app");
         break;
+      case "OpenCode":
+        paths.push("/usr/local/bin/opencode", path.join(home, ".local", "bin", "opencode"));
+        break;
       case "VS Code":
         paths.push("/Applications/Visual Studio Code.app");
         break;
@@ -275,6 +278,9 @@ function getStandardInstallPaths(ideName: string): string[] {
         break;
       case "Cursor":
         paths.push("/usr/bin/cursor", "/opt/cursor/cursor");
+        break;
+      case "OpenCode":
+        paths.push("/usr/local/bin/opencode", path.join(home, ".local", "bin", "opencode"));
         break;
       case "VS Code":
         paths.push("/usr/bin/code", "/usr/share/code/code");
@@ -445,6 +451,25 @@ When no tasks are assigned to you:
 - log_api_usage, get_agent_costs, get_project_costs, check_budget_remaining
 - estimate_context_size, compress_briefing
 - save_baseline, check_regression, list_regressions
+
+### v0.6 Brainstorming & Writing Plans
+- start_brainstorm, ask_brainstorm_question, answer_brainstorm_question
+- propose_approaches, present_design_section, validate_design_section
+- create_implementation_plan, add_plan_task, get_next_task, complete_step
+- generate_subagent_prompt, export_plan_as_markdown
+
+### v0.6 Systematic Debugging (4 Phases)
+- start_debug_session, log_investigation, add_evidence, complete_phase_1
+- log_patterns, complete_phase_2, form_hypothesis, test_hypothesis
+- implement_fix, verify_fix, check_red_flags
+
+### v0.7 Spec Pipeline & QA Loop
+- start_spec_pipeline, start_spec_phase, complete_spec_phase, export_spec_as_markdown
+- start_qa_loop, run_qa_iteration, log_qa_fix, get_qa_fix_suggestions, generate_qa_report
+
+### v0.7 Guard Hooks & Tool Clusters
+- install_guard_hooks, uninstall_guard_hooks, run_guard_hooks, get_guard_config
+- init_tool_clusters, list_tool_clusters, get_cluster_tools, find_tool_cluster
 `;
 
 function getAgentRulesPath(ideName: string, projectPath: string): string {
@@ -490,7 +515,7 @@ async function installAgentRules(ideName: string, projectPath: string): Promise<
 }
 
 async function main() {
-  console.log("🔍 MCP Swarm v0.5.0 Installer");
+  console.log("🔍 MCP Swarm v0.7.0 Installer");
   console.log("=".repeat(50));
 
   // Get project path
@@ -565,9 +590,9 @@ async function main() {
     console.log(`   - ${rulesPath}`);
   }
   
-  console.log("\n📊 Статистика MCP Swarm v0.5.0:");
-  console.log("   - 100+ инструментов");
-  console.log("   - 6 категорий функционала");
+  console.log("\n📊 Статистика MCP Swarm v0.7.0:");
+  console.log("   - 156+ инструментов");
+  console.log("   - 13 категорий функционала");
   console.log("   - Поддержка 50+ агентов одновременно");
   
   console.log("\n📖 Основные инструменты:");
@@ -575,7 +600,8 @@ async function main() {
   console.log("   Git: worktree_create, sync_with_base_branch, create_github_pr");
   console.log("   Collab: broadcast_chat, request_cross_agent_review");
   console.log("   Safety: start_voting, check_main_health");
-  console.log("   v0.5: check_agent_health, run_quality_gate, log_api_usage");
+  console.log("   v0.6: start_brainstorm, create_implementation_plan, start_debug_session");
+  console.log("   v0.7: start_spec_pipeline, start_qa_loop, install_guard_hooks, init_tool_clusters");
 }
 
 main().catch(err => {
