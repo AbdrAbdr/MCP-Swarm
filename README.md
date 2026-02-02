@@ -18,7 +18,7 @@ MCP Swarm — это система, которая позволяет неск�
 - **File Locking** — только один может редактировать файл
 - **Messaging** — агенты общаются между собой
 - **Task Distribution** — аукцион задач
-- **Real-time Sync** — все видят изменения мгновенно
+- **Real-time Sync** — все видят изменения мгновенно (через Cloudflare Hub)
 
 ## Как работает система агентов?
 
@@ -26,22 +26,21 @@ MCP Swarm — это система, которая позволяет неск�
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                  ПЕРВЫЙ АГЕНТ                       │
-│                 (ORCHESTRATOR)                      │
-│  - Автоматически избирается (first-come-first-win) │
-│  - Работает в БЕСКОНЕЧНОМ ЦИКЛЕ                    │
-│  - Только пользователь может остановить            │
-│  - Координирует всех исполнителей                  │
+│              CLOUDFLARE HUB (Deployed)              │
+│   https://mcp-swarm-hub.unilife-ch.workers.dev      │
+│   - WebSocket real-time sync                        │
+│   - Task claiming                                   │
+│   - File locking                                    │
 └────────────────────────┬────────────────────────────┘
                          │
          ┌───────────────┼───────────────┐
          ▼               ▼               ▼
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│ EXECUTOR 1  │  │ EXECUTOR 2  │  │ EXECUTOR N  │
-│  (Claude)   │  │  (Cursor)   │  │ (Windsurf)  │
-│ Исполнитель │  │ Исполнитель │  │ Исполнитель │
-│ Берёт задачи│  │ Берёт задачи│  │ Берёт задачи│
-│ Heartbeat   │  │ Heartbeat   │  │ Heartbeat   │
+│ ORCHESTRATOR│  │ EXECUTOR 1  │  │ EXECUTOR N  │
+│  (First)    │  │  (Cursor)   │  │ (Windsurf)  │
+│ Координатор │  │ Исполнитель │  │ Исполнитель │
+│ Бесконечный │  │ Берёт задачи│  │ Берёт задачи│
+│ цикл        │  │ Heartbeat   │  │ Heartbeat   │
 └─────────────┘  └─────────────┘  └─────────────┘
 ```
 
@@ -49,20 +48,14 @@ MCP Swarm — это система, которая позволяет неск�
 
 #### 1. ORCHESTRATOR (Координатор)
 
-**Кто становится:** Первый агент, вызвавший `swarm_orchestrator(action: "elect")`
+**Кто становится:** Первый агент, вызвавший `swarm_orchestrator({ action: "elect", repoPath })`
 
 **Что делает:**
-- Работает в **бесконечном цикле** (как Ralf Wigum)
+- Работает в **бесконечном цикле**
 - Читает список задач, распределяет их
 - Следит за здоровьем всех агентов (heartbeat)
 - Переназначает задачи если агент "умер"
 - НЕ останавливается по API — только пользователь может сказать "стоп"
-
-**Цикл работы:**
-```
-1. Poll событий → 2. Проверить inbox → 3. Распределить задачи →
-4. Проверить heartbeats → 5. Обновить dashboard → [повторить]
-```
 
 #### 2. EXECUTOR (Исполнитель)
 
@@ -73,14 +66,7 @@ MCP Swarm — это система, которая позволяет неск�
 - Получает задачи через аукцион или прямое назначение
 - Блокирует файлы перед редактированием
 - Отправляет heartbeat каждые N минут
-- Общается с другими агентами через messaging
 - Делает PR когда задача готова
-
-**Цикл работы:**
-```
-1. Проверить inbox → 2. Взять задачу → 3. Заблокировать файлы →
-4. Работать → 5. Освободить файлы → 6. Отправить heartbeat → [повторить]
-```
 
 #### 3. GHOST MODE (Режим призрака)
 
@@ -90,6 +76,22 @@ MCP Swarm — это система, которая позволяет неск�
 - Патрулирует код: проверяет lint ошибки
 - Оптимизирует импорты
 - Ищет проблемы в коде других агентов
+
+---
+
+## CRITICAL: repoPath Parameter
+
+> **КАЖДЫЙ вызов MCP Swarm ДОЛЖЕН включать параметр `repoPath`!**
+
+`repoPath` — это абсолютный путь к проекту, над которым вы работаете. Без него MCP Swarm не знает, какой проект координировать.
+
+```typescript
+// ПРАВИЛЬНО - всегда включайте repoPath
+swarm_agent({ action: "register", repoPath: "C:/Users/me/projects/my-app" })
+
+// НЕПРАВИЛЬНО - отсутствует repoPath
+swarm_agent({ action: "register" })
+```
 
 ---
 
@@ -115,9 +117,7 @@ npm run build
 
 ## Ручная установка MCP
 
-### Группа 1: Стандартный формат `mcpServers`
-
-**Claude Desktop, Cursor, Windsurf, Antigravity** — используют одинаковый формат конфига:
+### Формат конфига (для всех IDE)
 
 ```json
 {
@@ -126,92 +126,39 @@ npm run build
       "command": "node",
       "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_REPO_PATH": "C:/path/to/your/project"
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_PROJECT": "default"
       }
     }
   }
 }
 ```
+
+> **ВАЖНО:** НЕ устанавливайте `SWARM_REPO_PATH` в env! Агенты должны передавать `repoPath` динамически в каждом вызове.
+
+### Пути к конфигам
 
 | IDE | Путь к конфигу |
 |-----|----------------|
 | **Claude Desktop** | Windows: `%APPDATA%\Claude\claude_desktop_config.json`<br>Mac: `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | **Cursor** | `~/.cursor/mcp.json` |
-| **Windsurf** | `~/.windsurf/mcp_config.json` |
+| **Windsurf** | Windows: `~/.codeium/windsurf/mcp_config.json`<br>Mac: `~/.windsurf/mcp_config.json` |
 | **Antigravity** | Windows: `%APPDATA%\antigravity\mcp_config.json`<br>Mac: `~/Library/Application Support/antigravity/mcp_config.json` |
+| **OpenCode** | `~/.config/opencode/opencode.json` (формат отличается, см. ниже) |
+| **VS Code (Roo-Cline)** | `%APPDATA%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\mcp_settings.json` |
 
----
-
-### Группа 2: Claude Code (CLI)
-
-**Claude Code** — использует CLI команду или вложенную структуру в `~/.claude/.claude.json`:
-
-**Способ 1: CLI команда (рекомендуется)**
-```bash
-claude mcp add mcp-swarm --transport stdio -- node C:/path/to/Swarm_MCP/dist/serverSmart.js
-```
-
-**Способ 2: Ручное редактирование** `~/.claude/.claude.json`:
-```json
-{
-  "projects": {
-    "C:/your/project": {
-      "mcpServers": {
-        "mcp-swarm": {
-          "command": "node",
-          "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
-          "env": {
-            "SWARM_REPO_PATH": "C:/your/project"
-          }
-        }
-      }
-    }
-  }
-}
-```
-
----
-
-### Группа 3: OpenCode
-
-**OpenCode** — использует свой формат с `mcp` (не `mcpServers`) и массив `command`:
-
-**Конфиг:** `~/.config/opencode/opencode.json`
+### OpenCode (особый формат)
 
 ```json
 {
   "mcp": {
     "mcp-swarm": {
       "type": "local",
-      "command": [
-        "node",
-        "C:/path/to/Swarm_MCP/dist/serverSmart.js"
-      ],
+      "command": ["node", "C:/path/to/Swarm_MCP/dist/serverSmart.js"],
       "enabled": true,
       "environment": {
-        "SWARM_REPO_PATH": "C:/path/to/your/project"
-      }
-    }
-  }
-}
-```
-
----
-
-### Группа 4: VS Code (Roo-Cline)
-
-**VS Code с Roo-Cline** — использует свой путь:
-
-**Конфиг:** `%APPDATA%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\mcp_settings.json`
-
-```json
-{
-  "mcpServers": {
-    "mcp-swarm": {
-      "command": "node",
-      "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
-      "env": {
-        "SWARM_REPO_PATH": "C:/path/to/your/project"
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_PROJECT": "default"
       }
     }
   }
@@ -222,93 +169,45 @@ claude mcp add mcp-swarm --transport stdio -- node C:/path/to/Swarm_MCP/dist/ser
 
 ## Файлы правил для агентов
 
-После настройки MCP, создайте файл правил в корне вашего проекта:
+Создайте файл правил в корне вашего проекта:
 
 | IDE | Файл правил |
 |-----|-------------|
-| Claude Desktop | `CLAUDE.md` |
-| Claude Code | `CLAUDE.md` |
+| Claude Desktop / Claude Code | `CLAUDE.md` |
 | Cursor | `.cursorrules` |
 | Windsurf | `.windsurfrules` |
 | OpenCode | `AGENT.md` |
 | Antigravity | `GEMINI.md` |
+| Multi-agent | `AGENTS.md` |
 | VS Code (Roo-Cline) | `.clinerules` |
 
 ### Содержимое файла правил
 
-Скопируйте это в ваш файл правил:
-
 ```markdown
 # MCP Swarm Agent Rules (v0.9.0)
 
-## CRITICAL: Always Start with MCP Swarm
+## CRITICAL: repoPath Parameter
 
-Before ANY coding task:
+**EVERY MCP Swarm tool call MUST include `repoPath` parameter!**
 
-1. `swarm_agent({ action: "register" })` — получить имя агента
-2. `swarm_control({ action: "status" })` — проверить статус swarm
-3. `swarm_task({ action: "list" })` — посмотреть задачи
-4. `swarm_file({ action: "reserve", filePath, agent })` — заблокировать файлы
+```typescript
+// CORRECT
+swarm_agent({ action: "register", repoPath: "/path/to/project" })
 
-## Workflow
-
-1. Register → 2. Get Task → 3. Lock Files → 4. Work → 5. Unlock → 6. PR
+// WRONG
+swarm_agent({ action: "register" })
 ```
 
----
+## Before ANY coding task:
 
-## Файлы правил для агентов
-
-После установки MCP, создайте файл правил в корне вашего проекта:
-
-| IDE | Файл правил |
-|-----|-------------|
-| Claude Desktop | `CLAUDE.md` |
-| Claude Code | `CLAUDE.md` |
-| Cursor | `.cursorrules` |
-| Windsurf | `.windsurfrules` |
-| OpenCode | `AGENT.md` |
-| Antigravity | `GEMINI.md` |
-| VS Code | `.clinerules` |
-
-### Содержимое файла правил
-
-Скопируйте в файл:
-
-```markdown
-# MCP Swarm Agent Rules (v0.9.0)
-
-## CRITICAL: Always Start with MCP Swarm
-
-Before ANY coding task, you MUST:
-
-1. **Register yourself** - Call `swarm_agent({ action: "register" })`
-2. **Check swarm status** - Call `swarm_control({ action: "status" })`
-3. **Check task list** - Call `swarm_task({ action: "list" })`
-4. **Reserve files** - Before editing, call `swarm_file({ action: "reserve", filePath: "...", agent: "YourName" })`
-
-## Agent Roles
-
-### ORCHESTRATOR (First Agent)
-The first agent that calls `swarm_orchestrator({ action: "elect" })` becomes the Orchestrator.
-- Works in **INFINITE LOOP** - only user can stop
-- Distributes tasks, monitors agent heartbeats, coordinates work
-
-### EXECUTOR (All Other Agents)
-All subsequent agents become Executors.
-- Register with `swarm_agent({ action: "register" })`
-- Get tasks via auction system
-- Lock files before editing, send heartbeat, create PRs
+1. `swarm_agent({ action: "register", repoPath })` — получить имя агента
+2. `swarm_orchestrator({ action: "elect", repoPath })` — стать оркестратором
+3. `swarm_task({ action: "list", repoPath })` — посмотреть задачи
+4. `swarm_file({ action: "reserve", repoPath, filePath, agent })` — заблокировать файлы
 
 ## Workflow
 
-1. `swarm_agent({ action: "register" })` → Get your name (e.g., "RadiantWolf")
-2. `swarm_task({ action: "list" })` → See what needs to be done
-3. `swarm_file({ action: "reserve", filePath, agent, exclusive: true })` → Lock files
-4. Do your work
-5. `swarm_file({ action: "release", filePath, agent })` → Unlock files
-6. `swarm_git({ action: "sync" })` → Rebase before push
-7. `swarm_git({ action: "pr", title, body })` → Open PR
+1. Register → 2. Elect Orchestrator → 3. Get Task → 4. Lock Files → 5. Work → 6. Unlock → 7. PR
 ```
 
 ---
@@ -319,16 +218,14 @@ All subsequent agents become Executors.
 
 ### Пример использования
 
-**До (v0.8.x):**
-```
-task_create, task_list, task_assign, task_set_status, task_mark_done... (9 tools)
-```
-
-**После (v0.9.0):**
 ```javascript
-swarm_task({
-  action: "create" | "list" | "update" | "decompose" | "get_decomposition"
-})
+// Все инструменты требуют repoPath!
+const repoPath = "C:/Users/me/projects/my-app";
+
+swarm_agent({ action: "register", repoPath })
+swarm_orchestrator({ action: "elect", repoPath })
+swarm_task({ action: "list", repoPath })
+swarm_file({ action: "reserve", repoPath, filePath: "src/index.ts", agent: "MyName" })
 ```
 
 ### Полный список Smart Tools
@@ -382,7 +279,7 @@ swarm_task({
 ## Структура проекта
 
 ```
-/swarm/                  # Данные swarm
+/swarm/                  # Данные swarm (создаётся в вашем проекте)
 ├── tasks/               # Файлы задач
 ├── agents/              # Регистрации агентов
 ├── locks/               # File locks
@@ -392,66 +289,41 @@ swarm_task({
     ├── messages/            # Сообщения агентов
     └── inbox/               # Inbox каждого агента
 
-/orchestrator/           # Центр управления
+/orchestrator/           # Центр управления (создаётся в вашем проекте)
 ├── PULSE.md             # Живая карта агентов
 ├── KNOWLEDGE_BASE.md    # База знаний
 ├── briefings/           # Ментальные слепки
 ├── snapshots/           # Снапшоты для отката
-├── docs/                # Авто-документация
-├── sessions/            # Записи сессий
-├── quality/             # Отчёты качества
-├── costs/               # Логи расходов
-├── brainstorm/          # Brainstorm сессии
-├── plans/               # Implementation планы
-├── debug/               # Debug сессии
-├── specs/               # Spec pipelines
-└── qa-loops/            # QA loop сессии
+└── ...
 ```
 
 ---
 
 ## Ключевые возможности
 
-### 1. Orchestrator Election
-Первый агент автоматически становится координатором. Все остальные — исполнители.
-
-### 2. File Locking
-Только один агент может редактировать файл. Остальные могут читать.
-
-### 3. Agent Messaging
-Агенты общаются между собой через inbox/outbox систему.
-
-### 4. Task Auction
-Задачи выставляются на аукцион. Агенты "торгуются" за них.
-
-### 5. Collective Advice
-Агент может запросить совет у всех остальных.
-
-### 6. Ghost Mode
-Свободный агент патрулирует код, ищет ошибки.
-
-### 7. Briefing Handover
-Агент оставляет "ментальный слепок" для следующего.
-
-### 8. Quality Gate
-Автоматические проверки перед PR.
-
-### 9. Cost Tracking
-Отслеживание расходов на API каждого агента.
-
-### 10. Session Recording
-Запись действий для replay и обучения.
+| Функция | Описание |
+|---------|----------|
+| **Orchestrator Election** | Первый агент становится координатором |
+| **File Locking** | Только один агент редактирует файл |
+| **Agent Messaging** | Агенты общаются через inbox/outbox |
+| **Task Auction** | Задачи выставляются на аукцион |
+| **Cloudflare Hub** | Real-time синхронизация через WebSocket |
+| **Ghost Mode** | Свободный агент патрулирует код |
+| **Briefing Handover** | Агент оставляет "ментальный слепок" |
+| **Quality Gate** | Автоматические проверки перед PR |
+| **Cost Tracking** | Отслеживание расходов на API |
 
 ---
 
 ## Environment Variables
 
 ```bash
-SWARM_REPO_PATH=        # Путь к репозиторию
-SWARM_HUB_URL=          # URL Cloudflare Hub (ws://...)
-SWARM_PROJECT=default   # Имя проекта
-SWARM_HYBRID_MODE=true  # WS + Git fallback
+SWARM_HUB_URL=wss://mcp-swarm-hub.unilife-ch.workers.dev/ws   # Cloudflare Hub
+SWARM_PROJECT=default                                          # Имя проекта
+SWARM_HYBRID_MODE=true                                         # WS + Git fallback
 ```
+
+> **НЕ используйте `SWARM_REPO_PATH`!** Агенты передают `repoPath` в каждом вызове.
 
 ---
 
@@ -467,12 +339,27 @@ npm run dev:legacy
 # Запустить Companion daemon
 npm run companion
 
-# Установить MCP во все IDE
+# Установить правила агентов
 npm run install-mcp
 
 # Собрать проект
 npm run build
 ```
+
+---
+
+## Cloudflare Hub
+
+MCP Swarm использует Cloudflare Durable Objects для real-time синхронизации:
+
+- **URL:** `https://mcp-swarm-hub.unilife-ch.workers.dev`
+- **WebSocket:** `wss://mcp-swarm-hub.unilife-ch.workers.dev/ws`
+
+Функции:
+- Real-time синхронизация между агентами
+- Task claiming и file locking
+- Auction system
+- Agent heartbeats
 
 ---
 
@@ -495,79 +382,32 @@ MIT
 
 ## [0.9.0] - 2026-02-02
 
-### MAJOR: Smart Tools Consolidation
+### MAJOR: Smart Tools + repoPath
 
-**Reduces 168+ individual tools → 41 Smart Tools with `action` parameter**
-
-- Each Smart Tool groups 3-15 related functions via `action` parameter
-- Better discoverability and easier to remember
-- Consistent parameter patterns across all tools
+- **41 Smart Tools** (consolidated from 168+)
+- **repoPath parameter required** in every tool call
+- **Cloudflare Hub deployed** for real-time sync
+- **No more SWARM_REPO_PATH** in env - agents pass repoPath dynamically
 
 ### Files Changed
 
 - `src/smartTools.ts` — All 41 Smart Tools
 - `src/serverSmart.ts` — New server entry point
-- `package.json` — v0.9.0, `npm run dev` uses Smart Tools
+- `src/workflows/repo.ts` — Graceful handling of non-git repos
+- `src/scripts/install.ts` — Updated with repoPath instructions
+- `CLAUDE.md`, `GEMINI.md`, `AGENT.md`, `AGENTS.md` — Agent rules
 
 ---
 
-## [0.8.1] - 2026-02-02
+## [0.8.x] - 2026-02-02
 
-### Added
-- Smart Tools draft prototypes
-
----
-
-## [0.8.0] - 2026-02-02
-
-### Added
-- **Orchestrator Election** (6 tools)
-- **Agent Messaging** (6 tools)
-- **Infinite Loop Mode**
+- Orchestrator Election
+- Agent Messaging
+- Infinite Loop Mode
 
 ---
 
-## [0.7.0] - 2026-02-02
-
-### Added
-- **Spec Pipeline** (6 tools)
-- **QA Loop** (7 tools)
-- **Guard Hooks** (6 tools)
-- **Tool Clusters** (7 tools)
-
----
-
-## [0.6.0] - 2026-02-01
-
-### Added
-- **Brainstorming Skill** (9 tools)
-- **Writing Plans Skill** (11 tools)
-- **Systematic Debugging** (13 tools)
-
----
-
-## [0.5.0] - 2026-01-31
-
-### Added
-- Agent Health Monitor
-- Session Recording
-- Quality Gate
-- Cost Tracker
-- Context Compressor
-- Regression Detector
-
----
-
-## [0.4.x]
-
-- Timeline Visualization
-- Auto-Documentation
-- Agent Specialization
-- Conflict Prediction
-
----
-
-## [0.3.0] - [0.1.0]
+## [0.7.0] - [0.1.0]
 
 - Core functionality
 - Task management
