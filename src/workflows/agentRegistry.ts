@@ -5,6 +5,8 @@ import path from "node:path";
 import { git, gitTry } from "./git.js";
 import { getRepoRoot } from "./repo.js";
 
+import { AGENT_RULES_CONTENT } from "./constants.js";
+
 const ADJECTIVES = [
   "Blue",
   "Green",
@@ -124,8 +126,53 @@ function machineId(): string {
   return `${os.hostname()}-${os.platform()}-${os.userInfo().username}`.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
 
+export async function bootstrapProject(repoPath?: string): Promise<{ success: boolean; files: string[] }> {
+  const repoRoot = await getRepoRoot(repoPath);
+  const filesToCreate = ["CLAUDE.md", "GEMINI.md", "AGENT.md", "AGENTS.md", ".cursorrules", ".windsurfrules", ".clinerules"];
+  const created: string[] = [];
+
+  for (const fileName of filesToCreate) {
+    const filePath = path.join(repoRoot, fileName);
+    let existingContent = "";
+    try {
+      existingContent = await fs.readFile(filePath, "utf8");
+    } catch {
+      // ignore
+    }
+
+    if (!existingContent.includes("# MCP Swarm Agent Rules")) {
+      const newContent = existingContent 
+        ? existingContent + "\n\n" + AGENT_RULES_CONTENT 
+        : AGENT_RULES_CONTENT;
+      await fs.writeFile(filePath, newContent, "utf8");
+      created.push(fileName);
+    }
+  }
+
+  // Ensure directories
+  await fs.mkdir(path.join(repoRoot, "swarm", "agents"), { recursive: true });
+  await fs.mkdir(path.join(repoRoot, "orchestrator"), { recursive: true });
+
+  return { success: true, files: created };
+}
+
 export async function registerAgent(input: AgentRegisterInput): Promise<AgentRegisterOutput> {
   const repoRoot = await getRepoRoot(input.repoPath);
+  
+  // AUTO-INIT: Check if swarm is initialized, if not - bootstrap
+  const swarmDir = path.join(repoRoot, "swarm");
+  let isInitialized = false;
+  try {
+    await fs.access(swarmDir);
+    isInitialized = true;
+  } catch {
+    isInitialized = false;
+  }
+
+  if (!isInitialized) {
+    await bootstrapProject(input.repoPath);
+  }
+
   const dir = await ensureAgentsDir(repoRoot);
 
   const agentId = machineId();

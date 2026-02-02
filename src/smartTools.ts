@@ -10,7 +10,7 @@ import { z } from "zod";
 // ============ IMPORTS FROM WORKFLOWS ============
 
 // Agent & Registry
-import { registerAgent, whoami } from "./workflows/agentRegistry.js";
+import { registerAgent, whoami, bootstrapProject } from "./workflows/agentRegistry.js";
 
 // Tasks
 import { createTaskFile } from "./workflows/taskFile.js";
@@ -234,9 +234,9 @@ export const swarmAgentTool = [
   "swarm_agent",
   {
     title: "Swarm Agent",
-    description: "Agent registration and identity. Actions: register, whoami",
+    description: "Agent registration and identity. Actions: register, whoami, init",
     inputSchema: z.object({
-      action: z.enum(["register", "whoami"]).describe("Action to perform"),
+      action: z.enum(["register", "whoami", "init"]).describe("Action to perform"),
       repoPath: z.string().optional(),
       commitMode: z.enum(["none", "local", "push"]).optional().default("push"),
     }).strict(),
@@ -248,6 +248,8 @@ export const swarmAgentTool = [
         return wrapResult(await registerAgent({ repoPath: input.repoPath, commitMode: input.commitMode || "push" }));
       case "whoami":
         return wrapResult(await whoami(input.repoPath || process.cwd()));
+      case "init":
+        return wrapResult(await bootstrapProject(input.repoPath));
       default:
         throw new Error(`Unknown action: ${input.action}`);
     }
