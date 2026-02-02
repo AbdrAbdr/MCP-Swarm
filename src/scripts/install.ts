@@ -1,418 +1,10 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import path from "node:path";
-import os from "node:os";
-import { execFile, exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const execAsync = promisify(exec);
-
-type IdeConfig = {
-  name: string;
-  configPaths: string[];
-  mcpKey: string;
-  executableNames: string[]; // исполняемые файлы для проверки
-  processNames: string[]; // имена процессов для проверки
-};
-
-const IDE_CONFIGS: IdeConfig[] = [
-  {
-    name: "Windsurf",
-    configPaths: getWindsurfPaths(),
-    mcpKey: "mcpServers",
-    executableNames: ["windsurf", "windsurf.exe", "Windsurf.exe"],
-    processNames: ["windsurf", "Windsurf"],
-  },
-  {
-    name: "Cursor",
-    configPaths: getCursorPaths(),
-    mcpKey: "mcpServers",
-    executableNames: ["cursor", "cursor.exe", "Cursor.exe"],
-    processNames: ["cursor", "Cursor"],
-  },
-  {
-    name: "Claude Desktop",
-    configPaths: getClaudePaths(),
-    mcpKey: "mcpServers",
-    executableNames: ["claude", "Claude.exe", "Claude Desktop.exe"],
-    processNames: ["claude", "Claude"],
-  },
-  {
-    name: "Antigravity",
-    configPaths: getAntigravityPaths(),
-    mcpKey: "mcpServers",
-    executableNames: ["antigravity", "antigravity.exe", "Antigravity.exe"],
-    processNames: ["antigravity", "Antigravity"],
-  },
-  {
-    name: "OpenCode",
-    configPaths: getOpenCodePaths(),
-    mcpKey: "mcp", // OpenCode uses "mcp", not "mcpServers"
-    executableNames: ["opencode", "opencode.exe"],
-    processNames: ["opencode"],
-  },
-  {
-    name: "VS Code",
-    configPaths: getVSCodePaths(),
-    mcpKey: "mcpServers",
-    executableNames: ["code", "code.exe", "Code.exe"],
-    processNames: ["code", "Code"],
-  },
-];
-
-function getWindsurfPaths(): string[] {
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    return [
-      path.join(home, "AppData", "Roaming", "Windsurf", "mcp_config.json"),
-      path.join(home, ".windsurf", "mcp_config.json"),
-    ];
-  }
-  if (process.platform === "darwin") {
-    return [
-      path.join(home, "Library", "Application Support", "Windsurf", "mcp_config.json"),
-      path.join(home, ".windsurf", "mcp_config.json"),
-    ];
-  }
-  return [
-    path.join(home, ".config", "Windsurf", "mcp_config.json"),
-    path.join(home, ".windsurf", "mcp_config.json"),
-  ];
-}
-
-function getCursorPaths(): string[] {
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    return [
-      path.join(home, "AppData", "Roaming", "Cursor", "User", "globalStorage", "cursor.mcp", "mcp.json"),
-      path.join(home, ".cursor", "mcp.json"),
-    ];
-  }
-  if (process.platform === "darwin") {
-    return [
-      path.join(home, "Library", "Application Support", "Cursor", "User", "globalStorage", "cursor.mcp", "mcp.json"),
-      path.join(home, ".cursor", "mcp.json"),
-    ];
-  }
-  return [
-    path.join(home, ".config", "Cursor", "User", "globalStorage", "cursor.mcp", "mcp.json"),
-    path.join(home, ".cursor", "mcp.json"),
-  ];
-}
-
-function getClaudePaths(): string[] {
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    return [
-      path.join(home, "AppData", "Roaming", "Claude", "claude_desktop_config.json"),
-    ];
-  }
-  if (process.platform === "darwin") {
-    return [
-      path.join(home, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-    ];
-  }
-  return [
-    path.join(home, ".config", "Claude", "claude_desktop_config.json"),
-  ];
-}
-
-function getAntigravityPaths(): string[] {
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    return [
-      path.join(home, "AppData", "Roaming", "antigravity", "mcp_config.json"),
-    ];
-  }
-  if (process.platform === "darwin") {
-    return [
-      path.join(home, "Library", "Application Support", "antigravity", "mcp_config.json"),
-    ];
-  }
-  return [
-    path.join(home, ".config", "antigravity", "mcp_config.json"),
-  ];
-}
-
-function getOpenCodePaths(): string[] {
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    return [
-      path.join(home, ".config", "opencode", "opencode.json"),
-    ];
-  }
-  if (process.platform === "darwin") {
-    return [
-      path.join(home, ".config", "opencode", "opencode.json"),
-    ];
-  }
-  return [
-    path.join(home, ".config", "opencode", "opencode.json"),
-  ];
-}
-
-function getVSCodePaths(): string[] {
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    return [
-      path.join(home, "AppData", "Roaming", "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json"),
-    ];
-  }
-  if (process.platform === "darwin") {
-    return [
-      path.join(home, "Library", "Application Support", "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json"),
-    ];
-  }
-  return [
-    path.join(home, ".config", "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json"),
-  ];
-}
-
-async function fileExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function readJsonSafe(p: string): Promise<any> {
-  try {
-    const raw = await fs.readFile(p, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-async function writeJsonSafe(p: string, data: any): Promise<void> {
-  await fs.mkdir(path.dirname(p), { recursive: true });
-  await fs.writeFile(p, JSON.stringify(data, null, 2) + "\n", "utf8");
-}
-
-/**
- * Проверяет, установлена ли IDE по исполняемому файлу
- */
-async function isIdeInstalled(ide: IdeConfig): Promise<boolean> {
-  // Метод 1: Проверяем существование конфиг файла
-  for (const configPath of ide.configPaths) {
-    if (await fileExists(configPath)) {
-      return true;
-    }
-  }
-
-  // Метод 2: Проверяем наличие исполняемого файла в PATH
-  for (const execName of ide.executableNames) {
-    try {
-      if (process.platform === "win32") {
-        await execAsync(`where ${execName}`, { windowsHide: true });
-        return true;
-      } else {
-        await execAsync(`which ${execName}`);
-        return true;
-      }
-    } catch {
-      // Не найден в PATH
-    }
-  }
-
-  // Метод 3: Проверяем стандартные пути установки
-  const installPaths = getStandardInstallPaths(ide.name);
-  for (const installPath of installPaths) {
-    if (await fileExists(installPath)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Возвращает стандартные пути установки для IDE
- */
-function getStandardInstallPaths(ideName: string): string[] {
-  const home = os.homedir();
-  const paths: string[] = [];
-
-  if (process.platform === "win32") {
-    const programFiles = process.env.PROGRAMFILES || "C:\\Program Files";
-    const programFilesX86 = process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)";
-    const localAppData = process.env.LOCALAPPDATA || path.join(home, "AppData", "Local");
-
-    switch (ideName) {
-      case "Windsurf":
-        paths.push(
-          path.join(localAppData, "Programs", "Windsurf", "Windsurf.exe"),
-          path.join(programFiles, "Windsurf", "Windsurf.exe"),
-        );
-        break;
-      case "Cursor":
-        paths.push(
-          path.join(localAppData, "Programs", "cursor", "Cursor.exe"),
-          path.join(localAppData, "cursor", "Cursor.exe"),
-          path.join(programFiles, "Cursor", "Cursor.exe"),
-        );
-        break;
-      case "Claude Desktop":
-        paths.push(
-          path.join(localAppData, "Programs", "claude-desktop", "Claude.exe"),
-          path.join(programFiles, "Claude", "Claude.exe"),
-        );
-        break;
-      case "Antigravity":
-        paths.push(
-          path.join(localAppData, "Programs", "antigravity", "Antigravity.exe"),
-          path.join(programFiles, "Antigravity", "Antigravity.exe"),
-        );
-        break;
-      case "OpenCode":
-        paths.push(
-          path.join(localAppData, "Programs", "opencode", "opencode.exe"),
-        );
-        break;
-      case "VS Code":
-        paths.push(
-          path.join(localAppData, "Programs", "Microsoft VS Code", "Code.exe"),
-          path.join(programFiles, "Microsoft VS Code", "Code.exe"),
-        );
-        break;
-    }
-  } else if (process.platform === "darwin") {
-    switch (ideName) {
-      case "Windsurf":
-        paths.push("/Applications/Windsurf.app");
-        break;
-      case "Cursor":
-        paths.push("/Applications/Cursor.app");
-        break;
-      case "Claude Desktop":
-        paths.push("/Applications/Claude.app");
-        break;
-      case "Antigravity":
-        paths.push("/Applications/Antigravity.app");
-        break;
-      case "OpenCode":
-        paths.push("/usr/local/bin/opencode", path.join(home, ".local", "bin", "opencode"));
-        break;
-      case "VS Code":
-        paths.push("/Applications/Visual Studio Code.app");
-        break;
-    }
-  } else {
-    // Linux
-    switch (ideName) {
-      case "Windsurf":
-        paths.push("/usr/bin/windsurf", "/opt/Windsurf/windsurf");
-        break;
-      case "Cursor":
-        paths.push("/usr/bin/cursor", "/opt/cursor/cursor");
-        break;
-      case "OpenCode":
-        paths.push("/usr/local/bin/opencode", path.join(home, ".local", "bin", "opencode"));
-        break;
-      case "VS Code":
-        paths.push("/usr/bin/code", "/usr/share/code/code");
-        break;
-    }
-  }
-
-  return paths;
-}
-
-/**
- * Находит первый существующий конфиг-путь или возвращает предпочтительный
- */
-async function getPreferredConfigPath(ide: IdeConfig): Promise<string> {
-  // Сначала ищем существующий конфиг
-  for (const configPath of ide.configPaths) {
-    if (await fileExists(configPath)) {
-      return configPath;
-    }
-  }
-  
-  // Возвращаем первый (предпочтительный) путь
-  return ide.configPaths[0];
-}
-
-async function detectInstalledIdes(): Promise<{ name: string; configPath: string; mcpKey: string; verified: boolean }[]> {
-  const detected: { name: string; configPath: string; mcpKey: string; verified: boolean }[] = [];
-
-  for (const ide of IDE_CONFIGS) {
-    const isInstalled = await isIdeInstalled(ide);
-    
-    if (isInstalled) {
-      const configPath = await getPreferredConfigPath(ide);
-      const configExists = await fileExists(configPath);
-      
-      detected.push({
-        name: ide.name,
-        configPath,
-        mcpKey: ide.mcpKey,
-        verified: configExists, // Точно установлена если есть конфиг
-      });
-    }
-  }
-
-  return detected;
-}
-
-function getMcpSwarmConfig(projectPath: string): any {
-  // Нормализуем путь для текущей платформы
-  const normalizedPath = path.normalize(projectPath);
-  const serverPath = path.join(normalizedPath, "dist", "serverSmart.js");
-
-  return {
-    command: "node",
-    args: [serverPath],
-    env: {
-      SWARM_REPO_PATH: normalizedPath,
-    },
-  };
-}
-
-function getOpenCodeMcpConfig(projectPath: string): any {
-  const normalizedPath = path.normalize(projectPath);
-  const serverPath = path.join(normalizedPath, "dist", "serverSmart.js");
-
-  return {
-    type: "local",
-    command: ["node", serverPath],
-    enabled: true,
-    environment: {
-      SWARM_REPO_PATH: normalizedPath,
-    },
-  };
-}
-
-async function installToIde(ide: { name: string; configPath: string; mcpKey: string; verified: boolean }, projectPath: string): Promise<boolean> {
-  let config = await readJsonSafe(ide.configPath);
-  
-  if (!config) {
-    // Создаём новый конфиг только если IDE верифицирована
-    if (!ide.verified) {
-      console.log(`   ⚠️  ${ide.name}: IDE обнаружена, но конфиг не найден. Создаю новый.`);
-    }
-    config = {};
-  }
-
-  if (!config[ide.mcpKey]) {
-    config[ide.mcpKey] = {};
-  }
-
-  // OpenCode uses different config format
-  if (ide.name === "OpenCode") {
-    const mcpConfig = getOpenCodeMcpConfig(projectPath);
-    config[ide.mcpKey]["mcp-swarm"] = mcpConfig;
-  } else {
-    const mcpConfig = getMcpSwarmConfig(projectPath);
-    config[ide.mcpKey]["mcp-swarm"] = mcpConfig;
-  }
-
-  await writeJsonSafe(ide.configPath, config);
-  return true;
-}
 
 // Agent rules content for each IDE - v0.9.0 Smart Tools
 const AGENT_RULES_CONTENT = `# MCP Swarm Agent Rules (v0.9.0)
@@ -527,27 +119,27 @@ swarm_control({ action: "pulse" })                     // Update agent map
 \`\`\`
 `;
 
-function getAgentRulesPath(ideName: string, projectPath: string): string {
-  switch (ideName) {
-    case "Windsurf":
-      return path.join(projectPath, ".windsurfrules");
-    case "Cursor":
-      return path.join(projectPath, ".cursorrules");
-    case "Claude Desktop":
-      return path.join(projectPath, "CLAUDE.md");
-    case "Antigravity":
-      return path.join(projectPath, "GEMINI.md"); // Antigravity uses GEMINI.md
-    case "OpenCode":
-      return path.join(projectPath, "AGENT.md"); // OpenCode uses AGENT.md
-    case "VS Code":
-      return path.join(projectPath, ".clinerules");
-    default:
-      return path.join(projectPath, ".agentrules");
+// All supported IDEs and their rules files
+const IDE_RULES_FILES = [
+  { name: "Claude Desktop / Claude Code", file: "CLAUDE.md" },
+  { name: "Antigravity", file: "GEMINI.md" },
+  { name: "OpenCode", file: "AGENT.md" },
+  { name: "Cursor", file: ".cursorrules" },
+  { name: "Windsurf", file: ".windsurfrules" },
+  { name: "VS Code (Roo-Cline)", file: ".clinerules" },
+];
+
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
   }
 }
 
-async function installAgentRules(ideName: string, projectPath: string): Promise<string> {
-  const rulesPath = getAgentRulesPath(ideName, projectPath);
+async function installAgentRules(fileName: string, projectPath: string): Promise<boolean> {
+  const rulesPath = path.join(projectPath, fileName);
   
   // Check if file exists and has content
   let existingContent = "";
@@ -559,7 +151,7 @@ async function installAgentRules(ideName: string, projectPath: string): Promise<
 
   // Check if MCP Swarm rules already present
   if (existingContent.includes("# MCP Swarm Agent Rules")) {
-    return rulesPath; // already installed
+    return false; // already installed
   }
 
   // Append or create
@@ -568,98 +160,91 @@ async function installAgentRules(ideName: string, projectPath: string): Promise<
     : AGENT_RULES_CONTENT;
 
   await fs.writeFile(rulesPath, newContent, "utf8");
-  return rulesPath;
+  return true;
+}
+
+function getMcpConfig(projectPath: string): string {
+  const normalizedPath = path.normalize(projectPath).replace(/\\/g, "/");
+  const serverPath = path.join(normalizedPath, "dist", "serverSmart.js").replace(/\\/g, "/");
+
+  return JSON.stringify({
+    "mcp-swarm": {
+      command: "node",
+      args: [serverPath],
+      env: {
+        SWARM_REPO_PATH: normalizedPath,
+      },
+    },
+  }, null, 2);
 }
 
 async function main() {
-  console.log("🔍 MCP Swarm v0.9.0 Installer");
+  console.log("🐝 MCP Swarm v0.9.0 - Agent Rules Installer");
   console.log("=".repeat(50));
 
   // Get project path
   const projectPath = path.resolve(process.cwd());
-  console.log(`📁 Путь проекта: ${projectPath}`);
-  console.log(`🖥️  Платформа: ${process.platform}`);
+  console.log(`📁 Project path: ${projectPath}`);
 
   // Check if built
-  const serverPath = path.join(projectPath, "dist", "server.js");
+  const serverPath = path.join(projectPath, "dist", "serverSmart.js");
   if (!(await fileExists(serverPath))) {
-    console.log("⚠️  Сервер не собран. Запускаю npm run build...");
+    console.log("⚠️  Server not built. Running npm run build...");
     try {
       await execFileAsync("npm", ["run", "build"], { cwd: projectPath, windowsHide: true });
-      console.log("✅ Сборка завершена");
+      console.log("✅ Build completed");
     } catch (err: any) {
-      console.error("❌ Ошибка сборки:", err?.message);
+      console.error("❌ Build error:", err?.message);
       process.exit(1);
     }
   }
 
-  // Detect IDEs
-  console.log("\n🔎 Поиск установленных IDE...");
-  const ides = await detectInstalledIdes();
+  // Install agent rules for all IDEs
+  console.log("\n📜 Installing agent rules files...");
+  const installed: string[] = [];
+  const skipped: string[] = [];
 
-  if (ides.length === 0) {
-    console.log("❌ Поддерживаемые IDE не найдены.");
-    console.log("   Поддерживаются: Windsurf, Cursor, Claude Desktop, OpenCode, VS Code");
-    console.log("\n📝 Ручная установка:");
-    console.log("   Добавьте в конфиг вашей IDE:");
-    console.log(JSON.stringify(getMcpSwarmConfig(projectPath), null, 2));
-    process.exit(0);
-  }
-
-  console.log(`\n✅ Найдено ${ides.length} IDE:`);
-  for (const ide of ides) {
-    const status = ide.verified ? "✓ верифицирована" : "? обнаружена";
-    console.log(`   - ${ide.name} (${status})`);
-    console.log(`     Конфиг: ${ide.configPath}`);
-  }
-
-  // Install to each IDE
-  console.log("\n📦 Установка MCP Swarm...");
-  for (const ide of ides) {
+  for (const ide of IDE_RULES_FILES) {
     try {
-      await installToIde(ide, projectPath);
-      console.log(`   ✅ ${ide.name}: MCP конфиг установлен`);
-    } catch (err: any) {
-      console.log(`   ❌ ${ide.name}: ${err?.message}`);
-    }
-  }
-
-  // Install agent rules for each IDE
-  console.log("\n📜 Установка правил агентов...");
-  const installedRules = new Set<string>();
-  for (const ide of ides) {
-    try {
-      const rulesPath = await installAgentRules(ide.name, projectPath);
-      if (!installedRules.has(rulesPath)) {
-        installedRules.add(rulesPath);
-        console.log(`   ✅ ${path.basename(rulesPath)}: правила установлены`);
+      const wasInstalled = await installAgentRules(ide.file, projectPath);
+      if (wasInstalled) {
+        installed.push(ide.file);
+        console.log(`   ✅ ${ide.file} - created (${ide.name})`);
+      } else {
+        skipped.push(ide.file);
+        console.log(`   ⏭️  ${ide.file} - already has MCP Swarm rules`);
       }
     } catch (err: any) {
-      console.log(`   ❌ ${ide.name} rules: ${err?.message}`);
+      console.log(`   ❌ ${ide.file}: ${err?.message}`);
     }
   }
 
-  console.log("\n🎉 Установка завершена!");
-  console.log("   Перезапустите IDE для загрузки MCP сервера.");
-  
-  console.log("\n📜 Правила агентов установлены в:");
-  for (const rulesPath of installedRules) {
-    console.log(`   - ${rulesPath}`);
-  }
-  
-  console.log("\n📊 Статистика MCP Swarm v0.9.0:");
+  console.log("\n" + "=".repeat(50));
+  console.log("🎉 Agent rules installation complete!");
+  console.log(`   Created: ${installed.length} files`);
+  console.log(`   Skipped: ${skipped.length} files (already configured)`);
+
+  // Show manual MCP installation instructions
+  console.log("\n" + "=".repeat(50));
+  console.log("📦 MANUAL MCP SERVER INSTALLATION");
+  console.log("=".repeat(50));
+  console.log("\nAdd this to your IDE's MCP config file:\n");
+  console.log(getMcpConfig(projectPath));
+
+  console.log("\n📍 Config file locations:");
+  console.log("   Claude Desktop: %APPDATA%\\Claude\\claude_desktop_config.json");
+  console.log("   Cursor:         ~/.cursor/mcp.json");
+  console.log("   Windsurf:       ~/.windsurf/mcp_config.json");
+  console.log("   Antigravity:    %APPDATA%\\antigravity\\mcp_config.json");
+  console.log("   OpenCode:       ~/.config/opencode/opencode.json");
+  console.log("   VS Code:        Roo-Cline extension settings");
+
+  console.log("\n📊 MCP Swarm v0.9.0 Statistics:");
   console.log("   - 41 Smart Tools (consolidated from 168+)");
   console.log("   - Each tool has multiple actions via 'action' parameter");
-  console.log("   - Поддержка 50+ агентов одновременно");
-  
-  console.log("\n📖 Основные инструменты:");
-  console.log("   Core: swarm_agent, swarm_task, swarm_file");
-  console.log("   Git: swarm_worktree, swarm_git");
-  console.log("   Collab: swarm_collab, swarm_voting, swarm_message");
-  console.log("   Safety: swarm_safety, swarm_control");
-  console.log("   Planning: swarm_brainstorm, swarm_design, swarm_plan");
-  console.log("   Quality: swarm_debug, swarm_spec, swarm_qa, swarm_guard");
-  console.log("   Orchestrator: swarm_orchestrator (FIRST AGENT = INFINITE LOOP)");
+  console.log("   - Supports 50+ agents simultaneously");
+
+  console.log("\n🚀 After adding MCP config, restart your IDE!");
 }
 
 main().catch(err => {
