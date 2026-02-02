@@ -515,7 +515,7 @@ async function installAgentRules(ideName: string, projectPath: string): Promise<
 }
 
 async function main() {
-  console.log("🔍 MCP Swarm v0.7.0 Installer");
+  console.log("🔍 MCP Swarm v0.8.0 Installer");
   console.log("=".repeat(50));
 
   // Get project path
@@ -590,9 +590,9 @@ async function main() {
     console.log(`   - ${rulesPath}`);
   }
   
-  console.log("\n📊 Статистика MCP Swarm v0.7.0:");
-  console.log("   - 156+ инструментов");
-  console.log("   - 13 категорий функционала");
+  console.log("\n📊 Статистика MCP Swarm v0.8.0:");
+  console.log("   - 168+ инструментов");
+  console.log("   - 14 категорий функционала");
   console.log("   - Поддержка 50+ агентов одновременно");
   
   console.log("\n📖 Основные инструменты:");
@@ -602,6 +602,7 @@ async function main() {
   console.log("   Safety: start_voting, check_main_health");
   console.log("   v0.6: start_brainstorm, create_implementation_plan, start_debug_session");
   console.log("   v0.7: start_spec_pipeline, start_qa_loop, install_guard_hooks, init_tool_clusters");
+  console.log("   v0.8: orchestrator_elect, agent_message_send, agent_inbox_fetch");
 }
 
 main().catch(err => {

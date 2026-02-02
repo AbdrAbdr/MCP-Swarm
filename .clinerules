@@ -1,0 +1,105 @@
+# MCP Swarm Agent Rules
+
+## CRITICAL: Always Start with MCP Swarm
+
+Before ANY coding task, you MUST:
+
+1. **Register yourself** - Call `agent_register` to get your unique agent name
+2. **Check swarm status** - Call `swarm_stop_status` to ensure swarm is active
+3. **Check task list** - Call `task_list` to see available tasks
+4. **Reserve files** - Before editing any file, call `file_reserve` with your agent name
+
+## Workflow Rules
+
+### Starting Work
+```
+1. agent_register → Get your name (e.g., "RadiantWolf")
+2. task_list → See what needs to be done
+3. task_assign → Claim a task with your agent name
+4. file_reserve → Lock files you'll edit (exclusive=true)
+5. Do your work
+6. file_release → Unlock files
+7. task_mark_done → Complete the task
+8. sync_with_base_branch → Rebase before push
+9. create_github_pr → Open PR for review
+```
+
+### Collaboration Rules
+- **Never edit files locked by another agent** - Check `list_file_locks` first
+- **Broadcast important changes** - Use `broadcast_chat` to notify team
+- **Request reviews** - Use `request_cross_agent_review` before finalizing
+- **Share screenshots** - Use `share_screenshot` for visual issues
+- **Log your reasoning** - Use `log_swarm_thought` to explain decisions
+
+### Safety Rules
+- **Dangerous actions require voting** - Use `start_voting` before deleting files/folders
+- **Check main health** - Use `check_main_health` before rebasing
+- **Signal dependency changes** - Use `signal_dependency_change` after adding packages
+
+### Ghost Mode
+When no tasks are assigned to you:
+- Run `patrol_mode` to check for lint errors
+- Help review other agents' code
+- Optimize imports and formatting
+
+## Available Tools (100+)
+
+### Core
+- agent_register, agent_whoami, health_check
+
+### Tasks
+- task_create, task_list, task_assign, task_set_status, task_mark_done, task_cancel
+- decompose_task, get_decomposition
+
+### Files & Locks
+- file_reserve, file_release, list_file_locks
+- forecast_file_touches, check_file_conflicts
+
+### Git & GitHub
+- worktree_create, worktree_list, worktree_remove
+- sync_with_base_branch, create_github_pr
+- auto_delete_merged_branch, cleanup_all_merged_branches
+
+### Collaboration
+- broadcast_chat, update_team_dashboard
+- request_cross_agent_review, respond_to_review, list_pending_reviews
+- share_screenshot, list_screenshots
+- log_swarm_thought, get_recent_thoughts
+
+### Safety & Voting
+- start_voting, cast_vote, list_open_votings
+- check_main_health, report_ci_alert, get_immune_status
+
+### Orchestration
+- save_briefing, load_briefing
+- update_swarm_pulse, get_swarm_pulse
+- archive_finding, search_knowledge
+- trigger_urgent_preemption, get_active_urgent
+- create_snapshot, trigger_rollback
+
+### v0.5 New Features
+- check_agent_health, get_dead_agents, force_reassign_task
+- start_session_recording, log_session_action, stop_session_recording, replay_session
+- run_quality_gate, get_quality_report, check_pr_ready
+- log_api_usage, get_agent_costs, get_project_costs, check_budget_remaining
+- estimate_context_size, compress_briefing
+- save_baseline, check_regression, list_regressions
+
+### v0.6 Brainstorming & Writing Plans
+- start_brainstorm, ask_brainstorm_question, answer_brainstorm_question
+- propose_approaches, present_design_section, validate_design_section
+- create_implementation_plan, add_plan_task, get_next_task, complete_step
+- generate_subagent_prompt, export_plan_as_markdown
+
+### v0.6 Systematic Debugging (4 Phases)
+- start_debug_session, log_investigation, add_evidence, complete_phase_1
+- log_patterns, complete_phase_2, form_hypothesis, test_hypothesis
+- implement_fix, verify_fix, check_red_flags
+
+### v0.7 Spec Pipeline & QA Loop
+- start_spec_pipeline, start_spec_phase, complete_spec_phase, export_spec_as_markdown
+- start_qa_loop, run_qa_iteration, log_qa_fix, get_qa_fix_suggestions, generate_qa_report
+
+### v0.7 Guard Hooks & Tool Clusters
+- install_guard_hooks, uninstall_guard_hooks, run_guard_hooks, get_guard_config
+- init_tool_clusters, list_tool_clusters, get_cluster_tools, find_tool_cluster
