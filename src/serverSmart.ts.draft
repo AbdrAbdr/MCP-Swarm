@@ -1,0 +1,43 @@
+/**
+ * MCP Swarm Server v0.9.0 - Smart Tools Edition
+ * 
+ * Consolidated 168+ tools into 41 Smart Tools for better UX.
+ * Each Smart Tool uses an `action` parameter to select functionality.
+ * 
+ * Usage:
+ *   node dist/serverSmart.js
+ * 
+ * For legacy 168+ tools server, use:
+ *   node dist/server.js
+ */
+
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { allSmartTools } from "./smartTools.js";
+
+// Create MCP Server
+const server = new McpServer({
+  name: "mcp-swarm",
+  version: "0.9.0",
+});
+
+// Register all Smart Tools
+for (const tool of allSmartTools) {
+  const [name, config, handler] = tool;
+  server.tool(name, config, handler as any);
+}
+
+// Start server with stdio transport
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  
+  // Log startup info to stderr (not stdout, which is for MCP protocol)
+  console.error(`[MCP Swarm v0.9.0] Smart Tools server started`);
+  console.error(`[MCP Swarm v0.9.0] ${allSmartTools.length} Smart Tools registered`);
+}
+
+main().catch((error) => {
+  console.error("[MCP Swarm] Fatal error:", error);
+  process.exit(1);
+});
