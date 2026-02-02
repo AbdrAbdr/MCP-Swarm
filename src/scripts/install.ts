@@ -331,7 +331,7 @@ async function detectInstalledIdes(): Promise<{ name: string; configPath: string
 function getMcpSwarmConfig(projectPath: string): any {
   // Нормализуем путь для текущей платформы
   const normalizedPath = path.normalize(projectPath);
-  const serverPath = path.join(normalizedPath, "dist", "server.js");
+  const serverPath = path.join(normalizedPath, "dist", "serverSmart.js");
 
   return {
     command: "node",
@@ -364,112 +364,117 @@ async function installToIde(ide: { name: string; configPath: string; mcpKey: str
   return true;
 }
 
-// Agent rules content for each IDE
-const AGENT_RULES_CONTENT = `# MCP Swarm Agent Rules
+// Agent rules content for each IDE - v0.9.0 Smart Tools
+const AGENT_RULES_CONTENT = `# MCP Swarm Agent Rules (v0.9.0)
 
 ## CRITICAL: Always Start with MCP Swarm
 
 Before ANY coding task, you MUST:
 
-1. **Register yourself** - Call \`agent_register\` to get your unique agent name
-2. **Check swarm status** - Call \`swarm_stop_status\` to ensure swarm is active
-3. **Check task list** - Call \`task_list\` to see available tasks
-4. **Reserve files** - Before editing any file, call \`file_reserve\` with your agent name
+1. **Register yourself** - Call \`swarm_agent({ action: "register" })\` to get your unique agent name
+2. **Check swarm status** - Call \`swarm_control({ action: "status" })\` to ensure swarm is active
+3. **Check task list** - Call \`swarm_task({ action: "list" })\` to see available tasks
+4. **Reserve files** - Before editing, call \`swarm_file({ action: "reserve", filePath: "...", agent: "YourName" })\`
+
+## Agent Roles
+
+### ORCHESTRATOR (First Agent)
+The first agent that calls \`swarm_orchestrator({ action: "elect" })\` becomes the Orchestrator.
+- Works in **INFINITE LOOP** - only user can stop
+- Distributes tasks, monitors agent heartbeats, coordinates work
+- Uses \`swarm_control({ action: "pulse" })\` to update real-time agent map
+
+### EXECUTOR (All Other Agents)
+All subsequent agents become Executors.
+- Register with \`swarm_agent({ action: "register" })\`
+- Get tasks via auction system
+- Lock files before editing, send heartbeat, create PRs
 
 ## Workflow Rules
 
 ### Starting Work
 \`\`\`
-1. agent_register → Get your name (e.g., "RadiantWolf")
-2. task_list → See what needs to be done
-3. task_assign → Claim a task with your agent name
-4. file_reserve → Lock files you'll edit (exclusive=true)
+1. swarm_agent({ action: "register" }) → Get your name (e.g., "RadiantWolf")
+2. swarm_task({ action: "list" }) → See what needs to be done
+3. swarm_task({ action: "update", taskId, status: "in_progress", agent: "YourName" }) → Claim task
+4. swarm_file({ action: "reserve", filePath: "...", agent: "YourName", exclusive: true }) → Lock files
 5. Do your work
-6. file_release → Unlock files
-7. task_mark_done → Complete the task
-8. sync_with_base_branch → Rebase before push
-9. create_github_pr → Open PR for review
+6. swarm_file({ action: "release", filePath: "...", agent: "YourName" }) → Unlock files
+7. swarm_task({ action: "update", taskId, status: "done" }) → Complete task
+8. swarm_git({ action: "sync" }) → Rebase before push
+9. swarm_git({ action: "pr", title: "...", body: "..." }) → Open PR
 \`\`\`
 
 ### Collaboration Rules
-- **Never edit files locked by another agent** - Check \`list_file_locks\` first
-- **Broadcast important changes** - Use \`broadcast_chat\` to notify team
-- **Request reviews** - Use \`request_cross_agent_review\` before finalizing
-- **Share screenshots** - Use \`share_screenshot\` for visual issues
-- **Log your reasoning** - Use \`log_swarm_thought\` to explain decisions
+- **Never edit files locked by another agent** - Check \`swarm_file({ action: "list" })\` first
+- **Broadcast important changes** - Use \`swarm_collab({ action: "broadcast", message: "..." })\`
+- **Request reviews** - Use \`swarm_collab({ action: "review_request", ... })\`
+- **Log your reasoning** - Use \`swarm_collab({ action: "thought", text: "..." })\`
 
 ### Safety Rules
-- **Dangerous actions require voting** - Use \`start_voting\` before deleting files/folders
-- **Check main health** - Use \`check_main_health\` before rebasing
-- **Signal dependency changes** - Use \`signal_dependency_change\` after adding packages
+- **Dangerous actions require voting** - Use \`swarm_voting({ action: "start", ... })\`
+- **Check main health** - Use \`swarm_safety({ action: "main_health" })\`
+- **Signal dependency changes** - Use \`swarm_safety({ action: "dependency_change", ... })\`
 
 ### Ghost Mode
-When no tasks are assigned to you:
-- Run \`patrol_mode\` to check for lint errors
+When no tasks are assigned:
+- Run \`swarm_patrol({ action: "run" })\` to check for lint errors
 - Help review other agents' code
 - Optimize imports and formatting
 
-## Available Tools (100+)
+## 41 Smart Tools (v0.9.0)
 
-### Core
-- agent_register, agent_whoami, health_check
+| Tool | Actions |
+|------|---------|
+| swarm_agent | register, whoami |
+| swarm_task | create, list, update, decompose, get_decomposition |
+| swarm_file | reserve, release, list, forecast, conflicts, safety |
+| swarm_worktree | create, list, remove |
+| swarm_git | sync, pr, delete_merged, cleanup_merged |
+| swarm_collab | broadcast, dashboard, review_request, review_respond, review_list, screenshot, screenshot_list, thought, thought_list |
+| swarm_voting | start, vote, list |
+| swarm_safety | main_health, ci_alert, immune_status, dependency_change |
+| swarm_control | start, stop, status, pulse, pulse_get |
+| swarm_briefing | save, load |
+| swarm_knowledge | archive, search |
+| swarm_urgent | trigger, get_active |
+| swarm_snapshot | create, rollback |
+| swarm_health | check, dead_agents, force_reassign |
+| swarm_session | start, log, stop, replay |
+| swarm_quality | run_gate, get_report, check_pr_ready |
+| swarm_cost | log_usage, agent_costs, project_costs, budget_remaining |
+| swarm_context | estimate_size, compress_briefing |
+| swarm_regression | save_baseline, check, list |
+| swarm_brainstorm | start, question, answer |
+| swarm_design | propose, present, validate |
+| swarm_plan | create, add_task, get_next, complete_step, subagent_prompt, export_markdown |
+| swarm_debug | start, log_investigation, add_evidence, complete_phase1, log_patterns, complete_phase2, form_hypothesis, test_hypothesis, implement_fix, verify_fix, check_red_flags |
+| swarm_spec | start, start_phase, complete_phase, export_markdown |
+| swarm_qa | start, run_iteration, log_fix, get_suggestions, generate_report |
+| swarm_guard | install, uninstall, run, get_config |
+| swarm_cluster | init, list, get_tools, find |
+| swarm_orchestrator | elect, status, dispatch_task, collect_results |
+| swarm_message | send, inbox, ack, history |
+| swarm_patrol | run |
+| swarm_scan | run |
+| swarm_platform | check |
 
-### Tasks
-- task_create, task_list, task_assign, task_set_status, task_mark_done, task_cancel
-- decompose_task, get_decomposition
+## Quick Reference
 
-### Files & Locks
-- file_reserve, file_release, list_file_locks
-- forecast_file_touches, check_file_conflicts
+### Core Operations
+\`\`\`typescript
+swarm_agent({ action: "register" })                    // Get agent name
+swarm_task({ action: "list" })                         // List all tasks
+swarm_file({ action: "reserve", filePath, agent })     // Lock file
+swarm_git({ action: "pr", title, body })               // Create PR
+\`\`\`
 
-### Git & GitHub
-- worktree_create, worktree_list, worktree_remove
-- sync_with_base_branch, create_github_pr
-- auto_delete_merged_branch, cleanup_all_merged_branches
-
-### Collaboration
-- broadcast_chat, update_team_dashboard
-- request_cross_agent_review, respond_to_review, list_pending_reviews
-- share_screenshot, list_screenshots
-- log_swarm_thought, get_recent_thoughts
-
-### Safety & Voting
-- start_voting, cast_vote, list_open_votings
-- check_main_health, report_ci_alert, get_immune_status
-
-### Orchestration
-- save_briefing, load_briefing
-- update_swarm_pulse, get_swarm_pulse
-- archive_finding, search_knowledge
-- trigger_urgent_preemption, get_active_urgent
-- create_snapshot, trigger_rollback
-
-### v0.5 New Features
-- check_agent_health, get_dead_agents, force_reassign_task
-- start_session_recording, log_session_action, stop_session_recording, replay_session
-- run_quality_gate, get_quality_report, check_pr_ready
-- log_api_usage, get_agent_costs, get_project_costs, check_budget_remaining
-- estimate_context_size, compress_briefing
-- save_baseline, check_regression, list_regressions
-
-### v0.6 Brainstorming & Writing Plans
-- start_brainstorm, ask_brainstorm_question, answer_brainstorm_question
-- propose_approaches, present_design_section, validate_design_section
-- create_implementation_plan, add_plan_task, get_next_task, complete_step
-- generate_subagent_prompt, export_plan_as_markdown
-
-### v0.6 Systematic Debugging (4 Phases)
-- start_debug_session, log_investigation, add_evidence, complete_phase_1
-- log_patterns, complete_phase_2, form_hypothesis, test_hypothesis
-- implement_fix, verify_fix, check_red_flags
-
-### v0.7 Spec Pipeline & QA Loop
-- start_spec_pipeline, start_spec_phase, complete_spec_phase, export_spec_as_markdown
-- start_qa_loop, run_qa_iteration, log_qa_fix, get_qa_fix_suggestions, generate_qa_report
-
-### v0.7 Guard Hooks & Tool Clusters
-- install_guard_hooks, uninstall_guard_hooks, run_guard_hooks, get_guard_config
-- init_tool_clusters, list_tool_clusters, get_cluster_tools, find_tool_cluster
+### Orchestrator Operations
+\`\`\`typescript
+swarm_orchestrator({ action: "elect" })                // Become orchestrator
+swarm_orchestrator({ action: "dispatch_task", ... })   // Assign task to agent
+swarm_control({ action: "pulse" })                     // Update agent map
+\`\`\`
 `;
 
 function getAgentRulesPath(ideName: string, projectPath: string): string {
@@ -515,7 +520,7 @@ async function installAgentRules(ideName: string, projectPath: string): Promise<
 }
 
 async function main() {
-  console.log("🔍 MCP Swarm v0.8.0 Installer");
+  console.log("🔍 MCP Swarm v0.9.0 Installer");
   console.log("=".repeat(50));
 
   // Get project path
@@ -590,19 +595,19 @@ async function main() {
     console.log(`   - ${rulesPath}`);
   }
   
-  console.log("\n📊 Статистика MCP Swarm v0.8.0:");
-  console.log("   - 168+ инструментов");
-  console.log("   - 14 категорий функционала");
+  console.log("\n📊 Статистика MCP Swarm v0.9.0:");
+  console.log("   - 41 Smart Tools (consolidated from 168+)");
+  console.log("   - Each tool has multiple actions via 'action' parameter");
   console.log("   - Поддержка 50+ агентов одновременно");
   
   console.log("\n📖 Основные инструменты:");
-  console.log("   Core: agent_register, task_list, file_reserve");
-  console.log("   Git: worktree_create, sync_with_base_branch, create_github_pr");
-  console.log("   Collab: broadcast_chat, request_cross_agent_review");
-  console.log("   Safety: start_voting, check_main_health");
-  console.log("   v0.6: start_brainstorm, create_implementation_plan, start_debug_session");
-  console.log("   v0.7: start_spec_pipeline, start_qa_loop, install_guard_hooks, init_tool_clusters");
-  console.log("   v0.8: orchestrator_elect, agent_message_send, agent_inbox_fetch");
+  console.log("   Core: swarm_agent, swarm_task, swarm_file");
+  console.log("   Git: swarm_worktree, swarm_git");
+  console.log("   Collab: swarm_collab, swarm_voting, swarm_message");
+  console.log("   Safety: swarm_safety, swarm_control");
+  console.log("   Planning: swarm_brainstorm, swarm_design, swarm_plan");
+  console.log("   Quality: swarm_debug, swarm_spec, swarm_qa, swarm_guard");
+  console.log("   Orchestrator: swarm_orchestrator (FIRST AGENT = INFINITE LOOP)");
 }
 
 main().catch(err => {
