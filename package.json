@@ -1,6 +1,6 @@
 {
   "name": "mcp-swarm",
-  "version": "0.9.0",
+  "version": "0.9.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,12 @@
     "dev": "node --enable-source-maps dist/serverSmart.js",
     "dev:legacy": "node --enable-source-maps dist/server.js",
     "companion": "node --enable-source-maps dist/companion.js",
-    "install-mcp": "node --enable-source-maps dist/scripts/install.js"
+    "install-mcp": "node --enable-source-maps dist/scripts/install.js",
+    "dashboard:api": "node --enable-source-maps dist/dashboardApi.js",
+    "dashboard:ui": "cd dashboard && npm run dev",
+    "dashboard:install": "cd dashboard && npm install",
+    "dashboard": "concurrently \"npm run dashboard:api\" \"npm run dashboard:ui\"",
+    "dashboard:build": "cd dashboard && npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -19,6 +24,7 @@
     "@cloudflare/workers-types": "^4.20260131.0",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.18.0",
+    "concurrently": "^8.2.2",
     "typescript": "^5.6.3"
   }
 }

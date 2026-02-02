@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 47 100% 50%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 47 100% 50%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 47 100% 50%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px hsl(142 76% 36% / 0.3);
+}
+
+.glow-warning {
+  box-shadow: 0 0 20px hsl(38 92% 50% / 0.3);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px hsl(0 84% 60% / 0.3);
+}
+
+/* Animated gradient background */
+.gradient-bg {
+  background: linear-gradient(135deg, 
+    hsl(var(--background)) 0%,
+    hsl(0 0% 6%) 50%,
+    hsl(var(--background)) 100%
+  );
+}
+
+/* Status indicators */
+.status-online {
+  @apply bg-green-500;
+  animation: pulse 2s infinite;
+}
+
+.status-offline {
+  @apply bg-gray-500;
+}
+
+.status-busy {
+  @apply bg-yellow-500;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
