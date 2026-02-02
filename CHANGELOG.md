@@ -7,6 +7,99 @@
 
 ---
 
+## [0.9.0] - 2026-02-02
+
+### 🚀 MAJOR: Smart Tools Consolidation
+
+**Reduces 168+ individual tools → 41 Smart Tools with `action` parameter**
+
+This is a major UX improvement. Instead of agents needing to remember 168+ tool names,
+they now work with 41 logical groups where related functionality is accessed via the `action` parameter.
+
+### Added
+
+- **Smart Tools System** — 41 unified tools replacing 168+ individual tools
+  - Each Smart Tool groups 3-15 related functions via `action` parameter
+  - Better discoverability and easier to remember
+  - Consistent parameter patterns across all tools
+
+### Smart Tools List (41 tools)
+
+| # | Tool Name | Actions | Description |
+|---|-----------|---------|-------------|
+| 1 | `swarm_agent` | register, whoami | Agent identity |
+| 2 | `swarm_task` | create, list, update, decompose, get_decomposition | Task management |
+| 3 | `swarm_file` | reserve, release, list, forecast, conflicts, safety | File locking |
+| 4 | `swarm_git` | sync, pr, health, cleanup, cleanup_all | Git operations |
+| 5 | `swarm_worktree` | create, list, remove | Git worktrees |
+| 6 | `swarm_companion` | status, stop, pause, resume | Companion daemon |
+| 7 | `swarm_control` | stop, resume, status | Swarm control |
+| 8 | `swarm_chat` | broadcast, dashboard, thought, thoughts | Team chat |
+| 9 | `swarm_review` | request, respond, list | Code review |
+| 10 | `swarm_voting` | start, vote, list, get | Voting system |
+| 11 | `swarm_auction` | announce, bid, poll | Task auction |
+| 12 | `swarm_mcp` | scan, authorize, policy | MCP scanning |
+| 13 | `swarm_orchestrator` | elect, info, heartbeat, resign, executors, executor_heartbeat | Orchestrator |
+| 14 | `swarm_message` | send, inbox, ack, reply, search, thread | Messaging |
+| 15 | `swarm_briefing` | save, load | Briefings |
+| 16 | `swarm_pulse` | update, get | Real-time status |
+| 17 | `swarm_knowledge` | archive, search | Knowledge base |
+| 18 | `swarm_snapshot` | create, rollback, list | Snapshots |
+| 19 | `swarm_health` | check, dead, reassign, summary | Agent health |
+| 20 | `swarm_quality` | run, report, threshold, pr_ready | Quality gate |
+| 21 | `swarm_cost` | log, agent, project, limit, remaining | Cost tracking |
+| 22 | `swarm_brainstorm` | start, ask, answer, propose, present, validate, save, get, list | Brainstorming |
+| 23 | `swarm_plan` | create, add, next, start, step, complete, prompt, export, status, list, ready | Plans |
+| 24 | `swarm_debug` | start, investigate, evidence, phase1, patterns, phase2, hypothesis, test, fix, verify, get, list, redflags | Debugging |
+| 25 | `swarm_spec` | start, phase, complete, get, list, export | Spec pipeline |
+| 26 | `swarm_qa` | start, iterate, fix, get, list, suggest, report | QA loop |
+| 27 | `swarm_hooks` | install, uninstall, run, config, update, list | Git hooks |
+| 28 | `swarm_screenshot` | share, list | Screenshots |
+| 29 | `swarm_dependency` | signal, sync | Dependencies |
+| 30 | `swarm_platform` | request, respond, list | Cross-platform |
+| 31 | `swarm_immune` | alert, resolve, status, test, patrol | Immune system |
+| 32 | `swarm_context` | estimate, compress, compress_many, stats | Context compression |
+| 33 | `swarm_regression` | baseline, check, list, resolve, baselines | Regression detection |
+| 34 | `swarm_expertise` | track, suggest, record, experts, list | Agent expertise |
+| 35 | `swarm_conflict` | predict, analyze, hotspots, record | Conflict prediction |
+| 36 | `swarm_timeline` | generate, visualize | Timeline |
+| 37 | `swarm_docs` | generate, task_docs, list, get | Documentation |
+| 38 | `swarm_advice` | request, provide, list | Collective advice |
+| 39 | `swarm_preemption` | trigger, resolve, active | Urgent preemption |
+| 40 | `swarm_clusters` | init, list, tools, find, add, create, summary | Tool clusters |
+| 41 | `swarm_session` | start, log, stop, list, replay | Session recording |
+
+### Example Usage
+
+**Before (v0.8.x):**
+```
+tool: task_create
+tool: task_list
+tool: task_assign
+tool: task_set_status
+tool: task_mark_done
+... (9 separate tools)
+```
+
+**After (v0.9.0):**
+```
+tool: swarm_task
+  action: "create" | "list" | "update" | "decompose" | "get_decomposition"
+```
+
+### Files Changed
+
+- `src/smartTools.ts` — All 41 Smart Tools with correct workflow signatures
+- `src/serverSmart.ts` — New server entry point for Smart Tools
+- `package.json` — v0.9.0, added `dev:legacy` script for backward compatibility
+
+### Backward Compatibility
+
+- Legacy 168+ tools server available via `npm run dev:legacy`
+- Smart Tools server via `npm run dev` (default)
+
+---
+
 ## [0.8.1] - 2026-02-02
 
 ### Добавлено

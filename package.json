@@ -1,11 +1,12 @@
 {
   "name": "mcp-swarm",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "node --enable-source-maps dist/server.js",
+    "dev": "node --enable-source-maps dist/serverSmart.js",
+    "dev:legacy": "node --enable-source-maps dist/server.js",
     "companion": "node --enable-source-maps dist/companion.js",
     "install-mcp": "node --enable-source-maps dist/scripts/install.js"
   },
