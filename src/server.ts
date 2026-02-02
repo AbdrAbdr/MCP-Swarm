@@ -164,11 +164,41 @@ import {
   getDebugSessionTool,
   listDebugSessionsTool,
   checkRedFlagsTool,
+  // v0.7 Spec Pipeline
+  startSpecPipelineTool,
+  startSpecPhaseTool,
+  completeSpecPhaseTool,
+  getSpecPipelineTool,
+  listSpecPipelinesTool,
+  exportSpecAsMarkdownTool,
+  // v0.7 QA Loop
+  startQALoopTool,
+  runQAIterationTool,
+  logQAFixTool,
+  getQALoopTool,
+  listQALoopsTool,
+  getQAFixSuggestionsTool,
+  generateQAReportTool,
+  // v0.7 Guard Hooks
+  installGuardHooksTool,
+  uninstallGuardHooksTool,
+  runGuardHooksTool,
+  getGuardConfigTool,
+  updateGuardHookTool,
+  listGuardHooksTool,
+  // v0.7 Tool Clusters
+  initToolClustersTool,
+  listToolClustersTool,
+  getClusterToolsTool,
+  findToolClusterTool,
+  addToolToClusterTool,
+  createToolClusterTool,
+  getToolClusterSummaryTool,
 } from "./tools.js";
 
 const server = new McpServer({
   name: "mcp-swarm",
-  version: "0.6.0",
+  version: "0.7.0",
 });
 
 server.registerTool(...agentRegisterTool);
@@ -342,6 +372,40 @@ server.registerTool(...verifyFixTool);
 server.registerTool(...getDebugSessionTool);
 server.registerTool(...listDebugSessionsTool);
 server.registerTool(...checkRedFlagsTool);
+
+// v0.7 Spec Pipeline (gatherer → researcher → writer → critic)
+server.registerTool(...startSpecPipelineTool);
+server.registerTool(...startSpecPhaseTool);
+server.registerTool(...completeSpecPhaseTool);
+server.registerTool(...getSpecPipelineTool);
+server.registerTool(...listSpecPipelinesTool);
+server.registerTool(...exportSpecAsMarkdownTool);
+
+// v0.7 QA Loop (reviewer → fixer → loop)
+server.registerTool(...startQALoopTool);
+server.registerTool(...runQAIterationTool);
+server.registerTool(...logQAFixTool);
+server.registerTool(...getQALoopTool);
+server.registerTool(...listQALoopsTool);
+server.registerTool(...getQAFixSuggestionsTool);
+server.registerTool(...generateQAReportTool);
+
+// v0.7 Guard Hooks (pre-commit/pre-push safety)
+server.registerTool(...installGuardHooksTool);
+server.registerTool(...uninstallGuardHooksTool);
+server.registerTool(...runGuardHooksTool);
+server.registerTool(...getGuardConfigTool);
+server.registerTool(...updateGuardHookTool);
+server.registerTool(...listGuardHooksTool);
+
+// v0.7 Tool Clusters (organize tools by category)
+server.registerTool(...initToolClustersTool);
+server.registerTool(...listToolClustersTool);
+server.registerTool(...getClusterToolsTool);
+server.registerTool(...findToolClusterTool);
+server.registerTool(...addToolToClusterTool);
+server.registerTool(...createToolClusterTool);
+server.registerTool(...getToolClusterSummaryTool);
 
 server.registerTool(
   "health_check",

@@ -7,6 +7,51 @@
 
 ---
 
+## [0.7.0] - 2026-02-02
+
+### Добавлено
+- **Spec Pipeline** (6 tools) — структурированный pipeline для создания спецификаций
+  - `start_spec_pipeline` — начать pipeline с 4 ролями
+  - `start_spec_phase` — начать фазу (gatherer/researcher/writer/critic)
+  - `complete_spec_phase` — завершить фазу с output
+  - `get_spec_pipeline` — получить статус pipeline
+  - `list_spec_pipelines` — список всех pipelines
+  - `export_spec_as_markdown` — экспорт спецификации в markdown
+  
+- **QA Loop** (7 tools) — итеративные циклы review/fix
+  - `start_qa_loop` — начать QA loop для задачи
+  - `run_qa_iteration` — запустить итерацию проверок
+  - `log_qa_fix` — записать применённый fix
+  - `get_qa_loop` — получить статус loop
+  - `list_qa_loops` — список всех loops
+  - `get_qa_fix_suggestions` — получить предложения по fix
+  - `generate_qa_report` — сгенерировать markdown отчёт
+  
+- **Guard Hooks** (6 tools) — pre-commit/pre-push safety hooks
+  - `install_guard_hooks` — установить hooks в репозиторий
+  - `uninstall_guard_hooks` — удалить hooks
+  - `run_guard_hooks` — запустить hooks вручную (для тестирования)
+  - `get_guard_config` — получить конфигурацию hooks
+  - `update_guard_hook` — обновить конфигурацию hook
+  - `list_guard_hooks` — список всех hooks
+  
+- **Tool Clusters** (7 tools) — организация tools по категориям
+  - `init_tool_clusters` — инициализировать кластеры tools
+  - `list_tool_clusters` — список всех кластеров
+  - `get_cluster_tools` — получить tools в кластере
+  - `find_tool_cluster` — найти кластер для tool
+  - `add_tool_to_cluster` — добавить tool в кластер
+  - `create_tool_cluster` — создать новый кластер
+  - `get_tool_cluster_summary` — получить summary всех кластеров
+
+### Методологии
+- **Spec Pipeline:** 4 роли (gatherer → researcher → writer → critic) с итерациями
+- **QA Loop:** reviewer → fixer → loop до прохождения всех проверок
+- **Guard Hooks:** bypass с ключевым словом [skip-hooks] в commit message
+- **Tool Clusters:** 13 категорий (agent, task, file, git, collab, safety, quality, debug, plan, hooks, session, cost, docs)
+
+---
+
 ## [0.6.0] - 2026-01-30
 
 ### Добавлено

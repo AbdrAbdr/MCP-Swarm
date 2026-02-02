@@ -3558,3 +3558,615 @@ export const checkRedFlagsTool = [
     return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
   },
 ] as const;
+
+// ============================================================================
+// v0.7 Spec Pipeline Tools (gatherer → researcher → writer → critic)
+// ============================================================================
+
+import {
+  startSpecPipeline,
+  startSpecPhase,
+  completeSpecPhase,
+  getSpecPipeline,
+  listSpecPipelines,
+  exportSpecAsMarkdown,
+} from "./workflows/specPipeline.js";
+
+export const startSpecPipelineTool = [
+  "start_spec_pipeline",
+  {
+    title: "Start Spec Pipeline",
+    description: "Start a new spec pipeline with 4 roles: gatherer → researcher → writer → critic.",
+    inputSchema: z.object({
+      title: z.string().min(1),
+      description: z.string().min(1),
+      maxIterations: z.number().optional(),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      pipelineId: z.string(),
+      currentRole: z.string(),
+    }).strict(),
+  },
+  async (input: { title: string; description: string; maxIterations?: number; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await startSpecPipeline(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const startSpecPhaseTool = [
+  "start_spec_phase",
+  {
+    title: "Start Spec Phase",
+    description: "Start working on a role's phase (gatherer/researcher/writer/critic).",
+    inputSchema: z.object({
+      pipelineId: z.string().min(1),
+      role: z.enum(["gatherer", "researcher", "writer", "critic"]),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      instructions: z.string(),
+    }).strict(),
+  },
+  async (input: { pipelineId: string; role: "gatherer" | "researcher" | "writer" | "critic"; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await startSpecPhase(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const completeSpecPhaseTool = [
+  "complete_spec_phase",
+  {
+    title: "Complete Spec Phase",
+    description: "Complete a role's phase with output and move to next role.",
+    inputSchema: z.object({
+      pipelineId: z.string().min(1),
+      role: z.enum(["gatherer", "researcher", "writer", "critic"]),
+      output: z.string().min(1),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      nextRole: z.string(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { pipelineId: string; role: "gatherer" | "researcher" | "writer" | "critic"; output: string; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await completeSpecPhase(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getSpecPipelineTool = [
+  "get_spec_pipeline",
+  {
+    title: "Get Spec Pipeline",
+    description: "Get the current status of a spec pipeline.",
+    inputSchema: z.object({
+      pipelineId: z.string().min(1),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { pipelineId: string; repoPath?: string }) => {
+    const out = await getSpecPipeline(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const listSpecPipelinesTool = [
+  "list_spec_pipelines",
+  {
+    title: "List Spec Pipelines",
+    description: "List all spec pipelines, optionally filtered by status.",
+    inputSchema: z.object({
+      status: z.enum(["active", "completed", "stalled"]).optional(),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { status?: "active" | "completed" | "stalled"; repoPath?: string }) => {
+    const out = await listSpecPipelines(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const exportSpecAsMarkdownTool = [
+  "export_spec_as_markdown",
+  {
+    title: "Export Spec as Markdown",
+    description: "Export a completed spec pipeline as a markdown document.",
+    inputSchema: z.object({
+      pipelineId: z.string().min(1),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      filePath: z.string().optional(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { pipelineId: string; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await exportSpecAsMarkdown(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+// ============================================================================
+// v0.7 QA Loop Tools (reviewer → fixer → loop)
+// ============================================================================
+
+import {
+  startQALoop,
+  runQAIteration,
+  logQAFix,
+  getQALoop,
+  listQALoops,
+  getQAFixSuggestions,
+  generateQAReport,
+} from "./workflows/qaLoop.js";
+
+export const startQALoopTool = [
+  "start_qa_loop",
+  {
+    title: "Start QA Loop",
+    description: "Start a QA loop for iterative review/fix cycles.",
+    inputSchema: z.object({
+      taskId: z.string().min(1),
+      branch: z.string().optional(),
+      maxIterations: z.number().optional(),
+      autoFix: z.boolean().optional(),
+      checks: z.array(z.object({
+        name: z.string(),
+        type: z.enum(["lint", "test", "type", "security", "coverage", "custom"]),
+        command: z.string(),
+      })).optional(),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      loopId: z.string(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { taskId: string; branch?: string; maxIterations?: number; autoFix?: boolean; checks?: Array<{ name: string; type: "lint" | "test" | "type" | "security" | "coverage" | "custom"; command: string }>; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await startQALoop(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const runQAIterationTool = [
+  "run_qa_iteration",
+  {
+    title: "Run QA Iteration",
+    description: "Run one iteration of QA checks and report results.",
+    inputSchema: z.object({
+      loopId: z.string().min(1),
+      checkResults: z.array(z.object({
+        name: z.string(),
+        passed: z.boolean(),
+        output: z.string().optional(),
+        fixSuggestion: z.string().optional(),
+      })),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      allPassed: z.boolean(),
+      iteration: z.number(),
+      failedChecks: z.array(z.string()),
+      status: z.string(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { loopId: string; checkResults: Array<{ name: string; passed: boolean; output?: string; fixSuggestion?: string }>; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await runQAIteration(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const logQAFixTool = [
+  "log_qa_fix",
+  {
+    title: "Log QA Fix",
+    description: "Log a fix that was applied during QA loop.",
+    inputSchema: z.object({
+      loopId: z.string().min(1),
+      fixDescription: z.string().min(1),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { loopId: string; fixDescription: string; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await logQAFix(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getQALoopTool = [
+  "get_qa_loop",
+  {
+    title: "Get QA Loop",
+    description: "Get the current status of a QA loop.",
+    inputSchema: z.object({
+      loopId: z.string().min(1),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { loopId: string; repoPath?: string }) => {
+    const out = await getQALoop(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const listQALoopsTool = [
+  "list_qa_loops",
+  {
+    title: "List QA Loops",
+    description: "List all QA loops, optionally filtered by status.",
+    inputSchema: z.object({
+      status: z.enum(["running", "passed", "failed", "max_iterations"]).optional(),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { status?: "running" | "passed" | "failed" | "max_iterations"; repoPath?: string }) => {
+    const out = await listQALoops(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getQAFixSuggestionsTool = [
+  "get_qa_fix_suggestions",
+  {
+    title: "Get QA Fix Suggestions",
+    description: "Get fix suggestions for failed checks in a QA loop.",
+    inputSchema: z.object({
+      loopId: z.string().min(1),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { loopId: string; repoPath?: string }) => {
+    const out = await getQAFixSuggestions(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const generateQAReportTool = [
+  "generate_qa_report",
+  {
+    title: "Generate QA Report",
+    description: "Generate a markdown report for a QA loop.",
+    inputSchema: z.object({
+      loopId: z.string().min(1),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      report: z.string(),
+    }).strict(),
+  },
+  async (input: { loopId: string; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await generateQAReport(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+// ============================================================================
+// v0.7 Guard Hooks Tools (pre-commit/pre-push safety)
+// ============================================================================
+
+import {
+  installGuardHooks,
+  uninstallGuardHooks,
+  runGuardHooks,
+  getGuardConfig,
+  updateGuardHook,
+  listGuardHooks,
+} from "./workflows/guardHooks.js";
+
+export const installGuardHooksTool = [
+  "install_guard_hooks",
+  {
+    title: "Install Guard Hooks",
+    description: "Install pre-commit and pre-push safety hooks in the repository.",
+    inputSchema: z.object({
+      preCommitChecks: z.array(z.object({
+        name: z.string(),
+        command: z.string(),
+        args: z.array(z.string()).optional(),
+        failOnError: z.boolean().optional(),
+      })).optional(),
+      prePushChecks: z.array(z.object({
+        name: z.string(),
+        command: z.string(),
+        args: z.array(z.string()).optional(),
+        failOnError: z.boolean().optional(),
+      })).optional(),
+      bypassKeyword: z.string().optional(),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      installedHooks: z.array(z.string()),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { preCommitChecks?: Array<{ name: string; command: string; args?: string[]; failOnError?: boolean }>; prePushChecks?: Array<{ name: string; command: string; args?: string[]; failOnError?: boolean }>; bypassKeyword?: string; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await installGuardHooks(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const uninstallGuardHooksTool = [
+  "uninstall_guard_hooks",
+  {
+    title: "Uninstall Guard Hooks",
+    description: "Remove installed guard hooks from the repository.",
+    inputSchema: z.object({
+      hooks: z.array(z.enum(["pre-commit", "pre-push", "commit-msg"])).optional(),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      removedHooks: z.array(z.string()),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { hooks?: Array<"pre-commit" | "pre-push" | "commit-msg">; repoPath?: string }) => {
+    const out = await uninstallGuardHooks(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const runGuardHooksTool = [
+  "run_guard_hooks",
+  {
+    title: "Run Guard Hooks",
+    description: "Run guard hooks manually (for testing).",
+    inputSchema: z.object({
+      hook: z.enum(["pre-commit", "pre-push", "commit-msg"]),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.object({
+      passed: z.boolean(),
+      results: z.array(z.object({
+        name: z.string(),
+        passed: z.boolean(),
+        output: z.string(),
+      })),
+    }).strict(),
+  },
+  async (input: { hook: "pre-commit" | "pre-push" | "commit-msg"; repoPath?: string }) => {
+    const out = await runGuardHooks(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getGuardConfigTool = [
+  "get_guard_config",
+  {
+    title: "Get Guard Config",
+    description: "Get the current guard hooks configuration.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { repoPath?: string }) => {
+    const out = await getGuardConfig(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const updateGuardHookTool = [
+  "update_guard_hook",
+  {
+    title: "Update Guard Hook",
+    description: "Update a specific hook's configuration.",
+    inputSchema: z.object({
+      hook: z.enum(["pre-commit", "pre-push", "commit-msg"]),
+      enabled: z.boolean().optional(),
+      checks: z.array(z.object({
+        name: z.string(),
+        command: z.string(),
+        args: z.array(z.string()).optional(),
+        failOnError: z.boolean().optional(),
+      })).optional(),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { hook: "pre-commit" | "pre-push" | "commit-msg"; enabled?: boolean; checks?: Array<{ name: string; command: string; args?: string[]; failOnError?: boolean }>; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await updateGuardHook(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const listGuardHooksTool = [
+  "list_guard_hooks",
+  {
+    title: "List Guard Hooks",
+    description: "List all configured guard hooks.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { repoPath?: string }) => {
+    const out = await listGuardHooks(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+// ============================================================================
+// v0.7 Tool Clusters (organize tools by category)
+// ============================================================================
+
+import {
+  initToolClusters,
+  listToolClusters,
+  getClusterTools,
+  findToolCluster,
+  addToolToCluster,
+  createToolCluster,
+  getToolClusterSummary,
+} from "./workflows/toolClusters.js";
+
+export const initToolClustersTool = [
+  "init_tool_clusters",
+  {
+    title: "Initialize Tool Clusters",
+    description: "Initialize tool clusters with default configuration.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      clusters: z.number(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await initToolClusters(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const listToolClustersTool = [
+  "list_tool_clusters",
+  {
+    title: "List Tool Clusters",
+    description: "List all available tool clusters.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { repoPath?: string }) => {
+    const out = await listToolClusters(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getClusterToolsTool = [
+  "get_cluster_tools",
+  {
+    title: "Get Cluster Tools",
+    description: "Get all tools in a specific cluster.",
+    inputSchema: z.object({
+      clusterId: z.string().min(1),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: { clusterId: string; repoPath?: string }) => {
+    const out = await getClusterTools(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const findToolClusterTool = [
+  "find_tool_cluster",
+  {
+    title: "Find Tool Cluster",
+    description: "Find which cluster a tool belongs to.",
+    inputSchema: z.object({
+      toolName: z.string().min(1),
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.object({
+      clusterId: z.string().nullable(),
+      clusterName: z.string().nullable(),
+    }).strict(),
+  },
+  async (input: { toolName: string; repoPath?: string }) => {
+    const out = await findToolCluster(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const addToolToClusterTool = [
+  "add_tool_to_cluster",
+  {
+    title: "Add Tool to Cluster",
+    description: "Add a tool to a specific cluster.",
+    inputSchema: z.object({
+      clusterId: z.string().min(1),
+      toolName: z.string().min(1),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { clusterId: string; toolName: string; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await addToolToCluster(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const createToolClusterTool = [
+  "create_tool_cluster",
+  {
+    title: "Create Tool Cluster",
+    description: "Create a new tool cluster.",
+    inputSchema: z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      description: z.string().min(1),
+      icon: z.string().min(1),
+      tools: z.array(z.string()).optional(),
+      repoPath: z.string().optional(),
+      commitMode: z.enum(["none", "local", "push"]).default("push"),
+    }).strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }).strict(),
+  },
+  async (input: { id: string; name: string; description: string; icon: string; tools?: string[]; repoPath?: string; commitMode: "none" | "local" | "push" }) => {
+    const out = await createToolCluster(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;
+
+export const getToolClusterSummaryTool = [
+  "get_tool_cluster_summary",
+  {
+    title: "Get Tool Cluster Summary",
+    description: "Get a summary of all tool clusters with tool counts.",
+    inputSchema: z.object({
+      repoPath: z.string().optional(),
+    }).strict(),
+    outputSchema: z.object({
+      summary: z.string(),
+      totalTools: z.number(),
+      totalClusters: z.number(),
+    }).strict(),
+  },
+  async (input: { repoPath?: string }) => {
+    const out = await getToolClusterSummary(input);
+    return { content: [{ type: "text" as const, text: JSON.stringify(out) }], structuredContent: out };
+  },
+] as const;

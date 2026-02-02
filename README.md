@@ -1,8 +1,56 @@
-# MCP Swarm v0.6.0
+# MCP Swarm v0.7.0
 
 **Multi-Agent Coordination Platform** — система для координации до 50+ AI-агентов, работающих над одним проектом на разных машинах (Windows/Mac/Linux).
 
-## Что нового в v0.6.0 (33 новых tools)
+## Что нового в v0.7.0 (26 новых tools)
+
+### 1. Spec Pipeline (6 tools)
+Структурированный pipeline для создания спецификаций через **4 роли**:
+- **Gatherer** — сбор требований, ограничений, контекста
+- **Researcher** — исследование prior art, паттернов, tradeoffs
+- **Writer** — написание спецификации
+- **Critic** — ревью и выявление gaps/issues
+
+```
+start_spec_pipeline → start_spec_phase → complete_spec_phase (loop) → export_spec_as_markdown
+```
+
+### 2. QA Loop (7 tools)
+Итеративные циклы **reviewer → fixer → loop** до прохождения всех проверок:
+- `start_qa_loop` — начать QA loop
+- `run_qa_iteration` — запустить проверки
+- `log_qa_fix` — записать исправление
+- `get_qa_fix_suggestions` — получить предложения
+- `generate_qa_report` — сгенерировать отчёт
+
+### 3. Guard Hooks (6 tools)
+**Pre-commit** и **pre-push** safety hooks:
+- Автоматически запускают lint, type check, tests
+- Bypass через `[skip-hooks]` в commit message
+- Настраиваемые проверки
+
+### 4. Tool Clusters (7 tools)
+Организация **156+ tools** по **13 категориям**:
+
+| Кластер | Tools | Описание |
+|---------|-------|----------|
+| 🤖 agent | 10 | Agent management, health, specialization |
+| 📋 task | 11 | Task create, assign, decompose |
+| 🔒 file | 9 | File locks, conflict prediction |
+| 🌿 git | 7 | Worktrees, PRs, branch management |
+| 💬 collab | 12 | Chat, reviews, knowledge sharing |
+| 🛡️ safety | 13 | Voting, snapshots, emergency controls |
+| ✅ quality | 16 | Quality gates, QA loops, regression |
+| 🔍 debug | 13 | Systematic debugging |
+| 📝 plan | 26 | Brainstorming, plans, spec pipeline |
+| 🪝 hooks | 6 | Guard hooks |
+| 🎬 session | 5 | Session recording |
+| 💰 cost | 9 | Cost tracking, context compression |
+| 📚 docs | 5 | Auto-documentation |
+
+---
+
+## Что было в v0.6.0 (33 tools)
 
 ### 1. Brainstorming Skill (9 tools)
 Интерактивный дизайн через **вопросы по одному** (из [obra/superpowers](https://github.com/obra/superpowers)):
@@ -93,6 +141,8 @@ TDD-планы с **bite-sized задачами** (2-5 минут каждая):
 - **quality/** — отчёты качества (v0.5)
 - **costs/** — логи расходов (v0.5)
 - **baselines/** — эталонные метрики (v0.5)
+- **specs/** — spec pipelines (v0.7)
+- **qa-loops/** — QA loop сессии (v0.7)
 
 ### 🤖 Agent Features
 - **Уникальные имена** — RadiantWolf, SilentFox и т.д.
@@ -144,7 +194,7 @@ npm run companion
 
 ---
 
-## 📦 Tools (130+)
+## 📦 Tools (156+)
 
 ### Brainstorming (v0.6)
 | Tool | Description |
