@@ -108,94 +108,221 @@ npm install
 # 3. Собрать проект
 npm run build
 
-# 4. Установить MCP во все IDE автоматически
-npm run install-mcp
+# 4. Настроить IDE вручную (см. ниже)
 ```
 
-### Что делает `npm run install-mcp`?
+---
 
-Скрипт автоматически:
+## Ручная установка по IDE
 
-1. **Находит установленные IDE:**
-   - Claude Desktop
-   - Cursor
-   - Windsurf
-   - VS Code
-   - OpenCode
+### 1. Claude Desktop
 
-2. **Добавляет MCP конфигурацию:**
-   - В `claude_desktop_config.json` (Claude)
-   - В `mcp.json` (Cursor, Windsurf)
-   - В соответствующие конфиги других IDE
+**Конфиг:** `%APPDATA%\Claude\claude_desktop_config.json` (Windows) | `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac)
 
-3. **Создаёт файлы правил для агентов:**
+```json
+{
+  "mcpServers": {
+    "mcp-swarm": {
+      "command": "node",
+      "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
+      "env": {
+        "SWARM_REPO_PATH": "C:/path/to/your/project"
+      }
+    }
+  }
+}
+```
 
-| IDE | Файл правил | Описание |
-|-----|-------------|----------|
-| Claude | `CLAUDE.md` | Правила для Claude Desktop |
-| OpenCode | `GEMINI.md` | Правила для OpenCode/Gemini |
-| Cursor | `.cursorrules` | Правила для Cursor |
-| Windsurf | `.windsurfrules` | Правила для Windsurf |
+**Файл правил:** Создайте `CLAUDE.md` в корне вашего проекта.
 
-### Что прописывается в файлах правил?
+---
 
-Каждый файл содержит инструкции для агента:
+### 2. Claude Code (CLI)
+
+**Установка через команду:**
+
+```bash
+claude mcp add mcp-swarm --transport stdio -- node C:/path/to/Swarm_MCP/dist/serverSmart.js
+```
+
+Или добавьте в `~/.claude/.claude.json` в секцию `projects.{path}.mcpServers`:
+
+```json
+{
+  "projects": {
+    "C:/your/project": {
+      "mcpServers": {
+        "mcp-swarm": {
+          "command": "node",
+          "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
+          "env": {
+            "SWARM_REPO_PATH": "C:/your/project"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Файл правил:** Создайте `CLAUDE.md` в корне вашего проекта.
+
+---
+
+### 3. Cursor
+
+**Конфиг:** `~/.cursor/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "mcp-swarm": {
+      "command": "node",
+      "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
+      "env": {
+        "SWARM_REPO_PATH": "C:/path/to/your/project"
+      }
+    }
+  }
+}
+```
+
+**Файл правил:** Создайте `.cursorrules` в корне вашего проекта.
+
+---
+
+### 4. Windsurf
+
+**Конфиг:** `~/.windsurf/mcp_config.json` (Windows/Mac/Linux)
+
+```json
+{
+  "mcpServers": {
+    "mcp-swarm": {
+      "command": "node",
+      "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
+      "env": {
+        "SWARM_REPO_PATH": "C:/path/to/your/project"
+      }
+    }
+  }
+}
+```
+
+**Файл правил:** Создайте `.windsurfrules` в корне вашего проекта.
+
+---
+
+### 5. OpenCode
+
+**Конфиг:** `~/.config/opencode/opencode.json`
+
+```json
+{
+  "mcp": {
+    "mcp-swarm": {
+      "type": "local",
+      "command": [
+        "node",
+        "C:/path/to/Swarm_MCP/dist/serverSmart.js"
+      ],
+      "enabled": true,
+      "environment": {
+        "SWARM_REPO_PATH": "C:/path/to/your/project"
+      }
+    }
+  }
+}
+```
+
+**Файл правил:** Создайте `AGENT.md` в корне вашего проекта.
+
+---
+
+### 6. Antigravity (Google)
+
+**Конфиг:** `%APPDATA%\antigravity\User\settings.json` (Windows) | `~/Library/Application Support/antigravity/User/settings.json` (Mac)
+
+MCP поддержка в Antigravity - через расширения. Добавьте конфигурацию аналогично VS Code.
+
+**Файл правил:** Создайте `GEMINI.md` в корне вашего проекта.
+
+---
+
+### 7. VS Code (Roo-Cline)
+
+**Конфиг:** `%APPDATA%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\mcp_settings.json`
+
+```json
+{
+  "mcpServers": {
+    "mcp-swarm": {
+      "command": "node",
+      "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
+      "env": {
+        "SWARM_REPO_PATH": "C:/path/to/your/project"
+      }
+    }
+  }
+}
+```
+
+**Файл правил:** Создайте `.clinerules` в корне вашего проекта.
+
+---
+
+## Файлы правил для агентов
+
+После установки MCP, создайте файл правил в корне вашего проекта:
+
+| IDE | Файл правил |
+|-----|-------------|
+| Claude Desktop | `CLAUDE.md` |
+| Claude Code | `CLAUDE.md` |
+| Cursor | `.cursorrules` |
+| Windsurf | `.windsurfrules` |
+| OpenCode | `AGENT.md` |
+| Antigravity | `GEMINI.md` |
+| VS Code | `.clinerules` |
+
+### Содержимое файла правил
+
+Скопируйте в файл:
 
 ```markdown
-# MCP Swarm Agent Rules
+# MCP Swarm Agent Rules (v0.9.0)
 
 ## CRITICAL: Always Start with MCP Swarm
 
 Before ANY coding task, you MUST:
 
-1. **Register yourself** - Call `swarm_agent(action: "register")`
-2. **Check swarm status** - Call `swarm_control(action: "status")`
-3. **Check task list** - Call `swarm_task(action: "list")`
-4. **Reserve files** - Before editing, call `swarm_file(action: "reserve")`
+1. **Register yourself** - Call `swarm_agent({ action: "register" })`
+2. **Check swarm status** - Call `swarm_control({ action: "status" })`
+3. **Check task list** - Call `swarm_task({ action: "list" })`
+4. **Reserve files** - Before editing, call `swarm_file({ action: "reserve", filePath: "...", agent: "YourName" })`
 
-## Workflow Rules
+## Agent Roles
 
-1. agent_register → Get your name (e.g., "RadiantWolf")
-2. task_list → See what needs to be done
-3. file_reserve → Lock files you'll edit
+### ORCHESTRATOR (First Agent)
+The first agent that calls `swarm_orchestrator({ action: "elect" })` becomes the Orchestrator.
+- Works in **INFINITE LOOP** - only user can stop
+- Distributes tasks, monitors agent heartbeats, coordinates work
+
+### EXECUTOR (All Other Agents)
+All subsequent agents become Executors.
+- Register with `swarm_agent({ action: "register" })`
+- Get tasks via auction system
+- Lock files before editing, send heartbeat, create PRs
+
+## Workflow
+
+1. `swarm_agent({ action: "register" })` → Get your name (e.g., "RadiantWolf")
+2. `swarm_task({ action: "list" })` → See what needs to be done
+3. `swarm_file({ action: "reserve", filePath, agent, exclusive: true })` → Lock files
 4. Do your work
-5. file_release → Unlock files
-6. sync_with_base_branch → Rebase before push
-7. create_github_pr → Open PR for review
-```
-
-### Конфигурация MCP
-
-#### Claude Desktop (`claude_desktop_config.json`)
-
-```json
-{
-  "mcpServers": {
-    "mcp-swarm": {
-      "command": "node",
-      "args": ["C:/path/to/MCP0/dist/serverSmart.js"],
-      "env": {
-        "SWARM_REPO_PATH": "C:/path/to/your/project"
-      }
-    }
-  }
-}
-```
-
-#### Cursor/Windsurf (`mcp.json`)
-
-```json
-{
-  "mcpServers": {
-    "mcp-swarm": {
-      "command": "node",
-      "args": ["C:/path/to/MCP0/dist/serverSmart.js"],
-      "env": {
-        "SWARM_REPO_PATH": "C:/path/to/your/project"
-      }
-    }
-  }
-}
+5. `swarm_file({ action: "release", filePath, agent })` → Unlock files
+6. `swarm_git({ action: "sync" })` → Rebase before push
+7. `swarm_git({ action: "pr", title, body })` → Open PR
 ```
 
 ---
