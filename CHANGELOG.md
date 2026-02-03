@@ -7,6 +7,126 @@
 
 ---
 
+## [0.9.5] - 2026-02-03
+
+### 🧠 SONA — Self-Optimizing Neural Architecture
+
+#### Added
+
+- **SONA Module** (`src/workflows/sona.ts`)
+  - Self-learning task routing system inspired by Claude-Flow
+  - Records which agents perform best for each task type
+  - Routes new tasks to best-performing agents
+  - Learns from outcomes with <0.05ms adaptation
+  - Improves over time with reinforcement learning
+  
+- **Task Classification**
+  - Automatic category detection: frontend_ui, backend_api, database, testing, devops, documentation, refactoring, bugfix, feature, security, performance, infrastructure
+  - Complexity estimation: trivial, simple, medium, complex, epic
+  - Keyword-based pattern matching
+  - Affected path analysis
+  
+- **Agent Performance Tracking**
+  - Success rate tracking per category
+  - Quality score averaging
+  - Completion time tracking
+  - Statistical confidence calculation
+  - Specialization detection (top 3 categories per agent)
+  
+- **Online Learning**
+  - Exponential moving average for rolling metrics
+  - Configurable learning rate and decay
+  - Elastic Weight Consolidation (EWC++) to prevent forgetting
+  - Exploration/exploitation balance (10% exploration by default)
+  
+- **Smart Tool #49: `swarm_sona`**
+  - `route`: Get routing recommendation for a task
+  - `learn`: Record task outcome and update model
+  - `classify`: Classify a task (category, complexity)
+  - `profile`: Get agent's performance profile
+  - `profiles`: Get all agent profiles
+  - `specialists`: Get top agents for a category
+  - `history`: Get learning history
+  - `stats`: Get SONA statistics
+  - `config`: Get configuration
+  - `set_config`: Update configuration
+  - `reset`: Reset the model
+
+- **Dashboard API Endpoint** (`/api/sona`)
+  - Get SONA statistics and agent profiles
+  - View category distribution
+  - Monitor recent learning events
+  - Check top performing agents
+
+#### How SONA Works
+
+1. **Classification**: When a new task arrives, SONA classifies it by category and complexity
+2. **Routing**: SONA recommends the best agent based on historical performance
+3. **Execution**: The agent completes the task
+4. **Learning**: SONA records the outcome and updates agent profiles
+5. **Improvement**: Over time, routing becomes more accurate
+
+#### Example Usage
+
+```typescript
+// Get routing recommendation
+swarm_sona({
+  action: "route",
+  repoPath,
+  title: "Fix login button styling",
+  description: "Button is not visible on dark theme",
+  affectedFiles: ["src/components/Login.tsx", "src/styles/buttons.css"]
+})
+// Returns: { recommendedAgent: "RadiantWolf", confidence: 0.85, category: "frontend_ui", ... }
+
+// Record learning after task completion
+swarm_sona({
+  action: "learn",
+  repoPath,
+  taskId: "task-123",
+  agentName: "RadiantWolf",
+  title: "Fix login button styling",
+  description: "Button is not visible on dark theme",
+  success: true,
+  qualityScore: 0.9,
+  timeMinutes: 15
+})
+
+// Get specialists for backend work
+swarm_sona({
+  action: "specialists",
+  repoPath,
+  category: "backend_api",
+  limit: 3
+})
+// Returns: [{ agent: "StormyOwl", score: 0.92, ... }, ...]
+
+// Configure SONA
+swarm_sona({
+  action: "set_config",
+  repoPath,
+  config: {
+    explorationRate: 0.15,  // More exploration
+    autoLearn: true,
+    preferSpecialists: true
+  }
+})
+```
+
+#### Comparison with Claude-Flow SONA
+
+| Feature | Claude-Flow | MCP Swarm v0.9.5 |
+|---------|-------------|------------------|
+| Self-learning | ✅ | ✅ |
+| Category classification | ✅ | ✅ 13 categories |
+| Complexity estimation | ⚠️ Basic | ✅ 5 levels |
+| EWC++ (prevent forgetting) | ✅ | ✅ |
+| Distributed coordination | ❌ Local only | ✅ Cloudflare Hub |
+| Dashboard integration | ⚠️ Limited | ✅ /api/sona |
+| Telegram notifications | ❌ | ✅ |
+
+---
+
 ## [0.9.4] - 2026-02-03
 
 ### 📱 Telegram Bot Integration

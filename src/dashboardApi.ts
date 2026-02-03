@@ -449,6 +449,108 @@ async function getTelegramConfig(repoPath: string) {
   };
 }
 
+// Get SONA stats (Self-Optimizing Neural Architecture)
+async function getSONAStats(repoPath: string) {
+  const modelPath = path.join(repoPath, ".swarm", "sona", "model.json");
+  const historyPath = path.join(repoPath, ".swarm", "sona", "history.json");
+  
+  const model = await readJson<{
+    version: string;
+    agents: Record<string, {
+      agentName: string;
+      overallScore: number;
+      totalTasks: number;
+      lastActive: number;
+      specializations: string[];
+      categories: Record<string, {
+        successRate: number;
+        avgQuality: number;
+        taskCount: number;
+        confidence: number;
+      }>;
+    }>;
+    globalStats: {
+      totalTasks: number;
+      avgSuccessRate: number;
+      avgQuality: number;
+      lastUpdated: number;
+    };
+    config: {
+      enabled: boolean;
+      autoLearn: boolean;
+      explorationRate: number;
+      learningRate: number;
+    };
+  }>(modelPath);
+  
+  const history = await readJson<Array<{
+    taskId: string;
+    agentName: string;
+    category: string;
+    success: boolean;
+    qualityScore: number;
+    timestamp: number;
+  }>>(historyPath);
+  
+  if (!model) {
+    return {
+      enabled: false,
+      configured: false,
+      message: "SONA not initialized. Use swarm_sona({ action: 'route', ... }) to start learning.",
+    };
+  }
+  
+  // Calculate category distribution
+  const categoryDistribution: Record<string, number> = {};
+  if (history) {
+    for (const h of history) {
+      categoryDistribution[h.category] = (categoryDistribution[h.category] || 0) + 1;
+    }
+  }
+  
+  // Top performers
+  const topAgents = Object.values(model.agents)
+    .map(a => ({
+      name: a.agentName,
+      score: Math.round(a.overallScore * 100),
+      tasks: a.totalTasks,
+      specializations: a.specializations,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+  
+  // Recent learning events
+  const recentHistory = (history || []).slice(-10).reverse().map(h => ({
+    taskId: h.taskId,
+    agent: h.agentName,
+    category: h.category,
+    success: h.success,
+    quality: Math.round(h.qualityScore * 100),
+    time: new Date(h.timestamp).toISOString(),
+  }));
+  
+  return {
+    enabled: model.config?.enabled ?? true,
+    configured: true,
+    version: model.version,
+    config: {
+      autoLearn: model.config?.autoLearn ?? true,
+      explorationRate: model.config?.explorationRate ?? 0.1,
+      learningRate: model.config?.learningRate ?? 0.1,
+    },
+    globalStats: {
+      totalTasks: model.globalStats?.totalTasks || 0,
+      avgSuccessRate: Math.round((model.globalStats?.avgSuccessRate || 0) * 100),
+      avgQuality: Math.round((model.globalStats?.avgQuality || 0) * 100),
+      lastUpdated: model.globalStats?.lastUpdated,
+    },
+    agentCount: Object.keys(model.agents).length,
+    topAgents,
+    categoryDistribution,
+    recentHistory,
+  };
+}
+
 // Request handler
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // Handle CORS preflight
@@ -502,6 +604,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       case "/api/telegram":
         data = await getTelegramConfig(repoPath);
         break;
+      case "/api/sona":
+        data = await getSONAStats(repoPath);
+        break;
       case "/api/health":
         data = { status: "ok", timestamp: Date.now() };
         break;
@@ -526,7 +631,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         MCP Swarm Dashboard API Server v0.9.4          ║
+║         MCP Swarm Dashboard API Server v0.9.5          ║
 ╠════════════════════════════════════════════════════════╣
 ║  API:       http://localhost:${PORT}                     ║
 ║  Dashboard: http://localhost:3333                      ║
@@ -544,6 +649,7 @@ server.listen(PORT, () => {
 ║    GET /api/budget       - Cost бюджет и использование ║
 ║    GET /api/sync         - External Sync статус        ║
 ║    GET /api/telegram     - Telegram Bot конфигурация   ║
+║    GET /api/sona         - SONA статистика и профили   ║
 ║    GET /api/health       - Проверка работоспособности  ║
 ╚════════════════════════════════════════════════════════╝
   `);
