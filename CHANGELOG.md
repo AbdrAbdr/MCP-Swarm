@@ -7,6 +7,109 @@
 
 ---
 
+## [0.9.9] - 2026-02-03
+
+### 🤝 Consensus — Distributed Agreement Protocols
+
+#### Added
+
+- **Consensus Module** (`src/workflows/consensus.ts`)
+  - Raft-like leader election with term-based leadership
+  - Log replication for ordered command execution
+  - Byzantine Fault Tolerance (BFT) mode for untrusted environments
+  - Proposal system with configurable voting thresholds
+  - Automatic failover when leader becomes unresponsive
+
+- **Consensus Modes**
+  - `simple_majority`: 50%+ votes for approval
+  - `raft`: Term-based leadership, log replication
+  - `bft`: Byzantine fault tolerant (2/3+1 quorum)
+
+- **Node Management**
+  - Join/leave cluster
+  - Heartbeat monitoring
+  - Trusted/untrusted node classification
+  - Automatic dead node detection
+
+- **Proposal System**
+  - Types: config_change, task_assignment, architecture, rollback, emergency, custom
+  - Vote types: approve, reject, abstain
+  - Configurable majority thresholds (0.5 to 1.0)
+  - Expiration timeout handling
+  - Signature verification for BFT mode
+
+- **Log Replication**
+  - Ordered command log
+  - Commit confirmation from leader
+  - State machine replication across nodes
+
+- **Smart Tool #53: `swarm_consensus`**
+  - `join`: Join consensus cluster
+  - `leave`: Leave cluster
+  - `heartbeat`: Send heartbeat
+  - `status`: Get cluster status
+  - `elect`: Start leader election
+  - `leader`: Get current leader
+  - `propose`: Create proposal
+  - `vote`: Vote on proposal
+  - `proposals`: List proposals
+  - `get_proposal`: Get proposal details
+  - `execute`: Execute approved proposal
+  - `log` / `append` / `commit`: Log management
+  - `config` / `set_config`: Configuration
+  - `stats`: Statistics
+
+- **Dashboard API Endpoint** (`/api/consensus`)
+  - Cluster status and node list
+  - Leader information
+  - Proposal statistics
+  - Recent proposals
+
+#### Example Usage
+
+```typescript
+// Join cluster
+swarm_consensus({
+  action: "join",
+  nodeId: "agent-1",
+  nodeName: "RadiantWolf",
+  repoPath: "/path/to/project"
+});
+
+// Start leader election
+swarm_consensus({
+  action: "elect",
+  nodeId: "agent-1",
+  nodeName: "RadiantWolf",
+  repoPath
+});
+
+// Create a proposal
+swarm_consensus({
+  action: "propose",
+  nodeId: "agent-1",
+  nodeName: "RadiantWolf",
+  title: "Add dark mode",
+  description: "Implement dark mode for dashboard",
+  type: "architecture",
+  requiredMajority: 0.67, // 2/3 majority
+  repoPath
+});
+
+// Vote on proposal
+swarm_consensus({
+  action: "vote",
+  proposalId: "prop_xxx",
+  nodeId: "agent-2",
+  nodeName: "BrilliantFox",
+  vote: "approve",
+  reason: "Good idea!",
+  repoPath
+});
+```
+
+---
+
 ## [0.9.8] - 2026-02-03
 
 ### 🛡️ AIDefence — Security & Threat Detection

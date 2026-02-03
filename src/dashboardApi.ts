@@ -800,6 +800,109 @@ async function getDefenceStats(repoPath: string) {
   };
 }
 
+// Get Consensus stats
+async function getConsensusStats(repoPath: string) {
+  const configPath = path.join(repoPath, ".swarm", "consensus", "config.json");
+  const nodesPath = path.join(repoPath, ".swarm", "consensus", "nodes.json");
+  const electionPath = path.join(repoPath, ".swarm", "consensus", "election.json");
+  const proposalsPath = path.join(repoPath, ".swarm", "consensus", "proposals.json");
+  const statsPath = path.join(repoPath, ".swarm", "consensus", "stats.json");
+  
+  const config = await readJson<{
+    mode: string;
+    heartbeatInterval: number;
+    electionTimeout: number;
+    minNodes: number;
+    defaultMajority: number;
+  }>(configPath);
+  
+  const nodes = await readJson<Array<{
+    id: string;
+    name: string;
+    state: string;
+    term: number;
+    lastHeartbeat: number;
+    isTrusted: boolean;
+  }>>(nodesPath);
+  
+  const election = await readJson<{
+    term: number;
+    leaderId: string | null;
+    leaderName: string | null;
+    electedAt: number | null;
+  }>(electionPath);
+  
+  const proposals = await readJson<Array<{
+    id: string;
+    title: string;
+    status: string;
+    type: string;
+    proposedBy: string;
+    proposedAt: number;
+    votes: Array<{ vote: string }>;
+  }>>(proposalsPath);
+  
+  const stats = await readJson<{
+    totalProposals: number;
+    approvedProposals: number;
+    rejectedProposals: number;
+    totalElections: number;
+  }>(statsPath);
+  
+  if (!config && !nodes?.length) {
+    return {
+      configured: false,
+      message: "Consensus not initialized. Use swarm_consensus({ action: 'join', ... }) to start.",
+      consensusModes: ["simple_majority", "raft", "bft"],
+    };
+  }
+  
+  const now = Date.now();
+  const timeout = (config?.electionTimeout || 15000) * 2;
+  const activeNodes = (nodes || []).filter(n => (now - n.lastHeartbeat) < timeout);
+  const pendingProposals = (proposals || []).filter(p => p.status === "pending");
+  
+  return {
+    configured: true,
+    mode: config?.mode || "simple_majority",
+    cluster: {
+      totalNodes: nodes?.length || 0,
+      activeNodes: activeNodes.length,
+      quorumRequired: config?.minNodes || 2,
+      hasQuorum: activeNodes.length >= (config?.minNodes || 2),
+    },
+    leader: election?.leaderId ? {
+      id: election.leaderId,
+      name: election.leaderName,
+      term: election.term,
+      electedAt: election.electedAt,
+    } : null,
+    proposals: {
+      total: stats?.totalProposals || 0,
+      pending: pendingProposals.length,
+      approved: stats?.approvedProposals || 0,
+      rejected: stats?.rejectedProposals || 0,
+    },
+    elections: stats?.totalElections || 0,
+    nodes: (nodes || []).map(n => ({
+      id: n.id,
+      name: n.name,
+      state: n.id === election?.leaderId ? "leader" :
+             (now - n.lastHeartbeat) < timeout ? "follower" : "offline",
+      isTrusted: n.isTrusted,
+      lastSeen: n.lastHeartbeat,
+    })),
+    recentProposals: (proposals || []).slice(-5).reverse().map(p => ({
+      id: p.id,
+      title: p.title,
+      type: p.type,
+      status: p.status,
+      proposedBy: p.proposedBy,
+      votes: p.votes?.length || 0,
+    })),
+  };
+}
+
 // Request handler
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // Handle CORS preflight
@@ -865,6 +968,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       case "/api/defence":
         data = await getDefenceStats(repoPath);
         break;
+      case "/api/consensus":
+        data = await getConsensusStats(repoPath);
+        break;
       case "/api/health":
         data = { status: "ok", timestamp: Date.now() };
         break;
@@ -889,7 +995,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         MCP Swarm Dashboard API Server v0.9.8          ║
+║         MCP Swarm Dashboard API Server v0.9.9          ║
 ╠════════════════════════════════════════════════════════╣
 ║  API:       http://localhost:${PORT}                     ║
 ║  Dashboard: http://localhost:3333                      ║
@@ -911,6 +1017,7 @@ server.listen(PORT, () => {
 ║    GET /api/booster      - Agent Booster статистика    ║
 ║    GET /api/vector       - HNSW Vector Search статус   ║
 ║    GET /api/defence      - AIDefence безопасность      ║
+║    GET /api/consensus    - Consensus распред. согласие ║
 ║    GET /api/health       - Проверка работоспособности  ║
 ╚════════════════════════════════════════════════════════╝
   `);
