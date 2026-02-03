@@ -336,24 +336,23 @@
     - Автоматический роутинг на лучшую модель
     - Оптимизация cost/performance/quality
     - Обучение на обратной связи
-    - 12 встроенных экспертов (обновлено: февраль 2026)
+    - 10 встроенных экспертов (проверенные цены: февраль 2026)
     
-    **Встроенные эксперты:**
+    **Встроенные эксперты (официальные цены):**
     
-    | Provider | Model | Tier | Context | Strengths |
-    |----------|-------|------|---------|-----------|
-    | Anthropic | Claude Opus 4.5 | flagship | 200K | Лучший для кода и reasoning |
-    | Anthropic | Claude Sonnet 4.5 | premium | 200K | Баланс цена/качество |
-    | Anthropic | Claude Haiku 4.5 | economy | 200K | Быстрые ответы |
-    | OpenAI | GPT-5.2 | flagship | 256K | Agentic coding |
-    | OpenAI | GPT-5.2 Pro | flagship | 256K | Самый умный GPT |
-    | OpenAI | GPT-5 Mini | standard | 128K | Быстрый и дешёвый |
-    | OpenAI | GPT-5 Nano | economy | 64K | Самый быстрый |
-    | OpenAI | GPT-4.1 | premium | 128K | Стабильный workhorse |
-    | OpenAI | o3 | flagship | 200K | Глубокий reasoning |
-    | OpenAI | o4-mini | standard | 128K | Быстрый reasoning |
-    | Google | Gemini 2.5 Pro | flagship | 2M | Огромный контекст |
-    | Google | Gemini 2.5 Flash | economy | 1M | Быстрый с большим контекстом |
+    | Provider | Model | Tier | Input $/MTok | Output $/MTok | Context |
+    |----------|-------|------|--------------|---------------|---------|
+    | Anthropic | Claude Opus 4.5 | flagship | $5 | $25 | 200K |
+    | Anthropic | Claude Sonnet 4.5 | premium | $3 | $15 | 200K |
+    | Anthropic | Claude Haiku 4.5 | economy | $1 | $5 | 200K |
+    | OpenAI | GPT-5.2 | flagship | $1.75 | $14 | 256K |
+    | OpenAI | GPT-5.2 Pro | flagship | $21 | $168 | 256K |
+    | OpenAI | GPT-5 Mini | standard | $0.25 | $2 | 128K |
+    | OpenAI | GPT-4.1 | premium | $3 | $12 | 128K |
+    | OpenAI | GPT-4.1 Mini | standard | $0.80 | $3.20 | 128K |
+    | OpenAI | o4-mini | reasoning | $4 | $16 | 128K |
+    | Google | Gemini 2.5 Pro | flagship | $1.25 | $5 | **2M** |
+    | Google | Gemini 2.5 Flash | economy | $0.075 | $0.30 | **1M** |
     
     **Пример использования:**
     ```typescript

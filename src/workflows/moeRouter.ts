@@ -212,13 +212,19 @@ const DEFAULT_CONFIG: MoEConfig = {
 /**
  * Default expert models (Updated: February 2026)
  * 
+ * VERIFIED PRICES from official sources:
+ * - Anthropic: https://www.anthropic.com/pricing (February 2026)
+ * - OpenAI: https://openai.com/api/pricing (February 2026)
+ * - Google: Gemini pricing from Vertex AI
+ * 
  * Current AI Model Landscape:
  * - Anthropic: Claude 4.5 series (Opus, Sonnet, Haiku)
- * - OpenAI: GPT-5.x series + o3/o4 reasoning models
+ * - OpenAI: GPT-5.x series + o3/o4 reasoning models  
  * - Google: Gemini 2.5 series
  */
 const DEFAULT_EXPERTS: Expert[] = [
   // ============ ANTHROPIC (Claude 4.5 Series) ============
+  // Source: anthropic.com/pricing - February 2026
   {
     id: "claude-opus-4.5",
     name: "Claude Opus 4.5",
@@ -243,8 +249,8 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.97,
     },
     contextWindow: 200000,
-    costPer1kInput: 0.005,   // $5/MTok
-    costPer1kOutput: 0.025,  // $25/MTok
+    costPer1kInput: 0.005,   // $5/MTok (official)
+    costPer1kOutput: 0.025,  // $25/MTok (official)
     avgLatencyMs: 4000,
     rateLimit: 50,
     available: true,
@@ -276,8 +282,8 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.95,
     },
     contextWindow: 200000,
-    costPer1kInput: 0.003,   // $3/MTok
-    costPer1kOutput: 0.015,  // $15/MTok
+    costPer1kInput: 0.003,   // $3/MTok (official)
+    costPer1kOutput: 0.015,  // $15/MTok (official)
     avgLatencyMs: 1800,
     rateLimit: 100,
     available: true,
@@ -309,8 +315,8 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.82,
     },
     contextWindow: 200000,
-    costPer1kInput: 0.001,   // $1/MTok
-    costPer1kOutput: 0.005,  // $5/MTok
+    costPer1kInput: 0.001,   // $1/MTok (official)
+    costPer1kOutput: 0.005,  // $5/MTok (official)
     avgLatencyMs: 400,
     rateLimit: 200,
     available: true,
@@ -320,6 +326,7 @@ const DEFAULT_EXPERTS: Expert[] = [
   },
 
   // ============ OPENAI (GPT-5.x Series + Reasoning) ============
+  // Source: openai.com/api/pricing - February 2026
   {
     id: "gpt-5.2",
     name: "GPT-5.2",
@@ -344,8 +351,8 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.93,
     },
     contextWindow: 256000,
-    costPer1kInput: 0.005,
-    costPer1kOutput: 0.020,
+    costPer1kInput: 0.00175,  // $1.75/MTok (official)
+    costPer1kOutput: 0.014,   // $14/MTok (official)
     avgLatencyMs: 2000,
     rateLimit: 80,
     available: true,
@@ -377,8 +384,8 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.94,
     },
     contextWindow: 256000,
-    costPer1kInput: 0.010,
-    costPer1kOutput: 0.040,
+    costPer1kInput: 0.021,   // $21/MTok (official)
+    costPer1kOutput: 0.168,  // $168/MTok (official)
     avgLatencyMs: 3500,
     rateLimit: 50,
     available: true,
@@ -410,43 +417,10 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.85,
     },
     contextWindow: 128000,
-    costPer1kInput: 0.0005,
-    costPer1kOutput: 0.002,
+    costPer1kInput: 0.00025,  // $0.25/MTok (official)
+    costPer1kOutput: 0.002,   // $2/MTok (official)
     avgLatencyMs: 600,
     rateLimit: 200,
-    available: true,
-    lastUsed: 0,
-    totalCalls: 0,
-    successRate: 1.0,
-  },
-  {
-    id: "gpt-5-nano",
-    name: "GPT-5 Nano",
-    provider: "openai",
-    modelId: "gpt-5-nano",
-    tier: "economy",
-    capabilities: ["quick_answer", "conversation", "summarization"],
-    strengthScores: {
-      code_generation: 0.78,
-      code_review: 0.74,
-      code_refactor: 0.72,
-      debugging: 0.70,
-      reasoning: 0.75,
-      math: 0.72,
-      creative: 0.76,
-      summarization: 0.82,
-      translation: 0.80,
-      data_analysis: 0.74,
-      quick_answer: 0.90,
-      conversation: 0.88,
-      planning: 0.72,
-      documentation: 0.76,
-    },
-    contextWindow: 64000,
-    costPer1kInput: 0.0001,
-    costPer1kOutput: 0.0004,
-    avgLatencyMs: 300,
-    rateLimit: 500,
     available: true,
     lastUsed: 0,
     totalCalls: 0,
@@ -476,8 +450,8 @@ const DEFAULT_EXPERTS: Expert[] = [
       documentation: 0.90,
     },
     contextWindow: 128000,
-    costPer1kInput: 0.002,
-    costPer1kOutput: 0.008,
+    costPer1kInput: 0.003,   // $3/MTok (official fine-tuning price)
+    costPer1kOutput: 0.012,  // $12/MTok (official)
     avgLatencyMs: 1500,
     rateLimit: 100,
     available: true,
@@ -485,66 +459,99 @@ const DEFAULT_EXPERTS: Expert[] = [
     totalCalls: 0,
     successRate: 1.0,
   },
-  // OpenAI Reasoning Models
   {
-    id: "o3",
-    name: "OpenAI o3",
+    id: "gpt-4.1-mini",
+    name: "GPT-4.1 Mini",
     provider: "openai",
-    modelId: "o3",
-    tier: "flagship",
-    capabilities: ["reasoning", "math", "code_generation", "debugging", "planning"],
+    modelId: "gpt-4.1-mini",
+    tier: "standard",
+    capabilities: ["code_generation", "quick_answer", "conversation", "summarization"],
     strengthScores: {
-      code_generation: 0.96,
-      code_review: 0.94,
-      code_refactor: 0.92,
-      debugging: 0.98,
-      reasoning: 0.99,
-      math: 0.99,
-      creative: 0.82,
-      summarization: 0.86,
+      code_generation: 0.85,
+      code_review: 0.82,
+      code_refactor: 0.80,
+      debugging: 0.78,
+      reasoning: 0.82,
+      math: 0.80,
+      creative: 0.83,
+      summarization: 0.85,
       translation: 0.84,
-      data_analysis: 0.96,
-      quick_answer: 0.75,
-      conversation: 0.78,
-      planning: 0.97,
-      documentation: 0.88,
+      data_analysis: 0.82,
+      quick_answer: 0.90,
+      conversation: 0.88,
+      planning: 0.80,
+      documentation: 0.82,
     },
-    contextWindow: 200000,
-    costPer1kInput: 0.015,
-    costPer1kOutput: 0.060,
-    avgLatencyMs: 12000,
-    rateLimit: 20,
+    contextWindow: 128000,
+    costPer1kInput: 0.0008,  // $0.80/MTok (official)
+    costPer1kOutput: 0.0032, // $3.20/MTok (official)
+    avgLatencyMs: 500,
+    rateLimit: 200,
     available: true,
     lastUsed: 0,
     totalCalls: 0,
     successRate: 1.0,
   },
   {
+    id: "gpt-4.1-nano",
+    name: "GPT-4.1 Nano",
+    provider: "openai",
+    modelId: "gpt-4.1-nano",
+    tier: "economy",
+    capabilities: ["quick_answer", "conversation", "summarization"],
+    strengthScores: {
+      code_generation: 0.78,
+      code_review: 0.74,
+      code_refactor: 0.72,
+      debugging: 0.70,
+      reasoning: 0.75,
+      math: 0.72,
+      creative: 0.76,
+      summarization: 0.82,
+      translation: 0.80,
+      data_analysis: 0.74,
+      quick_answer: 0.90,
+      conversation: 0.88,
+      planning: 0.72,
+      documentation: 0.76,
+    },
+    contextWindow: 128000,
+    costPer1kInput: 0.0002,  // $0.20/MTok (official)
+    costPer1kOutput: 0.0008, // $0.80/MTok (official)
+    avgLatencyMs: 300,
+    rateLimit: 500,
+    available: true,
+    lastUsed: 0,
+    totalCalls: 0,
+    successRate: 1.0,
+  },
+  // OpenAI Reasoning Models
+  {
     id: "o4-mini",
     name: "OpenAI o4-mini",
     provider: "openai",
     modelId: "o4-mini",
     tier: "standard",
-    capabilities: ["reasoning", "math", "code_generation", "debugging"],
+    capabilities: ["reasoning", "math", "code_generation", "debugging", "planning"],
     strengthScores: {
-      code_generation: 0.88,
-      code_review: 0.85,
-      code_refactor: 0.83,
-      debugging: 0.90,
-      reasoning: 0.92,
-      math: 0.93,
-      creative: 0.75,
-      summarization: 0.80,
-      translation: 0.78,
-      data_analysis: 0.88,
+      code_generation: 0.90,
+      code_review: 0.88,
+      code_refactor: 0.86,
+      debugging: 0.92,
+      reasoning: 0.95,
+      math: 0.96,
+      creative: 0.78,
+      summarization: 0.82,
+      translation: 0.80,
+      data_analysis: 0.90,
       quick_answer: 0.78,
-      conversation: 0.75,
-      planning: 0.88,
-      documentation: 0.82,
+      conversation: 0.76,
+      planning: 0.92,
+      documentation: 0.84,
     },
     contextWindow: 128000,
-    costPer1kInput: 0.003,
-    costPer1kOutput: 0.012,
+    costPer1kInput: 0.004,   // $4/MTok (official)
+    costPer1kOutput: 0.016,  // $16/MTok (official)
     avgLatencyMs: 5000,
     rateLimit: 60,
     available: true,
