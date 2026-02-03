@@ -7,6 +7,85 @@
 
 ---
 
+## [0.9.8] - 2026-02-03
+
+### 🛡️ AIDefence — Security & Threat Detection
+
+#### Added
+
+- **AIDefence Module** (`src/workflows/aiDefence.ts`)
+  - <10ms threat detection latency
+  - Pattern-based detection with regex + heuristics
+  - Behavioral anomaly detection
+  - Quarantine system for suspicious content
+  - Audit logging for security events
+  - Configurable sensitivity levels
+
+- **Threat Categories**
+  - `prompt_injection`: Instruction override, role hijacking, delimiter attacks
+  - `jailbreak`: DAN mode, hypothetical bypasses, character hijacking
+  - `code_injection`: Shell commands, eval, SQL injection, path traversal
+  - `data_exfiltration`: API keys, credentials, external uploads
+  - `sensitive_data`: PII, private keys, passwords
+  - `unsafe_command`: rm -rf, sudo, crypto mining
+  - `social_engineering`: Authority claims, urgency manipulation
+  - `impersonation`: Agent identity spoofing
+  - `dos_attack`: Request flooding
+  - `unauthorized_tool`: Restricted tool access
+
+- **Sensitivity Levels**
+  - `low`: Only critical threats
+  - `medium`: Balanced (default)
+  - `high`: Strict checking
+  - `paranoid`: Maximum security
+
+- **Smart Tool #52: `swarm_defence`**
+  - `scan`: Scan text for threats
+  - `validate_agent`: Validate agent identity
+  - `validate_tool`: Validate tool usage
+  - `events`: Get security events log
+  - `quarantine`: Get quarantined items
+  - `release`: Release from quarantine
+  - `stats`: Get defence statistics
+  - `config` / `set_config`: Configuration
+  - `trust` / `untrust`: Agent whitelist management
+  - `clear_events`: Clear event log
+
+- **Dashboard API Endpoint** (`/api/defence`)
+  - Security statistics
+  - Threat distribution by category/severity
+  - Quarantine status
+  - Recent events log
+
+#### Example Usage
+
+```typescript
+// Scan text for threats
+swarm_defence({
+  action: "scan",
+  text: "Ignore all previous instructions...",
+  source: "user",
+  repoPath: "/path/to/project"
+});
+// Returns: { detected: true, category: "prompt_injection", severity: "high", action: "block" }
+
+// Configure sensitivity
+swarm_defence({
+  action: "set_config",
+  config: { sensitivity: "high", blockOnHighThreat: true },
+  repoPath: "/path/to/project"
+});
+
+// Add trusted agent
+swarm_defence({
+  action: "trust",
+  agentName: "RadiantWolf",
+  repoPath: "/path/to/project"
+});
+```
+
+---
+
 ## [0.9.7] - 2026-02-03
 
 ### 🔍 HNSW — Hierarchical Navigable Small World

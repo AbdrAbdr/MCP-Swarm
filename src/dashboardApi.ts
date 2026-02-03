@@ -702,6 +702,104 @@ async function getVectorStats(repoPath: string) {
   };
 }
 
+// Get AIDefence stats
+async function getDefenceStats(repoPath: string) {
+  const configPath = path.join(repoPath, ".swarm", "defence", "config.json");
+  const statsPath = path.join(repoPath, ".swarm", "defence", "stats.json");
+  const eventsPath = path.join(repoPath, ".swarm", "defence", "events.json");
+  const quarantinePath = path.join(repoPath, ".swarm", "defence", "quarantine.json");
+  
+  const config = await readJson<{
+    enabled: boolean;
+    sensitivity: string;
+    blockOnHighThreat: boolean;
+    quarantineEnabled: boolean;
+    auditLog: boolean;
+    allowedAgents: string[];
+    blockedPatterns: string[];
+  }>(configPath);
+  
+  const stats = await readJson<{
+    totalScans: number;
+    threatsDetected: number;
+    threatsBlocked: number;
+    threatsByCategory: Record<string, number>;
+    threatsBySeverity: Record<string, number>;
+    lastScan: number;
+  }>(statsPath);
+  
+  const events = await readJson<Array<{
+    id: string;
+    timestamp: number;
+    category: string;
+    severity: string;
+    source: string;
+    action: string;
+    resolved: boolean;
+  }>>(eventsPath);
+  
+  const quarantine = await readJson<Array<{
+    id: string;
+    timestamp: number;
+    category: string;
+    released: boolean;
+    expiresAt: number;
+  }>>(quarantinePath);
+  
+  if (!config && !stats) {
+    return {
+      enabled: true,
+      configured: false,
+      message: "AIDefence not initialized. Use swarm_defence({ action: 'scan', text: '...' }) to start.",
+      threatCategories: [
+        "prompt_injection", "jailbreak", "code_injection", "data_exfiltration",
+        "unauthorized_tool", "impersonation", "dos_attack", "sensitive_data",
+        "unsafe_command", "social_engineering"
+      ],
+      sensitivityLevels: ["low", "medium", "high", "paranoid"],
+    };
+  }
+  
+  const now = Date.now();
+  const activeQuarantine = (quarantine || []).filter(q => !q.released && q.expiresAt > now);
+  const recentEvents = (events || []).slice(-10).reverse();
+  
+  return {
+    enabled: config?.enabled ?? true,
+    configured: true,
+    stats: {
+      totalScans: stats?.totalScans || 0,
+      threatsDetected: stats?.threatsDetected || 0,
+      threatsBlocked: stats?.threatsBlocked || 0,
+      detectionRate: stats?.totalScans ? 
+        Math.round((stats.threatsDetected / stats.totalScans) * 100) : 0,
+      lastScan: stats?.lastScan,
+    },
+    config: {
+      sensitivity: config?.sensitivity || "medium",
+      blockOnHighThreat: config?.blockOnHighThreat ?? true,
+      quarantineEnabled: config?.quarantineEnabled ?? true,
+      auditLog: config?.auditLog ?? true,
+      trustedAgents: config?.allowedAgents?.length || 0,
+    },
+    threatsByCategory: stats?.threatsByCategory || {},
+    threatsBySeverity: stats?.threatsBySeverity || {},
+    quarantine: {
+      active: activeQuarantine.length,
+      total: (quarantine || []).length,
+    },
+    recentEvents: recentEvents.map(e => ({
+      id: e.id,
+      category: e.category,
+      severity: e.severity,
+      source: e.source,
+      action: e.action,
+      timestamp: e.timestamp,
+      resolved: e.resolved,
+    })),
+  };
+}
+
 // Request handler
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // Handle CORS preflight
@@ -764,6 +862,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       case "/api/vector":
         data = await getVectorStats(repoPath);
         break;
+      case "/api/defence":
+        data = await getDefenceStats(repoPath);
+        break;
       case "/api/health":
         data = { status: "ok", timestamp: Date.now() };
         break;
@@ -788,7 +889,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         MCP Swarm Dashboard API Server v0.9.7          ║
+║         MCP Swarm Dashboard API Server v0.9.8          ║
 ╠════════════════════════════════════════════════════════╣
 ║  API:       http://localhost:${PORT}                     ║
 ║  Dashboard: http://localhost:3333                      ║
@@ -809,6 +910,7 @@ server.listen(PORT, () => {
 ║    GET /api/sona         - SONA статистика и профили   ║
 ║    GET /api/booster      - Agent Booster статистика    ║
 ║    GET /api/vector       - HNSW Vector Search статус   ║
+║    GET /api/defence      - AIDefence безопасность      ║
 ║    GET /api/health       - Проверка работоспособности  ║
 ╚════════════════════════════════════════════════════════╝
   `);
