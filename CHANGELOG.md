@@ -7,6 +7,63 @@
 
 ---
 
+## [0.9.3] - 2026-02-03
+
+### 🧠 Smart Features & Cost Optimization
+
+#### Added
+
+- **Smart Task Routing** (`src/workflows/smartRouting.ts`)
+  - Automatic task assignment based on file expertise
+  - Tracks which agent edited which files
+  - Calculates expertise scores (exact match 10x, folder 3x, extension 2x)
+  - `recordFileEdit()`, `findBestAgent()`, `autoAssignTask()`
+
+- **Shared Context Pool** (`src/workflows/contextPool.ts`)
+  - Agents share notes about code to avoid re-reading
+  - Auto-staleness detection (if file hash changed)
+  - Tags, categories, and helpful counter
+  - `addContextNote()`, `getContextNotes()`, `searchContext()`
+
+- **Auto Code Review** (`src/workflows/autoReview.ts`)
+  - Automatic review assignment when task completes
+  - Finds reviewer who knows the affected files
+  - Comment severity levels (critical, major, minor, suggestion)
+  - `createReviewRequest()`, `addReviewComment()`, `completeReview()`
+
+- **GitHub/Linear Sync** (`src/workflows/externalSync.ts`)
+  - Two-way sync with GitHub Issues
+  - Linear.app integration (GraphQL API)
+  - Auto-import issues as swarm tasks
+  - Auto-close issues when task is done
+  - `syncFromGitHub()`, `syncFromLinear()`, `exportTaskToGitHub()`
+
+- **Cost Optimization** (`src/workflows/costOptimization.ts`)
+  - Task complexity analysis (simple/medium/complex)
+  - Smart model routing (cheap/standard/premium tiers)
+  - Budget management with daily/weekly/monthly limits
+  - Alert thresholds (50%, 80%, 95%)
+  - Supports GPT-3.5, GPT-4o, Claude 3 Haiku/Sonnet/Opus, Gemini, o1
+  - `analyzeTaskComplexity()`, `routeTask()`, `checkBudget()`, `generateCostReport()`
+
+- **Background Heartbeat Worker** (`src/workers/`)
+  - Uses Node.js `worker_threads` for continuous heartbeat
+  - Works even when agent is "thinking"
+  - `startHeartbeatWorker()`, `stopHeartbeatWorker()`
+
+- **Web Dashboard** (`dashboard/`)
+  - Real-time agent status monitoring
+  - Orchestrator status banner with glow effects
+  - Stats cards (agents, tasks, messages, uptime)
+  - Task list with priority indicators
+  - Built with Next.js + ShadCN UI
+
+- **Dashboard API** (`src/dashboardApi.ts`)
+  - HTTP API server on port 3334
+  - Endpoints: `/api/agents`, `/api/tasks`, `/api/messages`, `/api/orchestrator`
+
+---
+
 ## [0.9.1] - 2026-02-02
 
 ### 📚 Documentation & UX Improvements
