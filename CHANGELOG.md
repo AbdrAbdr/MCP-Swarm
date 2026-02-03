@@ -7,6 +7,92 @@
 
 ---
 
+## [0.9.10] - 2026-02-03
+
+### 🧠 MoE Router — Mixture of Experts Model Selection
+
+#### Added
+
+- **MoE Router Module** (`src/workflows/moeRouter.ts`)
+  - Intelligent model routing based on task characteristics
+  - Gating network for expert selection
+  - Cost-performance optimization
+  - Learning from feedback
+
+- **Expert Classification**
+  - 14 task categories: code_generation, code_review, debugging, reasoning, math, creative, etc.
+  - 4 model tiers: economy, standard, premium, flagship
+  - 6 providers: anthropic, openai, google, mistral, local, custom
+
+- **Built-in Experts**
+  - Claude Opus 4 (flagship)
+  - Claude Sonnet 4 (premium)
+  - Claude Haiku 3.5 (economy)
+  - GPT-4o (premium)
+  - GPT-4o Mini (economy)
+  - OpenAI o1 (flagship, reasoning)
+  - Gemini 2.0 Flash (standard)
+
+- **Routing Factors**
+  - Task match score (category-specific strength)
+  - Cost efficiency
+  - Performance history (success rate)
+  - Load balancing (prefer less recently used)
+  - Latency constraints
+  - Context window requirements
+
+- **Learning System**
+  - Feedback recording
+  - Exponential moving average for success rate
+  - Automatic latency calibration
+  - Per-expert statistics
+
+- **Smart Tool #54: `swarm_moe`**
+  - `route`: Route task to best expert
+  - `feedback`: Record routing feedback
+  - `experts`: List available experts
+  - `add_expert` / `remove_expert`: Manage experts
+  - `config` / `set_config`: Configuration
+  - `stats`: Routing statistics
+  - `history`: Routing history
+  - `classify`: Classify task category
+  - `reset`: Reset statistics
+
+- **Dashboard API Endpoint** (`/api/moe`)
+  - Routing statistics
+  - Expert list and usage
+  - Configuration status
+
+#### Example Usage
+
+```typescript
+// Route task to best model
+swarm_moe({
+  action: "route",
+  content: "Write a React component for user authentication",
+  preferredTier: "premium",
+  maxCost: 0.05,
+  repoPath
+});
+// → { selectedExpert: "claude-sonnet", confidence: 0.92, estimatedCost: $0.02 }
+
+// Record feedback for learning
+swarm_moe({
+  action: "feedback",
+  expertId: "claude-sonnet",
+  success: true,
+  quality: 5,
+  actualLatencyMs: 1800,
+  repoPath
+});
+
+// Get routing statistics
+swarm_moe({ action: "stats", repoPath });
+// → { totalRequests: 150, successRate: 94%, totalCost: $1.23 }
+```
+
+---
+
 ## [0.9.9] - 2026-02-03
 
 ### 🤝 Consensus — Distributed Agreement Protocols

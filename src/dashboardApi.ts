@@ -903,6 +903,103 @@ async function getConsensusStats(repoPath: string) {
   };
 }
 
+// Get MoE Router stats
+async function getMoEStats(repoPath: string) {
+  const configPath = path.join(repoPath, ".swarm", "moe", "config.json");
+  const expertsPath = path.join(repoPath, ".swarm", "moe", "experts.json");
+  const statsPath = path.join(repoPath, ".swarm", "moe", "stats.json");
+  
+  const config = await readJson<{
+    enabled: boolean;
+    defaultTier: string;
+    costWeight: number;
+    latencyWeight: number;
+    qualityWeight: number;
+    learningEnabled: boolean;
+  }>(configPath);
+  
+  const experts = await readJson<Array<{
+    id: string;
+    name: string;
+    provider: string;
+    tier: string;
+    available: boolean;
+    successRate: number;
+    totalCalls: number;
+    avgLatencyMs: number;
+    costPer1kInput: number;
+    costPer1kOutput: number;
+  }>>(expertsPath);
+  
+  const stats = await readJson<{
+    totalRequests: number;
+    successfulRoutes: number;
+    fallbacksUsed: number;
+    avgLatencyMs: number;
+    totalCost: number;
+    byExpert: Record<string, {
+      calls: number;
+      avgLatency: number;
+      totalCost: number;
+      successRate: number;
+    }>;
+    lastUpdated: number;
+  }>(statsPath);
+  
+  if (!experts?.length) {
+    return {
+      configured: false,
+      message: "MoE Router not initialized. Use swarm_moe({ action: 'route', content: '...' }) to start.",
+      builtInExperts: ["Claude Opus", "Claude Sonnet", "Claude Haiku", "GPT-4o", "GPT-4o Mini", "o1", "Gemini 2.0 Flash"],
+      taskCategories: ["code_generation", "code_review", "debugging", "reasoning", "creative", "summarization"],
+    };
+  }
+  
+  const availableExperts = experts.filter(e => e.available);
+  const expertsByProvider = experts.reduce((acc, e) => {
+    acc[e.provider] = (acc[e.provider] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  return {
+    configured: true,
+    enabled: config?.enabled ?? true,
+    stats: {
+      totalRequests: stats?.totalRequests || 0,
+      successfulRoutes: stats?.successfulRoutes || 0,
+      successRate: stats?.totalRequests ? 
+        Math.round((stats.successfulRoutes / stats.totalRequests) * 100) : 0,
+      avgLatencyMs: Math.round(stats?.avgLatencyMs || 0),
+      totalCost: `$${(stats?.totalCost || 0).toFixed(2)}`,
+      fallbacksUsed: stats?.fallbacksUsed || 0,
+    },
+    config: {
+      defaultTier: config?.defaultTier || "standard",
+      costWeight: config?.costWeight || 0.3,
+      latencyWeight: config?.latencyWeight || 0.2,
+      qualityWeight: config?.qualityWeight || 0.5,
+      learningEnabled: config?.learningEnabled ?? true,
+    },
+    experts: {
+      total: experts.length,
+      available: availableExperts.length,
+      byProvider: expertsByProvider,
+    },
+    topExperts: experts
+      .sort((a, b) => b.totalCalls - a.totalCalls)
+      .slice(0, 5)
+      .map(e => ({
+        id: e.id,
+        name: e.name,
+        provider: e.provider,
+        tier: e.tier,
+        calls: e.totalCalls,
+        successRate: Math.round(e.successRate * 100),
+        avgLatency: Math.round(e.avgLatencyMs),
+      })),
+  };
+}
+
 // Request handler
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // Handle CORS preflight
@@ -971,6 +1068,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       case "/api/consensus":
         data = await getConsensusStats(repoPath);
         break;
+      case "/api/moe":
+        data = await getMoEStats(repoPath);
+        break;
       case "/api/health":
         data = { status: "ok", timestamp: Date.now() };
         break;
@@ -995,7 +1095,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         MCP Swarm Dashboard API Server v0.9.9          ║
+║         MCP Swarm Dashboard API Server v0.9.10         ║
 ╠════════════════════════════════════════════════════════╣
 ║  API:       http://localhost:${PORT}                     ║
 ║  Dashboard: http://localhost:3333                      ║
@@ -1018,6 +1118,7 @@ server.listen(PORT, () => {
 ║    GET /api/vector       - HNSW Vector Search статус   ║
 ║    GET /api/defence      - AIDefence безопасность      ║
 ║    GET /api/consensus    - Consensus распред. согласие ║
+║    GET /api/moe          - MoE Router выбор моделей    ║
 ║    GET /api/health       - Проверка работоспособности  ║
 ╚════════════════════════════════════════════════════════╝
   `);
