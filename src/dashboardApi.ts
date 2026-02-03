@@ -638,6 +638,70 @@ async function getBoosterStats(repoPath: string) {
   };
 }
 
+// Get HNSW Vector stats
+async function getVectorStats(repoPath: string) {
+  const indexPath = path.join(repoPath, ".swarm", "hnsw", "index.json");
+  const configPath = path.join(repoPath, ".swarm", "hnsw", "config.json");
+  
+  const index = await readJson<{
+    version: string;
+    dimensions: number;
+    totalDocuments: number;
+    maxLevel: number;
+    lastUpdated: number;
+    nodes: Record<string, { neighbors: string[][] }>;
+  }>(indexPath);
+  
+  const config = await readJson<{
+    dimensions: number;
+    M: number;
+    efConstruction: number;
+    efSearch: number;
+    distanceMetric: string;
+  }>(configPath);
+  
+  if (!index || index.totalDocuments === 0) {
+    return {
+      configured: false,
+      message: "Vector index not initialized. Use swarm_vector({ action: 'init' }) to start.",
+      supportedDimensions: [384, 768, 1536],
+      distanceMetrics: ["cosine", "euclidean", "dot"],
+    };
+  }
+  
+  // Calculate average connections
+  let totalConnections = 0;
+  let nodeCount = 0;
+  for (const node of Object.values(index.nodes || {})) {
+    for (const neighbors of node.neighbors || []) {
+      if (neighbors) totalConnections += neighbors.length;
+    }
+    nodeCount++;
+  }
+  
+  // Estimate memory
+  const memoryKB = Math.round(JSON.stringify(index).length / 1024);
+  
+  return {
+    configured: true,
+    version: index.version,
+    stats: {
+      totalDocuments: index.totalDocuments,
+      dimensions: index.dimensions,
+      maxLevel: index.maxLevel,
+      avgConnections: nodeCount > 0 ? Math.round(totalConnections / nodeCount * 10) / 10 : 0,
+      memoryKB,
+      lastUpdated: index.lastUpdated,
+    },
+    config: {
+      dimensions: config?.dimensions || index.dimensions,
+      M: config?.M || 16,
+      efSearch: config?.efSearch || 50,
+      distanceMetric: config?.distanceMetric || "cosine",
+    },
+  };
+}
+
 // Request handler
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // Handle CORS preflight
@@ -697,6 +761,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       case "/api/booster":
         data = await getBoosterStats(repoPath);
         break;
+      case "/api/vector":
+        data = await getVectorStats(repoPath);
+        break;
       case "/api/health":
         data = { status: "ok", timestamp: Date.now() };
         break;
@@ -721,7 +788,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         MCP Swarm Dashboard API Server v0.9.6          ║
+║         MCP Swarm Dashboard API Server v0.9.7          ║
 ╠════════════════════════════════════════════════════════╣
 ║  API:       http://localhost:${PORT}                     ║
 ║  Dashboard: http://localhost:3333                      ║
@@ -741,6 +808,7 @@ server.listen(PORT, () => {
 ║    GET /api/telegram     - Telegram Bot конфигурация   ║
 ║    GET /api/sona         - SONA статистика и профили   ║
 ║    GET /api/booster      - Agent Booster статистика    ║
+║    GET /api/vector       - HNSW Vector Search статус   ║
 ║    GET /api/health       - Проверка работоспособности  ║
 ╚════════════════════════════════════════════════════════╝
   `);
