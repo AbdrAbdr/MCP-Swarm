@@ -1095,7 +1095,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         MCP Swarm Dashboard API Server v0.9.10         ║
+║         MCP Swarm Dashboard API Server v0.9.12         ║
 ╠════════════════════════════════════════════════════════╣
 ║  API:       http://localhost:${PORT}                     ║
 ║  Dashboard: http://localhost:3333                      ║

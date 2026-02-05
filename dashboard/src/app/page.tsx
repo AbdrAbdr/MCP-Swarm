@@ -34,6 +34,14 @@ import {
   ConsensusWidget, 
   MoEWidget 
 } from "@/components/widgets/AdvancedWidgets"
+import {
+  FileLocksWidget,
+  ActivityTimelineWidget,
+  CostTrackingWidget,
+  VotingWidget,
+  ConnectionStatusWidget
+} from "@/components/widgets/CoreWidgets"
+import { useWebSocket } from "@/hooks/useWebSocket"
 
 // Типы данных
 interface Agent {
@@ -291,6 +299,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   
+  // WebSocket for real-time updates
+  const { connected, lastEvent } = useWebSocket({
+    onEvent: (event) => {
+      // Update lastUpdate timestamp on any event
+      setLastUpdate(Date.now())
+    }
+  })
+  
   // Auto-refresh каждые 5 секунд
   useEffect(() => {
     const interval = setInterval(() => {
@@ -321,7 +337,13 @@ export default function Dashboard() {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
+            {connected && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+            )}
             Обновлено: {formatRelativeTime(lastUpdate)}
           </div>
           <Button variant="outline" size="icon" onClick={() => setLastUpdate(Date.now())}>
@@ -474,6 +496,28 @@ export default function Dashboard() {
         </div>
       </div>
       
+      {/* Core Widgets - Real-time */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
+            Real-time Monitoring
+          </CardTitle>
+          <CardDescription>
+            Live data from Swarm Hub via WebSocket
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ConnectionStatusWidget />
+            <ActivityTimelineWidget />
+            <FileLocksWidget />
+            <CostTrackingWidget />
+            <VotingWidget />
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Advanced AI Modules */}
       <Card>
         <CardHeader>
@@ -502,7 +546,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-center gap-4">
           <span className="flex items-center gap-1">
             <GitBranch className="w-4 h-4" />
-            MCP Swarm v0.9.10
+            MCP Swarm v0.9.12
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">

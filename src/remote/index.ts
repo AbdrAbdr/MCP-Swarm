@@ -5,6 +5,11 @@
  * Connects to a remote MCP Swarm server via Streamable HTTP transport.
  * Translates stdio <-> HTTP POST for IDE compatibility.
  * 
+ * Features:
+ * - Auto-starts companion daemon if not running
+ * - Translates stdio to HTTP
+ * - Session management
+ * 
  * Usage:
  *   npx mcp-swarm-remote --url https://your-server.workers.dev/mcp
  *   
@@ -19,12 +24,20 @@
  *   }
  */
 
+import { spawn } from "child_process";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 // Parse command line arguments
 const args = process.argv.slice(2);
 let serverUrl = "https://mcp-swarm-server.unilife-ch.workers.dev/mcp";
 let telegramUserId: string | null = null;
 let sessionId: string | null = null;
 let debug = false;
+let noCompanion = false;
 
 for (let i = 0; i < args.length; i++) {
     if (args[i] === "--url" && args[i + 1]) {
@@ -35,6 +48,8 @@ for (let i = 0; i < args.length; i++) {
         i++;
     } else if (args[i] === "--debug") {
         debug = true;
+    } else if (args[i] === "--no-companion") {
+        noCompanion = true;
     }
 }
 
@@ -47,6 +62,64 @@ function log(message: string): void {
 
 function logError(message: string): void {
     process.stderr.write(`[mcp-swarm-remote] ERROR: ${message}\n`);
+}
+
+// Check if companion is running
+async function isCompanionRunning(): Promise<boolean> {
+    try {
+        const response = await fetch("http://localhost:37373/health", {
+            method: "GET",
+            signal: AbortSignal.timeout(2000),
+        });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+// Start companion daemon in background
+async function startCompanion(): Promise<void> {
+    const companionPath = join(__dirname, "..", "companion.js");
+    
+    log(`Starting companion daemon: ${companionPath}`);
+    
+    const child = spawn("node", [companionPath], {
+        detached: true,
+        stdio: "ignore",
+        env: {
+            ...process.env,
+            SWARM_HUB_URL: process.env.SWARM_HUB_URL || "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        },
+    });
+    
+    child.unref();
+    
+    // Wait a bit for companion to start
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Verify it started
+    if (await isCompanionRunning()) {
+        log("Companion daemon started successfully");
+    } else {
+        log("Warning: Companion daemon may not have started correctly");
+    }
+}
+
+// Ensure companion is running
+async function ensureCompanion(): Promise<void> {
+    if (noCompanion) {
+        log("Companion auto-start disabled");
+        return;
+    }
+    
+    const running = await isCompanionRunning();
+    if (running) {
+        log("Companion daemon already running");
+        return;
+    }
+    
+    log("Companion daemon not running, starting...");
+    await startCompanion();
 }
 
 // Build full URL with query params
@@ -172,6 +245,9 @@ async function main(): Promise<void> {
     if (telegramUserId) {
         log(`Telegram User ID: ${telegramUserId}`);
     }
+
+    // Ensure companion daemon is running for local file operations
+    await ensureCompanion();
 
     // Set up stdin for reading
     process.stdin.setEncoding("utf8");

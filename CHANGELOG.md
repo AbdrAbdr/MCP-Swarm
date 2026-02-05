@@ -7,6 +7,87 @@
 
 ---
 
+## [0.9.12] - 2026-02-05
+
+### Dashboard Real-time Updates
+
+#### Added
+
+- **WebSocket Hook** (`dashboard/src/hooks/useWebSocket.ts`)
+  - Real-time connection to Swarm Hub
+  - Auto-reconnect with exponential backoff
+  - Keep-alive ping every 25 seconds
+  - Event filtering for specific event types
+
+- **New Core Widgets** (`dashboard/src/components/widgets/CoreWidgets.tsx`)
+  - **ConnectionStatusWidget** — Shows Hub connection status with reconnect button
+  - **ActivityTimelineWidget** — Real-time event stream from Hub
+  - **FileLocksWidget** — Active file reservations with live updates
+  - **CostTrackingWidget** — API usage and budget progress bars
+  - **VotingWidget** — Distributed consensus proposals and votes
+
+- **Live Indicators**
+  - Green pulsing dot for connected/active status
+  - LIVE/OFFLINE badges for real-time widgets
+  - Last update timestamps with relative time format
+
+### Telegram Bot Enhancements
+
+#### Added
+
+- **New Commands**
+  - `/reviews` — List pending code reviews with inline approve/reject buttons
+  - `/approve [id]` — Approve a review directly from Telegram
+  - `/reject [id] [reason]` — Reject a review with optional reason
+
+- **Enhanced Inline Keyboards**
+  - Reviews list shows approve/reject buttons for each pending review
+  - Help menu now includes Reviews button
+
+### Auto-start Companion
+
+#### Added
+
+- **Companion Auto-start** in `mcp-swarm-remote`
+  - Checks if companion daemon is running on port 37373
+  - Automatically spawns companion in background if not running
+  - Can be disabled with `--no-companion` flag
+
+#### Changed
+
+- Dashboard now uses WebSocket for real-time updates instead of polling-only
+- Added "Real-time Monitoring" section with new widgets
+- Updated version to 0.9.12 in footer
+
+---
+
+## [0.9.11] - 2026-02-04
+
+### One-Click Installer & Streamable HTTP
+
+#### Added
+
+- **One-Click Install Scripts**
+  - `install.ps1` — PowerShell installer for Windows
+  - `install.sh` — Bash installer for macOS/Linux
+  - `npx mcp-swarm-install` — Interactive Node.js installer
+
+- **Streamable HTTP Transport** (MCP spec 2025-03-26)
+  - Single `POST /mcp` endpoint instead of SSE
+  - Session management via `Mcp-Session-Id` header
+  - Works on Cloudflare Workers without SSE issues
+
+- **mcp-swarm-remote Proxy** (`src/remote/index.ts`)
+  - stdio → Streamable HTTP proxy for IDE integration
+  - Windows stdin compatibility fix
+
+#### Changed
+
+- Installer now **merges** configs instead of overwriting
+- Auto-detects IDE installations (Claude Desktop, Cursor, Windsurf, OpenCode, VS Code)
+
+---
+
 ## [0.9.10] - 2026-02-03
 
 ### 🧠 MoE Router — Mixture of Experts Model Selection

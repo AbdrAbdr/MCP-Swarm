@@ -5,6 +5,7 @@
  * - Event notifications (tasks, completions, CI errors)
  * - Status viewing (/tasks, /agents, /status)
  * - Task creation (/create_task)
+ * - Review approval (/approve, /reject)
  * - Swarm control (/stop, /resume)
  * - Interactive inline buttons
  * 
@@ -13,7 +14,7 @@
  * 2. Set TELEGRAM_BOT_TOKEN in environment
  * 3. Set TELEGRAM_CHAT_ID for notifications
  * 
- * @version 0.9.4
+ * @version 0.9.12
  */
 
 import * as fs from 'fs';
@@ -439,7 +440,10 @@ export async function handleCommand(
           `/status - Swarm status\n` +
           `/agents - List agents\n` +
           `/tasks - List tasks\n` +
+          `/reviews - List pending reviews\n` +
           `/create_task - Create task\n` +
+          `/approve [id] - Approve review\n` +
+          `/reject [id] - Reject review\n` +
           `/stop - Stop swarm\n` +
           `/resume - Resume swarm\n` +
           `/config - Bot settings`,
@@ -450,6 +454,9 @@ export async function handleCommand(
           ],
           [
             { text: '📋 Tasks', callback_data: 'list_tasks' },
+            { text: '👀 Reviews', callback_data: 'list_reviews' },
+          ],
+          [
             { text: '➕ New Task', callback_data: 'create_task' },
           ],
         ],
@@ -480,6 +487,25 @@ export async function handleCommand(
 
     case '/config':
       return await getConfig(repoPath);
+
+    case '/reviews':
+      return await getReviewsList(repoPath);
+
+    case '/approve':
+      if (args.length < 1) {
+        return {
+          text: '✅ <b>Approve Review</b>\n\nUsage: /approve [review_id]\n\nExample:\n<code>/approve rev-123</code>',
+        };
+      }
+      return await approveReview(repoPath, args[0]);
+
+    case '/reject':
+      if (args.length < 1) {
+        return {
+          text: '❌ <b>Reject Review</b>\n\nUsage: /reject [review_id] [reason]\n\nExample:\n<code>/reject rev-123 Needs more tests</code>',
+        };
+      }
+      return await rejectReview(repoPath, args[0], args.slice(1).join(' '));
 
     default:
       return { text: `Unknown command: ${command}\n\nUse /help for available commands.` };
@@ -757,6 +783,129 @@ async function getConfig(repoPath: string): Promise<CommandResult> {
   };
 }
 
+async function getReviewsList(repoPath: string): Promise<CommandResult> {
+  try {
+    const reviewsPath = path.join(repoPath, '.swarm', 'reviews', 'INDEX.json');
+    
+    if (!fs.existsSync(reviewsPath)) {
+      return { 
+        text: '👀 <b>Reviews</b>\n\nNo reviews yet.',
+        keyboard: [[{ text: '📊 Status', callback_data: 'swarm_status' }]],
+      };
+    }
+    
+    const index = JSON.parse(fs.readFileSync(reviewsPath, 'utf-8'));
+    const reviews = Object.values(index.reviews || {}) as any[];
+    
+    if (reviews.length === 0) {
+      return { 
+        text: '👀 <b>Reviews</b>\n\nNo reviews yet.',
+        keyboard: [[{ text: '📊 Status', callback_data: 'swarm_status' }]],
+      };
+    }
+    
+    // Filter pending reviews
+    const pending = reviews.filter((r: any) => r.status === 'pending' || r.status === 'in_progress');
+    const approved = reviews.filter((r: any) => r.status === 'approved').length;
+    const rejected = reviews.filter((r: any) => r.status === 'rejected').length;
+    
+    let text = '👀 <b>Reviews</b>\n\n';
+    text += `📊 Total: ${reviews.length} | ✅ ${approved} | ❌ ${rejected}\n\n`;
+    
+    if (pending.length > 0) {
+      text += '<b>⏳ Pending Reviews:</b>\n';
+      for (const review of pending.slice(0, 5)) {
+        text += `• <code>${review.id}</code>\n`;
+        text += `  ${review.taskTitle || 'Untitled'}\n`;
+        text += `  By: ${review.codeAuthor} | Files: ${review.changedFiles?.length || 0}\n\n`;
+      }
+    } else {
+      text += 'No pending reviews.\n';
+    }
+    
+    // Create buttons for pending reviews
+    const buttons: InlineButton[][] = pending.slice(0, 3).map((review: any) => [
+      { text: `✅ Approve ${review.id.substring(0, 10)}`, callback_data: `approve_review:${review.id}` },
+      { text: `❌ Reject`, callback_data: `reject_review:${review.id}` },
+    ]);
+    
+    buttons.push([{ text: '🔄 Refresh', callback_data: 'list_reviews' }]);
+    
+    return { text, keyboard: buttons };
+  } catch (error: any) {
+    return { text: `Error listing reviews: ${error.message}` };
+  }
+}
+
+async function approveReview(repoPath: string, reviewId: string): Promise<CommandResult> {
+  try {
+    const reviewsPath = path.join(repoPath, '.swarm', 'reviews', 'INDEX.json');
+    
+    if (!fs.existsSync(reviewsPath)) {
+      return { text: `Review ${reviewId} not found` };
+    }
+    
+    const index = JSON.parse(fs.readFileSync(reviewsPath, 'utf-8'));
+    const review = index.reviews?.[reviewId];
+    
+    if (!review) {
+      return { text: `Review ${reviewId} not found` };
+    }
+    
+    review.status = 'approved';
+    review.approvedAt = new Date().toISOString();
+    review.approvedBy = 'telegram';
+    
+    fs.writeFileSync(reviewsPath, JSON.stringify(index, null, 2));
+    
+    return {
+      text: 
+        `✅ <b>Review Approved</b>\n\n` +
+        `ID: <code>${reviewId}</code>\n` +
+        `Task: ${review.taskTitle || 'Untitled'}\n` +
+        `Author: ${review.codeAuthor}`,
+      keyboard: [[{ text: '👀 View Reviews', callback_data: 'list_reviews' }]],
+    };
+  } catch (error: any) {
+    return { text: `Error approving review: ${error.message}` };
+  }
+}
+
+async function rejectReview(repoPath: string, reviewId: string, reason?: string): Promise<CommandResult> {
+  try {
+    const reviewsPath = path.join(repoPath, '.swarm', 'reviews', 'INDEX.json');
+    
+    if (!fs.existsSync(reviewsPath)) {
+      return { text: `Review ${reviewId} not found` };
+    }
+    
+    const index = JSON.parse(fs.readFileSync(reviewsPath, 'utf-8'));
+    const review = index.reviews?.[reviewId];
+    
+    if (!review) {
+      return { text: `Review ${reviewId} not found` };
+    }
+    
+    review.status = 'rejected';
+    review.rejectedAt = new Date().toISOString();
+    review.rejectedBy = 'telegram';
+    review.rejectionReason = reason || 'Rejected via Telegram';
+    
+    fs.writeFileSync(reviewsPath, JSON.stringify(index, null, 2));
+    
+    return {
+      text: 
+        `❌ <b>Review Rejected</b>\n\n` +
+        `ID: <code>${reviewId}</code>\n` +
+        `Task: ${review.taskTitle || 'Untitled'}\n` +
+        `Reason: ${reason || 'No reason provided'}`,
+      keyboard: [[{ text: '👀 View Reviews', callback_data: 'list_reviews' }]],
+    };
+  } catch (error: any) {
+    return { text: `Error rejecting review: ${error.message}` };
+  }
+}
+
 // ============================================================================
 // CALLBACK HANDLER
 // ============================================================================
@@ -776,6 +925,15 @@ export async function handleCallback(
     
     case 'list_tasks':
       return await getTasksList(repoPath);
+    
+    case 'list_reviews':
+      return await getReviewsList(repoPath);
+    
+    case 'approve_review':
+      return await approveReview(repoPath, params[0]);
+    
+    case 'reject_review':
+      return await rejectReview(repoPath, params[0]);
     
     case 'create_task':
       return {
