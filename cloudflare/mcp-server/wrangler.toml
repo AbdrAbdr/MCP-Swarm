@@ -1,0 +1,24 @@
+name = "mcp-swarm-server"
+main = "src/index.ts"
+compatibility_date = "2025-12-01"
+
+# Durable Objects для persistent state
+[durable_objects]
+bindings = [
+  { name = "MCP_SESSION", class_name = "McpSession" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["McpSession"]
+
+# Публичные настройки
+[vars]
+HUB_URL = "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws"
+
+# ═══════════════════════════════════════════════════════════════════
+# СЕКРЕТЫ (добавляются через CLI, НЕ здесь!)
+# ═══════════════════════════════════════════════════════════════════
+# npx wrangler secret put TELEGRAM_BOT_TOKEN
+# npx wrangler secret put TELEGRAM_CHAT_ID
+# ═══════════════════════════════════════════════════════════════════

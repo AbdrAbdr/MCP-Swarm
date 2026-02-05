@@ -222,6 +222,37 @@ export class SwarmRoom {
       return Response.json({ entries });
     }
 
+    // ==================== TELEGRAM BOT ENDPOINTS ====================
+    // GET /api/stats - Get swarm statistics for Telegram bot
+    if (url.pathname === "/api/stats" && request.method === "GET") {
+      const stats = await this.getSwarmStats();
+      return Response.json(stats);
+    }
+
+    // GET /api/agents - Get list of agents for Telegram bot
+    if (url.pathname === "/api/agents" && request.method === "GET") {
+      const pulse = await this.getSwarmPulse();
+      return Response.json({ agents: pulse.agents });
+    }
+
+    // GET /api/tasks - Get list of tasks for Telegram bot
+    if (url.pathname === "/api/tasks" && request.method === "GET") {
+      const tasks = await this.getTaskList();
+      return Response.json({ tasks });
+    }
+
+    // POST /api/stop - Stop the swarm (from Telegram bot)
+    if (url.pathname === "/api/stop" && request.method === "POST") {
+      await this.setSwarmStopped(true);
+      return Response.json({ ok: true, stopped: true });
+    }
+
+    // POST /api/resume - Resume the swarm (from Telegram bot)
+    if (url.pathname === "/api/resume" && request.method === "POST") {
+      await this.setSwarmStopped(false);
+      return Response.json({ ok: true, stopped: false });
+    }
+
     return new Response("Not Found", { status: 404 });
   }
 
@@ -640,5 +671,65 @@ export class SwarmRoom {
     
     entries.sort((a, b) => b.createdAt - a.createdAt);
     return entries.slice(0, 50);
+  }
+
+  // ==================== TELEGRAM BOT SUPPORT ====================
+  
+  private async getSwarmStats(): Promise<{
+    stopped: boolean;
+    orchestratorName: string | null;
+    agentCount: number;
+    taskCount: number;
+    messageCount: number;
+  }> {
+    const stopped = await this.state.storage.get<boolean>("swarm_stopped") || false;
+    const leader = await this.state.storage.get<string>("leader") || null;
+    const pulse = await this.getSwarmPulse();
+    const tasks = await this.getTaskList();
+    const events = await this.getEventsSince(Date.now() - 24 * 60 * 60 * 1000); // Last 24h
+    const messageCount = events.filter(e => e.type.startsWith("chat.")).length;
+
+    return {
+      stopped,
+      orchestratorName: leader,
+      agentCount: pulse.agents.length,
+      taskCount: tasks.length,
+      messageCount,
+    };
+  }
+
+  private async getTaskList(): Promise<any[]> {
+    const all = await this.state.storage.list<any>({ prefix: "task:" });
+    const tasks: any[] = [];
+    
+    for (const [, task] of all) {
+      tasks.push(task);
+    }
+    
+    // Also check task claims for status
+    const claims = await this.state.storage.list<TaskClaim>({ prefix: "task_claim:" });
+    const claimMap = new Map<string, string>();
+    for (const [, claim] of claims) {
+      claimMap.set(claim.taskId, claim.agent);
+    }
+
+    // Merge claim info into tasks
+    for (const task of tasks) {
+      const assignee = claimMap.get(task.id || task.taskId);
+      if (assignee) {
+        task.assignee = assignee;
+        task.status = "in_progress";
+      }
+    }
+
+    return tasks;
+  }
+
+  private async setSwarmStopped(stopped: boolean): Promise<void> {
+    await this.state.storage.put("swarm_stopped", stopped);
+    await this.broadcast({ 
+      kind: stopped ? "swarm_stopped" : "swarm_resumed", 
+      ts: Date.now() 
+    });
   }
 }

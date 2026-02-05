@@ -8,3 +8,13 @@ SWARM_PROJECT = "default"
 
 # TELEGRAM_BOT_TOKEN should be set as a secret:
 # wrangler secret put TELEGRAM_BOT_TOKEN
+
+# Durable Object for storing user<->project mappings
+[durable_objects]
+bindings = [
+  { name = "USER_PROJECTS", class_name = "UserProjects" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["UserProjects"]

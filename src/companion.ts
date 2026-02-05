@@ -15,11 +15,46 @@ import {
   acknowledgeMessage,
   type AgentRole,
 } from "./workflows/orchestrator.js";
+import { BridgeManager } from "./bridge.js";
+import { getProjectIdSource } from "./workflows/projectId.js";
+
+// ============ TELEGRAM BOT URL ============
+const TELEGRAM_BOT_URL = "https://mcp-swarm-telegram.unilife-ch.workers.dev";
+
+/**
+ * Register project in Telegram Bot for user notifications
+ * Called when companion starts with TELEGRAM_USER_ID env variable
+ */
+async function registerProjectInTelegram(
+  userId: string,
+  projectId: string,
+  projectName: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${TELEGRAM_BOT_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: parseInt(userId, 10),
+        projectId,
+        name: projectName,
+      }),
+    });
+    
+    if (response.ok) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 type CompanionConfig = {
   repoPath?: string;
   project?: string;
   hubUrl?: string;
+  mcpServerUrl?: string; // URL персонального MCP Server для Auto-Bridge
   pollSeconds?: number;
   controlPort?: number;
   controlToken?: string;
@@ -40,6 +75,7 @@ function getEnvConfig(): CompanionConfig {
     repoPath: process.env.SWARM_REPO_PATH,
     project: process.env.SWARM_PROJECT ?? "default",
     hubUrl: process.env.SWARM_HUB_URL,
+    mcpServerUrl: process.env.MCP_SERVER_URL, // Auto-Bridge к Remote MCP
     pollSeconds: Number.isFinite(pollSeconds) ? pollSeconds : 10,
     controlPort: Number.isFinite(controlPort) ? controlPort : 37373,
     controlToken: process.env.SWARM_CONTROL_TOKEN,
@@ -90,6 +126,24 @@ async function run() {
   const cfg = getEnvConfig();
   const repoRoot = await getRepoRoot(cfg.repoPath);
 
+  // ============ SMART PROJECT ID ============
+  const projectInfo = await getProjectIdSource(repoRoot);
+  const projectId = projectInfo.id;
+  log("info", `📁 Project ID: ${colors.bright}${projectId}${colors.reset} (source: ${projectInfo.source})`);
+
+  // ============ TELEGRAM REGISTRATION ============
+  // If TELEGRAM_USER_ID is set, register this project for the user
+  const telegramUserId = process.env.TELEGRAM_USER_ID;
+  if (telegramUserId) {
+    const projectName = path.basename(repoRoot);
+    const registered = await registerProjectInTelegram(telegramUserId, projectId, projectName);
+    if (registered) {
+      log("success", `📱 Project registered in Telegram for user ${telegramUserId}`);
+    } else {
+      log("warn", `📱 Failed to register project in Telegram (will retry later)`);
+    }
+  }
+
   // Register agent if not already registered
   let me = await whoami(repoRoot);
   if (!me.agent) {
@@ -133,6 +187,20 @@ async function run() {
   let ws: any | null = null;
   let stop = false;
   let paused = false;
+
+  // ============ AUTO-BRIDGE ============
+  // Если задан MCP_SERVER_URL, автоматически подключаемся к Remote MCP
+  let bridgeManager: BridgeManager | null = null;
+  if (cfg.mcpServerUrl) {
+    log("info", `🌉 Auto-Bridge enabled: ${cfg.mcpServerUrl}`);
+    bridgeManager = new BridgeManager({
+      mcpServerUrl: cfg.mcpServerUrl,
+      projects: [repoRoot],
+    });
+    bridgeManager.start().catch(err => {
+      log("error", `Bridge start failed: ${err.message}`);
+    });
+  }
 
   function checkToken(req: http.IncomingMessage): boolean {
     if (!controlToken) return true;
@@ -189,7 +257,81 @@ async function run() {
     if (req.method === "GET" && req.url === "/status") {
       res.statusCode = 200;
       res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ ok: true, stop, paused, agentName, role, isOrchestrator }));
+      res.end(JSON.stringify({
+        ok: true,
+        stop,
+        paused,
+        agentName,
+        role,
+        isOrchestrator,
+        bridge: bridgeManager?.getStatus() ?? null,
+      }));
+      return;
+    }
+
+    // ============ BRIDGE AUTO-ADD ============
+    // POST /bridge/add?project=/path/to/project
+    if (req.method === "POST" && req.url?.startsWith("/bridge/add")) {
+      const url = new URL(req.url, `http://localhost:${controlPort}`);
+      const projectPath = url.searchParams.get("project");
+
+      if (!projectPath) {
+        res.statusCode = 400;
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({ ok: false, error: "Missing ?project= parameter" }));
+        return;
+      }
+
+      if (!bridgeManager) {
+        res.statusCode = 400;
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({ ok: false, error: "Bridge not enabled. Set MCP_SERVER_URL env." }));
+        return;
+      }
+
+      log("info", `🌉 Auto-adding project: ${projectPath}`);
+      bridgeManager.addProject(projectPath).then(() => {
+        log("success", `🌉 Project added: ${projectPath}`);
+      }).catch(err => {
+        log("error", `🌉 Failed to add project: ${err.message}`);
+      });
+
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ ok: true, added: projectPath }));
+      return;
+    }
+
+    // GET /bridge/status
+    if (req.method === "GET" && req.url === "/bridge/status") {
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({
+        ok: true,
+        enabled: !!bridgeManager,
+        projects: bridgeManager?.getStatus() ?? {},
+      }));
+      return;
+    }
+
+    // POST /bridge/remove?project=/path/to/project
+    if (req.method === "POST" && req.url?.startsWith("/bridge/remove")) {
+      const url = new URL(req.url, `http://localhost:${controlPort}`);
+      const projectPath = url.searchParams.get("project");
+
+      if (!projectPath || !bridgeManager) {
+        res.statusCode = 400;
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({ ok: false, error: "Missing project or bridge not enabled" }));
+        return;
+      }
+
+      bridgeManager.removeProject(projectPath);
+      log("info", `🌉 Project removed: ${projectPath}`);
+
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ ok: true, removed: projectPath }));
       return;
     }
 
@@ -238,7 +380,7 @@ async function run() {
     if (!hubUrl) return;
 
     const url = new URL(hubUrl);
-    url.searchParams.set("project", cfg.project || "default");
+    url.searchParams.set("project", projectId); // Use smart projectId instead of cfg.project
     url.searchParams.set("agent", agentName);
 
     ws = new WS(url.toString());
@@ -263,6 +405,19 @@ async function run() {
             stop = true;
           }
         }
+
+        // ============ AUTO-DETECT PROJECTS ============
+        // Если пришёл event с новым repoPath — автоматически подключаем bridge
+        if (bridgeManager && msg?.payload?.repoPath) {
+          const eventRepoPath = msg.payload.repoPath as string;
+          const status = bridgeManager.getStatus();
+          if (!status[eventRepoPath]) {
+            log("info", `🔍 Auto-detected new project: ${eventRepoPath}`);
+            bridgeManager.addProject(eventRepoPath).catch(err => {
+              log("error", `🌉 Failed to auto-add: ${err.message}`);
+            });
+          }
+        }
       } catch {
         // ignore
       }
@@ -281,8 +436,8 @@ async function run() {
   const inboxCheckInterval = 30_000; // Check inbox every 30 seconds
 
   log("info", "Entering main loop...");
-  log("info", isOrchestrator 
-    ? "🔄 INFINITE LOOP MODE - Type 'stop' to exit" 
+  log("info", isOrchestrator
+    ? "🔄 INFINITE LOOP MODE - Type 'stop' to exit"
     : "🔄 EXECUTOR MODE - Will stop when orchestrator stops or task complete");
 
   // ============ MAIN LOOP ============
@@ -306,7 +461,7 @@ async function run() {
 
     // Always pull Git (for STOP.json and other files)
     await pullIfPossible(repoRoot);
-    
+
     // Check STOP.json - but ORCHESTRATOR ignores it unless user explicitly stopped
     const stopState = await getStopState(repoRoot);
     if (stopState.state.stopped && !isOrchestrator) {
@@ -325,7 +480,7 @@ async function run() {
     const now = Date.now();
     if (now - lastInboxCheck > inboxCheckInterval) {
       lastInboxCheck = now;
-      
+
       try {
         const inbox = await fetchAgentInbox({
           repoPath: repoRoot,
@@ -336,7 +491,7 @@ async function run() {
 
         if (inbox.unread > 0) {
           log("info", `📬 ${inbox.unread} unread message(s) in inbox`);
-          
+
           // Auto-acknowledge urgent messages for orchestrator
           for (const msg of inbox.messages) {
             if (msg.importance === "urgent" && !msg.acknowledged) {
@@ -407,6 +562,11 @@ async function run() {
   }
 
   // ============ CLEANUP ============
+  if (bridgeManager) {
+    bridgeManager.stop();
+    log("info", "🌉 Bridge stopped");
+  }
+
   if (ws) {
     try {
       ws.close();

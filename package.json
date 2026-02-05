@@ -1,13 +1,29 @@
 {
   "name": "mcp-swarm",
-  "version": "0.9.10",
-  "private": true,
+  "version": "0.9.11",
+  "private": false,
   "type": "module",
+  "description": "Universal AI agent coordination platform with 54+ smart tools",
+  "keywords": ["mcp", "ai", "agent", "swarm", "coordination", "cloudflare"],
+  "author": "MCP Swarm Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AbdrAbdr/Swarm_MCP"
+  },
+  "bin": {
+    "mcp-swarm": "./dist/serverSmart.js",
+    "mcp-swarm-remote": "./dist/remote/index.js",
+    "mcp-swarm-companion": "./dist/companion.js",
+    "mcp-swarm-install": "./dist/installer/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "node --enable-source-maps dist/serverSmart.js",
     "dev:legacy": "node --enable-source-maps dist/server.js",
+    "remote": "node --enable-source-maps dist/remote/index.js",
     "companion": "node --enable-source-maps dist/companion.js",
+    "bridge": "node --enable-source-maps dist/bridge.js",
     "install-mcp": "node --enable-source-maps dist/scripts/install.js",
     "dashboard:api": "node --enable-source-maps dist/dashboardApi.js",
     "dashboard:ui": "cd dashboard && npm run dev",
