@@ -20,11 +20,13 @@
  */
 
 // ============ TELEGRAM BOT URL ============
-const TELEGRAM_BOT_URL = "https://mcp-swarm-telegram.unilife-ch.workers.dev";
+// This should be set via wrangler.toml [vars] TELEGRAM_BOT_URL
+// or passed in request if user deploys their own telegram-bot
 
 export interface Env {
     MCP_SESSION: DurableObjectNamespace;
     HUB_URL: string;
+    TELEGRAM_BOT_URL?: string;
     TELEGRAM_BOT_TOKEN?: string;
     TELEGRAM_CHAT_ID?: string;
 }
@@ -32,12 +34,17 @@ export interface Env {
 // ============ TELEGRAM REGISTRATION ============
 
 async function registerProjectInTelegram(
+    telegramBotUrl: string | undefined,
     userId: string,
     projectId: string,
     projectName: string
 ): Promise<boolean> {
+    if (!telegramBotUrl) {
+        // Telegram bot not configured, skip registration
+        return false;
+    }
     try {
-        const response = await fetch(`${TELEGRAM_BOT_URL}/register`, {
+        const response = await fetch(`${telegramBotUrl}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -701,7 +708,7 @@ async function executeToolRemote(
         if (toolName === "swarm_agent" && args.action === "register" && telegramUserId && repoPath) {
             const projectName = repoPath.split(/[/\\]/).pop() || "unknown";
             const projectId = generateProjectId(repoPath);
-            await registerProjectInTelegram(telegramUserId, projectId, projectName);
+            await registerProjectInTelegram(env.TELEGRAM_BOT_URL, telegramUserId, projectId, projectName);
         }
 
         return result;

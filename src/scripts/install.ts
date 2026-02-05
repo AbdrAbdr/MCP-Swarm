@@ -62,7 +62,7 @@ function getMcpConfig(projectPath: string): string {
       command: "node",
       args: [serverPath],
       env: {
-        SWARM_HUB_URL: "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        SWARM_HUB_URL: "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         SWARM_PROJECT: "default",
       },
     },

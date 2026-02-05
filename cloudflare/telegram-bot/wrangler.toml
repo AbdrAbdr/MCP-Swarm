@@ -1,13 +1,38 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# MCP Swarm Telegram Bot - Cloudflare Worker
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# ИНСТРУКЦИЯ ПО ДЕПЛОЮ:
+# 1. Создайте бота через @BotFather в Telegram
+# 2. Скопируйте токен бота
+# 3. Сначала задеплойте Hub (cloudflare/hub) и скопируйте его URL
+# 4. Замените SWARM_HUB_URL ниже на URL вашего Hub
+# 5. npx wrangler login
+# 6. npx wrangler secret put TELEGRAM_BOT_TOKEN
+#    (вставьте токен от BotFather)
+# 7. npx wrangler deploy
+# 8. Установите webhook:
+#    curl "https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook?url=https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/webhook"
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
 name = "mcp-swarm-telegram"
 main = "worker.ts"
 compatibility_date = "2024-01-01"
 
+# ═══════════════════════════════════════════════════════════════════════════
+# НАСТРОЙКИ - ЗАМЕНИТЕ НА СВОИ!
+# ═══════════════════════════════════════════════════════════════════════════
 [vars]
-SWARM_HUB_URL = "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws"
+# URL вашего Hub (задеплойте сначала cloudflare/hub)
+SWARM_HUB_URL = "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
 SWARM_PROJECT = "default"
 
-# TELEGRAM_BOT_TOKEN should be set as a secret:
-# wrangler secret put TELEGRAM_BOT_TOKEN
+# ═══════════════════════════════════════════════════════════════════════════
+# СЕКРЕТЫ (добавляются через CLI, НЕ здесь!)
+# ═══════════════════════════════════════════════════════════════════════════
+# npx wrangler secret put TELEGRAM_BOT_TOKEN
+# ═══════════════════════════════════════════════════════════════════════════
 
 # Durable Object for storing user<->project mappings
 [durable_objects]

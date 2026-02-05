@@ -156,7 +156,7 @@ Add to your MCP config file:
       "command": "node",
       "args": ["C:/path/to/MCP0/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "SWARM_PROJECT": "default"
       }
     }

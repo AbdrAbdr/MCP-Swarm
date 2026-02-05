@@ -33,7 +33,7 @@ const __dirname = dirname(__filename);
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-let serverUrl = "https://mcp-swarm-server.unilife-ch.workers.dev/mcp";
+let serverUrl: string | null = null;
 let telegramUserId: string | null = null;
 let sessionId: string | null = null;
 let debug = false;
@@ -50,7 +50,38 @@ for (let i = 0; i < args.length; i++) {
         debug = true;
     } else if (args[i] === "--no-companion") {
         noCompanion = true;
+    } else if (args[i] === "--help" || args[i] === "-h") {
+        console.error(`
+MCP Swarm Remote - Connect to your Cloudflare MCP Server
+
+Usage: npx mcp-swarm-remote --url <your-server-url> [options]
+
+Required:
+  --url <url>              Your MCP server URL (deploy cloudflare/mcp-server first)
+                           Example: https://mcp-swarm-server.myaccount.workers.dev/mcp
+
+Options:
+  --telegram-user-id <id>  Your Telegram User ID for notifications
+  --no-companion           Don't auto-start companion daemon
+  --debug                  Enable debug logging
+
+Setup instructions:
+  https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free
+`);
+        process.exit(0);
     }
+}
+
+if (!serverUrl) {
+    console.error(`
+ERROR: --url is required!
+
+You must deploy your own Cloudflare MCP Server first.
+See: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free
+
+Usage: npx mcp-swarm-remote --url https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp
+`);
+    process.exit(1);
 }
 
 // Log to stderr (for debugging)
@@ -124,7 +155,7 @@ async function ensureCompanion(): Promise<void> {
 
 // Build full URL with query params
 function buildUrl(): string {
-    const url = new URL(serverUrl);
+    const url = new URL(serverUrl!); // serverUrl is validated above
     if (telegramUserId) {
         url.searchParams.set("telegram_user_id", telegramUserId);
     }

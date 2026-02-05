@@ -533,7 +533,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "command": "node",
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "SWARM_PROJECT": "default"
       }
     }
@@ -556,7 +556,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "command": "node",
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "SWARM_PROJECT": "default"
       }
     }
@@ -579,7 +579,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "command": "node",
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "SWARM_PROJECT": "default"
       }
     }
@@ -600,7 +600,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "command": "node",
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "SWARM_PROJECT": "default"
       }
     }
@@ -622,7 +622,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "command": "node",
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "SWARM_PROJECT": "default"
       }
     }
@@ -642,18 +642,79 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 
 **v0.9.11 NEW:** Теперь используется **Streamable HTTP** транспорт вместо SSE для совместимости с Cloudflare Workers!
 
-Три варианта использования MCP Swarm Remote:
+### 🆓 Cloudflare Workers — ЭТО БЕСПЛАТНО!
 
-### Вариант A: Публичный сервер (самый простой)
+MCP Swarm использует Cloudflare Workers для облачной инфраструктуры. **Вам не нужно ничего платить!**
 
-Используйте готовый сервер — ничего деплоить не нужно:
+**Free Tier лимиты (более чем достаточно для личного использования):**
+
+| Ресурс | Бесплатный лимит | Для MCP Swarm |
+|--------|------------------|---------------|
+| **Workers Requests** | 100,000 / день | ~1000 агентов/день |
+| **Durable Objects Requests** | 1,000,000 / месяц | Хватит на большую команду |
+| **Durable Objects Storage** | 1 GB | Годы истории сообщений |
+| **WebSocket Messages** | Без лимита | ∞ |
+| **CPU Time** | 10ms / запрос | Достаточно |
+
+> 💡 **Для сравнения:** Если вы работаете 8 часов в день с 5 агентами, вы используете ~5% от бесплатного лимита.
+
+### Шаг 1: Создайте аккаунт Cloudflare (бесплатно)
+
+1. Перейдите на [dash.cloudflare.com](https://dash.cloudflare.com)
+2. Зарегистрируйтесь (email + пароль)
+3. Подтвердите email
+4. **Готово!** Карта не нужна.
+
+### Шаг 2: Задеплойте свою инфраструктуру
 
 ```bash
-# Установите глобально
-npm install -g mcp-swarm
+# 1. Клонируйте репозиторий
+git clone https://github.com/AbdrAbdr/Swarm_MCP.git
+cd Swarm_MCP
+
+# 2. Залогиньтесь в Cloudflare (откроется браузер)
+npx wrangler login
+
+# 3. Задеплойте Hub (координация агентов)
+cd cloudflare/hub
+npx wrangler deploy
+# ✅ Запишите URL: wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws
+
+# 4. Задеплойте MCP Server
+cd ../mcp-server
+# Откройте wrangler.toml и замените HUB_URL на ваш Hub URL из шага 3
+npx wrangler deploy
+# ✅ Запишите URL: https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp
 ```
 
-Конфигурация IDE:
+### Шаг 3: (Опционально) Telegram Bot
+
+```bash
+# 1. Откройте Telegram, найдите @BotFather
+# 2. Отправьте /newbot, следуйте инструкциям
+# 3. Скопируйте токен (выглядит как: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
+
+cd cloudflare/telegram-bot
+# Откройте wrangler.toml и замените SWARM_HUB_URL на ваш Hub URL
+
+# Добавьте токен как секрет
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+# Вставьте токен и нажмите Enter
+
+npx wrangler deploy
+# ✅ Запишите URL: https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev
+
+# 4. Установите webhook (замените YOUR_TOKEN и YOUR-SUBDOMAIN)
+curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/webhook"
+```
+
+### Шаг 4: Настройте IDE
+
+**Вариант A: Remote (рекомендуется)**
+
+```bash
+npm install -g mcp-swarm
+```
 
 ```json
 {
@@ -662,7 +723,7 @@ npm install -g mcp-swarm
       "command": "npx",
       "args": [
         "mcp-swarm-remote",
-        "--url", "https://mcp-swarm-server.unilife-ch.workers.dev/mcp",
+        "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp",
         "--telegram-user-id", "YOUR_TELEGRAM_ID"
       ]
     }
@@ -670,48 +731,16 @@ npm install -g mcp-swarm
 }
 ```
 
-### Вариант B: Self-hosted (свой Worker)
-
-Деплой своего MCP Server на Cloudflare:
-
-```bash
-# 1. Клонируйте репозиторий
-git clone https://github.com/AbdrAbdr/Swarm_MCP.git
-cd Swarm_MCP/cloudflare/mcp-server
-
-# 2. Деплой
-npx wrangler login
-npx wrangler deploy
-# → https://mcp-swarm-server.YOUR-ACCOUNT.workers.dev
-```
-
-Конфигурация IDE:
-```json
-{
-  "mcpServers": {
-    "mcp-swarm": {
-      "command": "npx",
-      "args": [
-        "mcp-swarm-remote",
-        "--url", "https://mcp-swarm-server.YOUR-ACCOUNT.workers.dev/mcp"
-      ]
-    }
-  }
-}
-```
-
-### Вариант C: Локальный с Hub (полный контроль)
-
-Локальный MCP сервер, который синхронизируется через облачный Hub:
+**Вариант B: Локальный с Hub**
 
 ```json
 {
   "mcpServers": {
     "mcp-swarm": {
       "command": "node",
-      "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
+      "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "TELEGRAM_USER_ID": "YOUR_TELEGRAM_ID"
       }
     }
@@ -721,14 +750,24 @@ npx wrangler deploy
 
 ### 🔄 Сравнение вариантов
 
-| Функция | Вариант A (Public) | Вариант B (Self-hosted) | Вариант C (Local+Hub) |
-|---------|-------------------|------------------------|----------------------|
-| Установка | `npm i -g mcp-swarm` | `wrangler deploy` | `git clone && npm build` |
-| Конфиг IDE | Короткий | Короткий | Длинный |
-| Данные | Публичный сервер | Ваш Worker | Локально |
-| Offline | ❌ | ❌ | ✅ (с Hub fallback) |
-| Latency | ~50-100ms | ~50-100ms | <10ms |
-| Обновления | Автоматически | Ваш контроль | `git pull` |
+| Функция | Remote | Local+Hub |
+|---------|--------|-----------|
+| Установка | `npm i -g mcp-swarm` | `git clone && npm build` |
+| Конфиг | Короткий | Длинный |
+| Данные | Ваш Worker | Локально |
+| Offline | ❌ | ✅ (с Hub fallback) |
+| Latency | ~50-100ms | <10ms |
+
+### ❓ Что такое YOUR-SUBDOMAIN?
+
+Когда вы деплоите Worker, Cloudflare автоматически создаёт URL:
+```
+https://mcp-swarm-hub.abdr.workers.dev
+                      ^^^^
+                      Это ваш subdomain (имя аккаунта)
+```
+
+Вы увидите его в выводе команды `npx wrangler deploy`.
 
 > 📖 Подробная документация: [REMOTE.md](./REMOTE.md)
 
@@ -769,22 +808,22 @@ MCP Swarm автоматически определяет уникальный I
 
 ## 📱 Telegram Bot — Настройка
 
-MCP Swarm имеет встроенный Telegram бот `@MyCFSwarmBot` для уведомлений и управления проектами.
+MCP Swarm поддерживает Telegram уведомления через **вашего собственного бота**.
 
-### Новая система: User ID привязка
+### Создание бота
 
-Telegram бот теперь работает по модели **"один User ID → много проектов"**:
-- Каждый пользователь видит **только свои проекты**
-- Проекты **автоматически регистрируются** при запуске MCP
-- Можно переключаться между проектами прямо в боте
+1. Откройте Telegram и найдите **@BotFather**
+2. Отправьте `/newbot` и следуйте инструкциям
+3. Скопируйте токен (выглядит как `123456789:ABCdef...`)
+4. Задеплойте `cloudflare/telegram-bot` (см. инструкции выше)
 
-### Шаг 1: Получите свой User ID
+### Получение User ID
 
-1. Откройте Telegram и найдите **@MyCFSwarmBot**
+1. Откройте **вашего бота** в Telegram
 2. Отправьте `/start`
 3. Бот покажет ваш **User ID** (число, например `987654321`)
 
-### Шаг 2: Добавьте User ID в конфигурацию
+### Добавьте User ID в конфигурацию
 
 **Для локального MCP:**
 
@@ -814,7 +853,7 @@ export TELEGRAM_USER_ID="987654321"
       "command": "node",
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
         "TELEGRAM_USER_ID": "987654321"
       }
     }
@@ -830,7 +869,7 @@ export TELEGRAM_USER_ID="987654321"
 {
   "mcpServers": {
     "mcp-swarm": {
-      "url": "https://mcp-swarm-server.unilife-ch.workers.dev/mcp/sse?telegram_user_id=987654321",
+      "url": "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp/sse?telegram_user_id=YOUR_USER_ID",
       "transport": "sse"
     }
   }
@@ -927,7 +966,7 @@ swarm_agent({ action: "register" })
 <summary><strong>❌ Cloudflare Hub недоступен</strong></summary>
 
 1. Проверьте интернет-соединение
-2. Hub URL: `wss://mcp-swarm-hub.unilife-ch.workers.dev/ws`
+2. Убедитесь что ваш Hub задеплоен и URL правильный
 3. При проблемах система автоматически использует локальный Git-fallback
 
 </details>
@@ -960,13 +999,13 @@ swarm_file({ action: "list", repoPath: "/path/to/project" })
 
 ## 📊 Архитектура
 
-### Cloudflare Workers (Публичные endpoints)
+### Cloudflare Workers (Ваши endpoints после деплоя)
 
-| Worker | URL | Назначение |
+| Worker | URL (пример) | Назначение |
 |--------|-----|------------|
-| **Hub** | `wss://mcp-swarm-hub.unilife-ch.workers.dev/ws` | Координация агентов |
-| **MCP Server** | `https://mcp-swarm-server.unilife-ch.workers.dev` | Remote MCP (SSE) |
-| **Telegram Bot** | `https://mcp-swarm-telegram.unilife-ch.workers.dev` | Уведомления |
+| **Hub** | `wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws` | Координация агентов |
+| **MCP Server** | `https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp` | Remote MCP (HTTP) |
+| **Telegram Bot** | `https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev` | Уведомления |
 
 ### Схема
 

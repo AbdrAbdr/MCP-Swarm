@@ -181,19 +181,25 @@ interface McpSwarmConfig {
     env?: Record<string, string>;
 }
 
-function generateMcpSwarmConfig(mode: "remote" | "local", telegramId?: string): McpSwarmConfig {
+function generateMcpSwarmConfig(mode: "remote" | "local", telegramId?: string, serverUrl?: string, hubUrl?: string): McpSwarmConfig {
     if (mode === "remote") {
+        if (!serverUrl) {
+            throw new Error("Server URL is required for remote mode. Deploy cloudflare/mcp-server first.");
+        }
         const args = [
             "mcp-swarm-remote",
-            "--url", "https://mcp-swarm-server.unilife-ch.workers.dev/mcp",
+            "--url", serverUrl,
         ];
         if (telegramId) {
             args.push("--telegram-user-id", telegramId);
         }
         return { command: "npx", args };
     } else {
+        if (!hubUrl) {
+            throw new Error("Hub URL is required for local mode. Deploy cloudflare/hub first.");
+        }
         const env: Record<string, string> = {
-            SWARM_HUB_URL: "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+            SWARM_HUB_URL: hubUrl,
         };
         if (telegramId) {
             env.TELEGRAM_USER_ID = telegramId;

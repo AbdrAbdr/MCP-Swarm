@@ -47,7 +47,7 @@ interface UseWebSocketReturn {
   reconnect: () => void
 }
 
-const DEFAULT_HUB_URL = process.env.NEXT_PUBLIC_HUB_URL || "wss://mcp-swarm-hub.unilife-ch.workers.dev"
+const DEFAULT_HUB_URL = process.env.NEXT_PUBLIC_HUB_URL || ""
 const MAX_EVENTS = 100
 
 export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
@@ -59,6 +59,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     reconnectInterval = 3000,
     maxReconnectAttempts = 5
   } = options
+
+  // Check if Hub URL is configured
+  if (!url) {
+    console.warn("NEXT_PUBLIC_HUB_URL not configured. Set it in dashboard/.env to enable real-time updates.")
+  }
 
   const [connected, setConnected] = useState(false)
   const [connecting, setConnecting] = useState(false)

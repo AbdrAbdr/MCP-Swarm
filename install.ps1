@@ -77,7 +77,7 @@ try {
     exit 1
 }
 
-# Step 2: Mode
+# Step 2: Choose Mode
 Write-Header "Step 2: Choose Mode"
 
 Write-Host "  1) Remote (Recommended) - Cloud server" -ForegroundColor Green
@@ -88,11 +88,43 @@ $modeChoice = Read-Host "Choose [1/2] (default: 1)"
 if ($modeChoice -eq "2") { $mode = "local" } else { $mode = "remote" }
 Write-OK "Mode: $mode"
 
+# Step 2.5: Server URLs
+Write-Header "Step 2.5: Your Cloudflare Server URLs"
+
+Write-Host "You need to deploy your own Cloudflare Workers first!" -ForegroundColor Yellow
+Write-Host "See: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free" -ForegroundColor Cyan
+Write-Host ""
+
+if ($mode -eq "remote") {
+    Write-Host "Enter your MCP Server URL (from cloudflare/mcp-server deploy)" -ForegroundColor White
+    Write-Host "Example: https://mcp-swarm-server.myaccount.workers.dev/mcp" -ForegroundColor Gray
+    $serverUrl = Read-Host "MCP Server URL"
+    
+    if (-not $serverUrl) {
+        Write-Err "Server URL is required! Deploy your server first."
+        Write-Host "Instructions: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free" -ForegroundColor Cyan
+        exit 1
+    }
+    Write-OK "Server: $serverUrl"
+} else {
+    Write-Host "Enter your Hub URL (from cloudflare/hub deploy)" -ForegroundColor White
+    Write-Host "Example: wss://mcp-swarm-hub.myaccount.workers.dev/ws" -ForegroundColor Gray
+    $hubUrl = Read-Host "Hub URL"
+    
+    if (-not $hubUrl) {
+        Write-Err "Hub URL is required! Deploy your hub first."
+        Write-Host "Instructions: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free" -ForegroundColor Cyan
+        exit 1
+    }
+    Write-OK "Hub: $hubUrl"
+}
+
 # Step 3: Telegram
 Write-Header "Step 3: Telegram (Optional)"
 
-Write-Host "Get notifications via @MyCFSwarmBot" -ForegroundColor White
-Write-Host "Send /start to get your User ID" -ForegroundColor Gray
+Write-Host "Create your own bot via @BotFather in Telegram" -ForegroundColor White
+Write-Host "Then deploy cloudflare/telegram-bot" -ForegroundColor Gray
+Write-Host "Send /start to your bot to get your User ID" -ForegroundColor Gray
 Write-Host ""
 
 $telegramId = Read-Host "Telegram User ID (Enter to skip)"
@@ -134,7 +166,7 @@ if ($mode -eq "remote") {
   "mcpServers": {
     "mcp-swarm": {
       "command": "npx",
-      "args": ["mcp-swarm-remote", "--url", "https://mcp-swarm-server.unilife-ch.workers.dev/mcp", "--telegram-user-id", "$telegramId"]
+      "args": ["mcp-swarm-remote", "--url", "$serverUrl", "--telegram-user-id", "$telegramId"]
     }
   }
 }
@@ -142,7 +174,7 @@ if ($mode -eq "remote") {
         $mcpSwarmJson = @"
 {
       "command": "npx",
-      "args": ["mcp-swarm-remote", "--url", "https://mcp-swarm-server.unilife-ch.workers.dev/mcp", "--telegram-user-id", "$telegramId"]
+      "args": ["mcp-swarm-remote", "--url", "$serverUrl", "--telegram-user-id", "$telegramId"]
     }
 "@
     } else {
@@ -151,7 +183,7 @@ if ($mode -eq "remote") {
   "mcpServers": {
     "mcp-swarm": {
       "command": "npx",
-      "args": ["mcp-swarm-remote", "--url", "https://mcp-swarm-server.unilife-ch.workers.dev/mcp"]
+      "args": ["mcp-swarm-remote", "--url", "$serverUrl"]
     }
   }
 }
@@ -159,7 +191,7 @@ if ($mode -eq "remote") {
         $mcpSwarmJson = @"
 {
       "command": "npx",
-      "args": ["mcp-swarm-remote", "--url", "https://mcp-swarm-server.unilife-ch.workers.dev/mcp"]
+      "args": ["mcp-swarm-remote", "--url", "$serverUrl"]
     }
 "@
     }
@@ -172,7 +204,7 @@ if ($mode -eq "remote") {
       "command": "npx",
       "args": ["mcp-swarm"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "$hubUrl",
         "TELEGRAM_USER_ID": "$telegramId"
       }
     }
@@ -187,7 +219,7 @@ if ($mode -eq "remote") {
       "command": "npx",
       "args": ["mcp-swarm"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws"
+        "SWARM_HUB_URL": "$hubUrl"
       }
     }
   }

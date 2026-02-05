@@ -170,15 +170,43 @@ if [ "$mode_choice" = "2" ]; then
 fi
 ok "Mode: $MODE"
 
+# Step 2.5: Server URLs
+header "Step 2.5: Your Cloudflare Server URLs"
+
+echo -e "${YELLOW}You need to deploy your own Cloudflare Workers first!${NC}"
+echo -e "${CYAN}See: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free${NC}"
+echo ""
+
+if [ "$MODE" = "remote" ]; then
+    echo "Enter your MCP Server URL (from cloudflare/mcp-server deploy)"
+    echo -e "${GRAY}Example: https://mcp-swarm-server.myaccount.workers.dev/mcp${NC}"
+    read -p "MCP Server URL: " SERVER_URL
+    
+    if [ -z "$SERVER_URL" ]; then
+        err "Server URL is required! Deploy your server first."
+        echo -e "${CYAN}Instructions: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free${NC}"
+        exit 1
+    fi
+    ok "Server: $SERVER_URL"
+else
+    echo "Enter your Hub URL (from cloudflare/hub deploy)"
+    echo -e "${GRAY}Example: wss://mcp-swarm-hub.myaccount.workers.dev/ws${NC}"
+    read -p "Hub URL: " HUB_URL
+    
+    if [ -z "$HUB_URL" ]; then
+        err "Hub URL is required! Deploy your hub first."
+        echo -e "${CYAN}Instructions: https://github.com/AbdrAbdr/Swarm_MCP#-cloudflare-workers--its-free${NC}"
+        exit 1
+    fi
+    ok "Hub: $HUB_URL"
+fi
+
 # Step 3: Telegram
 header "Step 3: Telegram Notifications (Optional)"
 
-echo "Get notified about tasks, agents, CI errors via Telegram."
-echo ""
-echo -e "${GRAY}To get your Telegram User ID:${NC}"
-echo -e "${GRAY}  1. Open Telegram and find @MyCFSwarmBot${NC}"
-echo -e "${GRAY}  2. Send /start${NC}"
-echo -e "${GRAY}  3. Bot will show your User ID${NC}"
+echo "Create your own bot via @BotFather in Telegram"
+echo -e "${GRAY}Then deploy cloudflare/telegram-bot${NC}"
+echo -e "${GRAY}Send /start to your bot to get your User ID${NC}"
 echo ""
 
 read -p "Enter Telegram User ID (or press Enter to skip): " TELEGRAM_ID
@@ -229,7 +257,7 @@ if [ "$MODE" = "remote" ]; then
       "args": [
         "mcp-swarm-remote",
         "--url",
-        "https://mcp-swarm-server.unilife-ch.workers.dev/mcp",
+        "$SERVER_URL",
         "--telegram-user-id",
         "$TELEGRAM_ID"
       ]
@@ -247,7 +275,7 @@ EOF
       "args": [
         "mcp-swarm-remote",
         "--url",
-        "https://mcp-swarm-server.unilife-ch.workers.dev/mcp"
+        "$SERVER_URL"
       ]
     }
   }
@@ -264,7 +292,7 @@ else
       "command": "npx",
       "args": ["mcp-swarm"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+        "SWARM_HUB_URL": "$HUB_URL",
         "TELEGRAM_USER_ID": "$TELEGRAM_ID"
       }
     }
@@ -280,7 +308,7 @@ EOF
       "command": "npx",
       "args": ["mcp-swarm"],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws"
+        "SWARM_HUB_URL": "$HUB_URL"
       }
     }
   }

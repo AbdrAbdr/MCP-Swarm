@@ -19,7 +19,8 @@ import { BridgeManager } from "./bridge.js";
 import { getProjectIdSource } from "./workflows/projectId.js";
 
 // ============ TELEGRAM BOT URL ============
-const TELEGRAM_BOT_URL = "https://mcp-swarm-telegram.unilife-ch.workers.dev";
+// Set TELEGRAM_BOT_URL env variable to your deployed telegram-bot worker
+const TELEGRAM_BOT_URL = process.env.TELEGRAM_BOT_URL || "";
 
 /**
  * Register project in Telegram Bot for user notifications
