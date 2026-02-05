@@ -119,7 +119,7 @@ async function startCompanion(): Promise<void> {
         stdio: "ignore",
         env: {
             ...process.env,
-            SWARM_HUB_URL: process.env.SWARM_HUB_URL || "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws",
+            // SWARM_HUB_URL must be set by user - no default hardcoded URL
         },
     });
     
