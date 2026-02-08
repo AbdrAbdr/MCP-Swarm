@@ -1,111 +1,113 @@
-# 🐝 MCP Swarm v0.9.14 — Универсальная Платформа Координации AI-Агентов
+> 🇷🇺 [Читать на русском](./README.ru.md)
 
-**MCP Swarm** — это глобальная «нервная система» для ваших AI-помощников. Она превращает разрозненных агентов (Claude, Cursor, Windsurf, OpenCode) в слаженную команду, способную работать над огромными проектами без конфликтов и потери контекста.
+# 🐝 MCP Swarm v0.9.15 — Universal AI Agent Coordination Platform
 
----
-
-## 🧠 Что это такое?
-
-Когда вы используете несколько AI-инструментов одновременно, они часто «сталкиваются лбами»: редактируют одни и те же файлы, переделывают работу друг друга или просто не знают, что сделал коллега пять минут назад.
-
-**MCP Swarm решает это раз и навсегда:**
-1.  **Командная работа:** Агенты видят друг друга и общаются.
-2.  **Безопасность:** Система блокировки файлов (File Locking) не дает двум агентам писать в один файл одновременно.
-3.  **Память:** Всё, что сделано сегодня, сохраняется в папке `swarm/`. Завтра любой агент продолжит с того же места.
-4.  **Лидерство:** Система сама выбирает Оркестратора, который раздает задачи и следит за порядком.
+**MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
 ---
 
-## 🛠 54 Smart Tools: Инструментарий Swarm
+## 🧠 What Is This?
 
-Вместо сотен мелких команд мы создали **54 интеллектуальных инструмента**. Каждый из них — это целое направление работы:
+When you use multiple AI tools simultaneously, they often collide: editing the same files, redoing each other's work, or simply not knowing what a colleague did five minutes ago.
 
-### 🚀 Ядро системы
-1.  **swarm_agent** — Регистрация, идентификация и авто-инициализация любого проекта.
-2.  **swarm_orchestrator** — Выборы лидера, мониторинг исполнителей, раздача задач.
-3.  **swarm_control** — Глобальный стоп-кран и управление состоянием роя.
-4.  **swarm_pulse** — Живая карта активности: кто над чем работает прямо сейчас.
+**MCP Swarm solves this once and for all:**
+1.  **Teamwork:** Agents see each other and communicate.
+2.  **Safety:** File Locking prevents two agents from writing to the same file simultaneously.
+3.  **Memory:** Everything done today is saved in the `swarm/` folder. Tomorrow, any agent picks up right where it left off.
+4.  **Leadership:** The system automatically elects an Orchestrator who assigns tasks and keeps order.
 
-### 📋 Управление задачами и планами
-5.  **swarm_task** — Создание, аукцион и отслеживание задач.
-6.  **swarm_plan** — Составление сложных многошаговых планов реализации.
-7.  **swarm_briefing** — «Ментальные слепки»: передача контекста между сменами агентов.
-8.  **swarm_decompose** — Разбиение больших задач на мелкие подзадачи.
+---
 
-### 🔒 Работа с файлами и Git
-9.  **swarm_file** — Умная блокировка файлов и прогноз конфликтов.
-10. **swarm_git** — Синхронизация, проверка здоровья ветки и создание PR.
-11. **swarm_worktree** — Управление рабочими деревьями Git для параллельных задач.
-12. **swarm_snapshot** — Мгновенные снимки кода для быстрого отката.
-13. **swarm_conflict** — Предсказание и анализ горячих точек в коде.
+## 🛠 54 Smart Tools: The Swarm Toolkit
 
-### 💬 Коммуникация и Коллаборация
-14. **swarm_chat** — Общий чат агентов и логирование «мыслей» роя.
-15. **swarm_message** — Личные сообщения между агентами с подтверждением прочтения.
-16. **swarm_review** — Запрос и проведение кросс-агентного код-ревью.
-17. **swarm_voting** — Голосование за опасные или важные архитектурные решения.
-18. **swarm_brainstorm** — Коллективный поиск идей и проектирование систем.
+Instead of hundreds of small commands, we created **54 intelligent tools**. Each represents an entire area of work:
 
-### 🛡️ Качество и Здоровье
-19. **swarm_health** — Проверка «живучести» агентов и переназначение задач «умерших».
-20. **swarm_quality** — Проверка кода перед мерджем (линтеры, тесты, типы).
-21. **swarm_immune** — Автоматическая реакция на поломки в CI/CD.
-22. **swarm_safety** — Анализ безопасности изменений и зависимостей.
-23. **swarm_qa** — Циклы тестирования и исправления багов.
-24. **swarm_debug** — Системная отладка с фиксацией гипотез и улик.
+### 🚀 Core System
+1.  **swarm_agent** — Registration, identification, and auto-initialization of any project.
+2.  **swarm_orchestrator** — Leader election, executor monitoring, task distribution.
+3.  **swarm_control** — Global kill switch and swarm state management.
+4.  **swarm_pulse** — Live activity map: who's working on what right now.
 
-### 📊 Аналитика и Документация
-25. **swarm_cost** — Трекинг расходов на API каждого агента и проект в целом.
-26. **swarm_docs** — Автоматическая генерация документации по ходу работы.
-27. **swarm_timeline** — Визуализация истории развития проекта.
-28. **swarm_knowledge** — База знаний: сохранение находок, паттернов и обходных путей.
+### 📋 Task & Plan Management
+5.  **swarm_task** — Task creation, auction, and tracking.
+6.  **swarm_plan** — Building complex multi-step implementation plans.
+7.  **swarm_briefing** — "Mental snapshots": context transfer between agent shifts.
+8.  **swarm_decompose** — Breaking large tasks into smaller subtasks.
 
-### 🤖 Продвинутые функции
-29. **swarm_mcp** — Сканирование и авторизация других MCP-серверов в системе.
-30. **swarm_companion** — Управление фоновым демоном-помощником.
-31. **swarm_session** — Запись и воспроизведение сессий работы агентов.
-32. **swarm_expertise** — Анализ специализации: кто из агентов лучше шарит в какой части кода.
-33. **swarm_regression** — Детектор регрессий: следит, чтобы старые баги не возвращались.
-34. **swarm_context** — Умное сжатие контекста для экономии токенов.
-35. **swarm_platform** — Проверка кросс-платформенной совместимости.
-36. **swarm_urgent** — Система экстренного прерывания для критических задач.
-37. **swarm_spec** — Управление спецификациями и фазами проектирования.
-38. **swarm_guard** — Установка защитных хуков на файлы.
-39. **swarm_clusters** — Группировка инструментов в логические кластеры.
-40. **swarm_patrol** — Режим автономного патрулирования кода.
-41. **swarm_scan** — Глубокое сканирование проекта на соответствие правилам Swarm.
+### 🔒 Files & Git
+9.  **swarm_file** — Smart file locking and conflict forecasting.
+10. **swarm_git** — Sync, branch health checks, and PR creation.
+11. **swarm_worktree** — Git worktree management for parallel tasks.
+12. **swarm_snapshot** — Instant code snapshots for quick rollback.
+13. **swarm_conflict** — Prediction and analysis of code hotspots.
+
+### 💬 Communication & Collaboration
+14. **swarm_chat** — Shared agent chat and swarm "thoughts" logging.
+15. **swarm_message** — Direct messages between agents with read receipts.
+16. **swarm_review** — Requesting and conducting cross-agent code reviews.
+17. **swarm_voting** — Voting on dangerous or important architectural decisions.
+18. **swarm_brainstorm** — Collective ideation and system design.
+
+### 🛡️ Quality & Health
+19. **swarm_health** — Agent liveness checks and reassigning "dead" agents' tasks.
+20. **swarm_quality** — Pre-merge code checks (linters, tests, types).
+21. **swarm_immune** — Automatic response to CI/CD failures.
+22. **swarm_safety** — Security analysis of changes and dependencies.
+23. **swarm_qa** — Testing and bug-fixing cycles.
+24. **swarm_debug** — Systematic debugging with hypothesis and evidence tracking.
+
+### 📊 Analytics & Documentation
+25. **swarm_cost** — API cost tracking per agent and project.
+26. **swarm_docs** — Automatic documentation generation during work.
+27. **swarm_timeline** — Project development history visualization.
+28. **swarm_knowledge** — Knowledge base: saving findings, patterns, and workarounds.
+
+### 🤖 Advanced Features
+29. **swarm_mcp** — Scanning and authorizing other MCP servers in the system.
+30. **swarm_companion** — Background helper daemon management.
+31. **swarm_session** — Recording and replaying agent work sessions.
+32. **swarm_expertise** — Specialization analysis: which agent knows which part of the code best.
+33. **swarm_regression** — Regression detector: ensures old bugs don't come back.
+34. **swarm_context** — Smart context compression to save tokens.
+35. **swarm_platform** — Cross-platform compatibility checking.
+36. **swarm_urgent** — Emergency interrupt system for critical tasks.
+37. **swarm_spec** — Specification and design phase management.
+38. **swarm_guard** — Setting up protective file hooks.
+39. **swarm_clusters** — Grouping tools into logical clusters.
+40. **swarm_patrol** — Autonomous code patrolling mode.
+41. **swarm_scan** — Deep project scan for Swarm rules compliance.
 
 ### 🧠 v0.9.3 — Smart Features
-42. **swarm_routing** — Умное назначение задач на основе экспертизы агентов в файлах.
-43. **swarm_context_pool** — Общие заметки о коде между агентами (экономия токенов).
-44. **swarm_autoreview** — Автоматическое назначение code review при завершении задач.
-45. **swarm_external** — Двусторонняя синхронизация с GitHub Issues и Linear.app.
-46. **swarm_budget** — Оптимизация затрат: роутинг задач на дешёвые/дорогие модели.
+42. **swarm_routing** — Smart task assignment based on agent file expertise.
+43. **swarm_context_pool** — Shared code notes between agents (token savings).
+44. **swarm_autoreview** — Automatic code review assignment on task completion.
+45. **swarm_external** — Two-way sync with GitHub Issues and Linear.app.
+46. **swarm_budget** — Cost optimization: routing tasks to cheap/expensive models.
 
 ### 📱 v0.9.4 — Telegram Integration
-47. **swarm_telegram** — Telegram Bot для уведомлений и управления Swarm.
-    - Получайте уведомления о задачах, агентах, CI ошибках
-    - Команды: `/status`, `/agents`, `/tasks`, `/create_task`, `/stop`, `/resume`
-    - Интерактивные кнопки для быстрых действий
-    - Настройка через Dashboard или `.swarm/telegram.json`
-48. **swarm_batch** — Батчинг API запросов (экономия 50% на Anthropic/OpenAI).
-    - Автоматическая группировка запросов
-    - Поддержка Anthropic Message Batches и OpenAI Batch API
-    - Статистика экономии
+47. **swarm_telegram** — Telegram Bot for notifications and Swarm management.
+    - Get notifications about tasks, agents, CI errors
+    - Commands: `/status`, `/agents`, `/tasks`, `/create_task`, `/stop`, `/resume`
+    - Interactive buttons for quick actions
+    - Configure via Dashboard or `.swarm/telegram.json`
+48. **swarm_batch** — API request batching (50% savings on Anthropic/OpenAI).
+    - Automatic request grouping
+    - Supports Anthropic Message Batches and OpenAI Batch API
+    - Savings statistics
 
 ### 🧠 v0.9.5 — SONA: Self-Optimizing Neural Architecture
-49. **swarm_sona** — Самообучающийся роутер задач.
-    - Классифицирует задачи по 13 категориям (frontend_ui, backend_api, database, testing, devops, etc.)
-    - Определяет сложность (trivial, simple, medium, complex, epic)
-    - Отслеживает успешность каждого агента в каждой категории
-    - Маршрутизирует новые задачи к лучшим исполнителям
-    - Обучается на результатах (<0.05ms адаптация)
-    - EWC++ (Elastic Weight Consolidation) — не забывает старые паттерны
-    - 10% exploration rate — пробует новых агентов для сбора данных
+49. **swarm_sona** — Self-learning task router.
+    - Classifies tasks into 13 categories (frontend_ui, backend_api, database, testing, devops, etc.)
+    - Determines complexity (trivial, simple, medium, complex, epic)
+    - Tracks each agent's success rate per category
+    - Routes new tasks to the best performers
+    - Learns from results (<0.05ms adaptation)
+    - EWC++ (Elastic Weight Consolidation) — doesn't forget old patterns
+    - 10% exploration rate — tries new agents for data collection
     
-    **Пример использования:**
+    **Usage example:**
     ```typescript
-    // Получить рекомендацию — кому назначить задачу
+    // Get recommendation — who to assign the task to
     swarm_sona({
       action: "route",
       repoPath,
@@ -115,7 +117,7 @@
     })
     // → { recommendedAgent: "RadiantWolf", confidence: 0.85, category: "frontend_ui" }
     
-    // После выполнения — обучить систему
+    // After completion — train the system
     swarm_sona({
       action: "learn",
       repoPath,
@@ -126,34 +128,34 @@
       timeMinutes: 15
     })
     
-    // Получить специалистов по backend
+    // Get backend specialists
     swarm_sona({ action: "specialists", repoPath, category: "backend_api", limit: 3 })
     // → [{ agent: "StormyOwl", score: 0.92 }, { agent: "BrightFox", score: 0.88 }, ...]
     ```
 
 ### ⚡ v0.9.6 — Agent Booster
-50. **swarm_booster** — Быстрое выполнение простых задач БЕЗ LLM.
-    - 352x быстрее чем LLM (~8ms vs ~3000ms)
-    - $0 стоимость (без API вызовов)
-    - Работает офлайн
-    - Детерминированные результаты
+50. **swarm_booster** — Fast execution of simple tasks WITHOUT LLM.
+    - 352x faster than LLM (~8ms vs ~3000ms)
+    - $0 cost (no API calls)
+    - Works offline
+    - Deterministic results
     
-    **Поддерживаемые типы задач:**
-    - `rename_variable` — переименование переменных/функций
-    - `fix_typo` — исправление опечаток в строках/комментариях
-    - `find_replace` — простая замена текста
-    - `add_console_log` / `remove_console_log` — добавление/удаление отладки
-    - `toggle_flag` — переключение boolean флагов
-    - `update_version` — обновление версий
-    - `update_import` — обновление путей импортов
-    - `format_json` — форматирование JSON
-    - `sort_imports` — сортировка импортов
-    - `add_export` — добавление export
-    - `extract_constant` — извлечение magic numbers
+    **Supported task types:**
+    - `rename_variable` — rename variables/functions
+    - `fix_typo` — fix typos in strings/comments
+    - `find_replace` — simple text replacement
+    - `add_console_log` / `remove_console_log` — add/remove debugging
+    - `toggle_flag` — toggle boolean flags
+    - `update_version` — update versions
+    - `update_import` — update import paths
+    - `format_json` — format JSON
+    - `sort_imports` — sort imports
+    - `add_export` — add export
+    - `extract_constant` — extract magic numbers
     
-    **Пример использования:**
+    **Usage example:**
     ```typescript
-    // Проверить, можно ли ускорить задачу
+    // Check if a task can be boosted
     swarm_booster({
       action: "can_boost",
       repoPath,
@@ -161,7 +163,7 @@
     })
     // → { canBoost: true, taskType: "rename_variable", confidence: 0.9 }
     
-    // Выполнить задачу локально
+    // Execute locally
     swarm_booster({
       action: "execute",
       repoPath,
@@ -174,42 +176,42 @@
     })
     // → { success: true, changes: 5, timeMs: 2, savedCost: "$0.01" }
     
-    // Удалить все console.log из файла
+    // Remove all console.log from a file
     swarm_booster({
       action: "execute",
       repoPath,
       task: { type: "remove_console_log", filePath: "src/debug.ts" }
     })
     
-    // Статистика экономии
+    // Savings stats
     swarm_booster({ action: "stats", repoPath })
     // → { totalTasks: 50, costSaved: "$0.50", timeSavedMinutes: 2.5 }
     ```
 
 ### 🔍 v0.9.7 — HNSW Vector Search
-51. **swarm_vector** — Быстрый семантический поиск в памяти.
-    - 150x-12,500x быстрее brute force
-    - Pure TypeScript (без зависимостей)
-    - Поддержка cosine/euclidean/dot метрик
-    - Встроенный простой embedder + поддержка внешних
+51. **swarm_vector** — Fast semantic search in memory.
+    - 150x–12,500x faster than brute force
+    - Pure TypeScript (no dependencies)
+    - Supports cosine/euclidean/dot metrics
+    - Built-in simple embedder + external embedder support
     
-    **Применения:**
-    - Семантический поиск в knowledge base
-    - Поиск похожих кусков кода
-    - Retrieval контекста для агентов
-    - Поиск дубликатов
-    - Кластеризация задач
+    **Applications:**
+    - Semantic search in knowledge base
+    - Finding similar code snippets
+    - Context retrieval for agents
+    - Duplicate detection
+    - Task clustering
     
-    **Пример использования:**
+    **Usage example:**
     ```typescript
-    // Инициализация индекса
+    // Initialize index
     swarm_vector({
       action: "init",
       repoPath,
       config: { dimensions: 384, distanceMetric: "cosine" }
     })
     
-    // Добавление документов
+    // Add documents
     swarm_vector({
       action: "add",
       repoPath,
@@ -218,7 +220,7 @@
       metadata: { category: "auth", language: "typescript" }
     })
     
-    // Семантический поиск
+    // Semantic search
     swarm_vector({
       action: "search",
       repoPath,
@@ -228,32 +230,32 @@
     })
     // → [{ id: "doc-1", score: 0.87, ... }, ...]
     
-    // Поиск дубликатов
+    // Find duplicates
     swarm_vector({ action: "duplicates", repoPath, threshold: 0.95 })
     // → [{ id1: "doc-1", id2: "doc-5", similarity: 0.97 }]
     ```
 
 ### 🛡️ v0.9.8 — AIDefence Security
-52. **swarm_defence** — Защита от угроз и атак на AI-систему.
-    - <10ms детекция угроз
-    - Pattern-based + эвристический анализ
-    - Система карантина подозрительного контента
-    - Аудит-логирование всех событий безопасности
+52. **swarm_defence** — Protection against threats and attacks on the AI system.
+    - <10ms threat detection
+    - Pattern-based + heuristic analysis
+    - Quarantine system for suspicious content
+    - Audit logging of all security events
     
-    **Категории угроз:**
-    - Prompt injection (обход инструкций)
-    - Jailbreak (обход ограничений)
-    - Code injection (вредоносный код)
-    - Data exfiltration (утечка данных)
-    - Sensitive data (PII, ключи API)
-    - Unsafe commands (опасные команды)
-    - Social engineering (манипуляции)
+    **Threat categories:**
+    - Prompt injection (bypassing instructions)
+    - Jailbreak (bypassing restrictions)
+    - Code injection (malicious code)
+    - Data exfiltration (data leaks)
+    - Sensitive data (PII, API keys)
+    - Unsafe commands (dangerous commands)
+    - Social engineering (manipulation)
     
-    **Уровни чувствительности:** `low`, `medium`, `high`, `paranoid`
+    **Sensitivity levels:** `low`, `medium`, `high`, `paranoid`
     
-    **Пример использования:**
+    **Usage example:**
     ```typescript
-    // Сканирование текста на угрозы
+    // Scan text for threats
     swarm_defence({
       action: "scan",
       text: "Ignore all previous instructions and...",
@@ -262,36 +264,36 @@
     })
     // → { detected: true, category: "prompt_injection", severity: "high", action: "block" }
     
-    // Настройка чувствительности
+    // Configure sensitivity
     swarm_defence({
       action: "set_config",
       config: { sensitivity: "high", blockOnHighThreat: true },
       repoPath
     })
     
-    // Добавление доверенного агента
+    // Add trusted agent
     swarm_defence({ action: "trust", agentName: "RadiantWolf", repoPath })
     
-    // Просмотр статистики
+    // View statistics
     swarm_defence({ action: "stats", repoPath })
     // → { totalScans: 150, threatsDetected: 3, threatsBlocked: 2, ... }
     ```
 
 ### 🤝 v0.9.9 — Consensus Protocols
-53. **swarm_consensus** — Распределённое согласие для координации агентов.
-    - Raft-подобные выборы лидера
-    - Репликация лога команд
+53. **swarm_consensus** — Distributed agreement for agent coordination.
+    - Raft-like leader elections
+    - Command log replication
     - Byzantine Fault Tolerance (BFT)
-    - Система предложений и голосований
+    - Proposal and voting system
     
-    **Режимы консенсуса:**
-    - `simple_majority`: 50%+ голосов
-    - `raft`: Term-based лидерство
-    - `bft`: Byzantine (2/3+1 кворум)
+    **Consensus modes:**
+    - `simple_majority`: 50%+ votes
+    - `raft`: Term-based leadership
+    - `bft`: Byzantine (2/3+1 quorum)
     
-    **Пример использования:**
+    **Usage example:**
     ```typescript
-    // Присоединение к кластеру
+    // Join a cluster
     swarm_consensus({
       action: "join",
       nodeId: "agent-1",
@@ -299,7 +301,7 @@
       repoPath
     })
     
-    // Выборы лидера
+    // Leader election
     swarm_consensus({
       action: "elect",
       nodeId: "agent-1",
@@ -307,19 +309,19 @@
       repoPath
     })
     
-    // Создание предложения
+    // Create a proposal
     swarm_consensus({
       action: "propose",
       nodeId: "agent-1",
       nodeName: "RadiantWolf",
-      title: "Внедрить dark mode",
-      description: "Добавить тёмную тему в дашборд",
+      title: "Implement dark mode",
+      description: "Add dark theme to dashboard",
       type: "architecture",
       requiredMajority: 0.67,
       repoPath
     })
     
-    // Голосование
+    // Vote
     swarm_consensus({
       action: "vote",
       proposalId: "prop_xxx",
@@ -332,13 +334,13 @@
     ```
 
 ### 🧠 v0.9.10 — MoE Router
-54. **swarm_moe** — Интеллектуальный выбор AI-модели для задачи.
-    - Автоматический роутинг на лучшую модель
-    - Оптимизация cost/performance/quality
-    - Обучение на обратной связи
-    - 16 встроенных экспертов (проверенные цены: февраль 2026)
+54. **swarm_moe** — Intelligent AI model selection for tasks.
+    - Automatic routing to the best model
+    - Cost/performance/quality optimization
+    - Learning from feedback
+    - 16 built-in experts (verified prices: February 2026)
     
-    **Встроенные эксперты (официальные цены):**
+    **Built-in experts (official prices):**
     
     | Provider | Model | Tier | Input $/MTok | Output $/MTok | Context |
     |----------|-------|------|--------------|---------------|---------|
@@ -358,9 +360,9 @@
     | Google | Gemini 2.5 Flash | standard | $0.30 | $2.50 | **1M** |
     | Google | Gemini 2.5 Flash Lite | economy | $0.10 | $0.40 | **1M** |
     
-    **Пример использования:**
+    **Usage example:**
     ```typescript
-    // Роутинг задачи на лучшую модель
+    // Route a task to the best model
     swarm_moe({
       action: "route",
       content: "Write a React component for user authentication",
@@ -370,7 +372,7 @@
     })
     // → { selectedExpert: "claude-sonnet", confidence: 0.92, estimatedCost: $0.02 }
     
-    // Обратная связь для обучения
+    // Feedback for learning
     swarm_moe({
       action: "feedback",
       expertId: "claude-sonnet",
@@ -380,36 +382,36 @@
       repoPath
     })
     
-    // Статистика
+    // Statistics
     swarm_moe({ action: "stats", repoPath })
     // → { totalRequests: 150, successRate: 94%, totalCost: $1.23 }
     ```
 
-### 📊 v0.9.12 — Real-time Dashboard & Enhanced Controls (NEW)
+### 📊 v0.9.12 — Real-time Dashboard & Enhanced Controls
 
 **Dashboard WebSocket Widgets:**
-- **ConnectionStatusWidget** — Live статус подключения к Hub с кнопкой reconnect
-- **ActivityTimelineWidget** — Real-time поток событий Swarm
-- **FileLocksWidget** — Активные блокировки файлов с live updates
-- **CostTrackingWidget** — Использование API и прогресс бюджета
-- **VotingWidget** — Proposals и голосования в реальном времени
+- **ConnectionStatusWidget** — Live Hub connection status with reconnect button
+- **ActivityTimelineWidget** — Real-time Swarm event stream
+- **FileLocksWidget** — Active file locks with live updates
+- **CostTrackingWidget** — API usage and budget progress
+- **VotingWidget** — Real-time proposals and voting
 
-**Настройка Dashboard WebSocket:**
+**Dashboard WebSocket Setup:**
 ```bash
-# В dashboard/.env
+# In dashboard/.env
 NEXT_PUBLIC_HUB_URL=wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev
 ```
 
 **Telegram Code Reviews (NEW):**
-- `/reviews` — Список pending code reviews с inline кнопками approve/reject
-- `/approve [id]` — Одобрить review напрямую из Telegram
-- `/reject [id] [reason]` — Отклонить review с указанием причины
+- `/reviews` — List pending code reviews with inline approve/reject buttons
+- `/approve [id]` — Approve a review directly from Telegram
+- `/reject [id] [reason]` — Reject a review with a reason
 
-**Пример:**
+**Example:**
 ```
-Вы: /reviews
+You: /reviews
 
-Бот: 📋 Pending Code Reviews:
+Bot: 📋 Pending Code Reviews:
 
 1. 🔵 Review #abc123
    Files: src/utils.ts, src/index.ts
@@ -418,51 +420,51 @@ NEXT_PUBLIC_HUB_URL=wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev
    
    [✅ Approve] [❌ Reject]
 
-Вы: /approve abc123
-Бот: ✅ Review abc123 approved!
+You: /approve abc123
+Bot: ✅ Review abc123 approved!
 ```
 
 **Auto-start Companion (NEW):**
-При запуске `mcp-swarm-remote` автоматически проверяет и запускает companion демон:
+When launching `mcp-swarm-remote`, it automatically checks and starts the companion daemon:
 ```bash
-# Companion запускается автоматически
+# Companion starts automatically
 npx -y -p mcp-swarm mcp-swarm-remote --url https://...
 
-# Отключить автозапуск
+# Disable auto-start
 npx -y -p mcp-swarm mcp-swarm-remote --url https://... --no-companion
 ```
 
-Companion работает на порту **37373** и обеспечивает:
-- Локальное выполнение файловых операций
-- Bridge между IDE и Hub
-- Health checks на `/health` endpoint
+Companion runs on port **37373** and provides:
+- Local file operations execution
+- Bridge between IDE and Hub
+- Health checks on `/health` endpoint
 
 ---
 
-## 🔄 Жизненный цикл роя
+## 🔄 Swarm Lifecycle
 
-### 1. Начало работы (Новый или Старый проект)
-Вы открываете проект и говорите: **«Используй MCP Swarm»**. 
-Первый агент вызывает `register` и `elect`. 
-*   **Если проект новый:** Сервер сам создаст файлы правил (`CLAUDE.md`, `GEMINI.md` и др.) и папки.
-*   **Если проект уже работает в Swarm:** Сервер подхватит историю из папки `swarm/`.
+### 1. Getting Started (New or Existing Project)
+Open your project and say: **"Use MCP Swarm. Register and become the orchestrator if you're first."**
+The first agent calls `register` and `elect`.
+*   **New project:** The server auto-creates rule files (`CLAUDE.md`, `GEMINI.md`, etc.) and folders.
+*   **Existing Swarm project:** The server picks up history from the `swarm/` folder.
 
-### 2. Оркестратор — Сердце системы
-Первый агент, ставший Оркестратором, входит в **бесконечный цикл**. Он:
-*   Никогда не замолкает.
-*   Постоянно мониторит `PULSE.md`.
-*   Распределяет входящие задачи.
-*   Спит только тогда, когда человек нажмет «Stop».
+### 2. Orchestrator — The Heart of the System
+The first agent that becomes Orchestrator enters an **infinite loop**. It:
+*   Never goes silent.
+*   Constantly monitors `PULSE.md`.
+*   Distributes incoming tasks.
+*   Only sleeps when a human hits "Stop."
 
-### 3. Утро следующего дня
-Когда вы выключаете компьютер, состояние сохраняется в Git/Файлах. 
-Утром первый запущенный агент проверяет: «Есть ли живой Оркестратор?». Если нет — он сам забирает эту роль, читает вчерашние задачи и продолжает координировать команду. **История никогда не сбрасывается.**
+### 3. The Next Morning
+When you shut down your computer, the state is saved in Git/Files.
+In the morning, the first launched agent checks: "Is there a live Orchestrator?" If not — it takes the role, reads yesterday's tasks, and continues coordinating the team. **History is never reset.**
 
 ---
 
-## ⚙️ Установка
+## ⚙️ Installation
 
-### 🚀 One-Click Install (Рекомендуется)
+### 🚀 One-Click Install (Recommended)
 
 **Windows (PowerShell):**
 ```powershell
@@ -474,33 +476,33 @@ irm https://raw.githubusercontent.com/AbdrAbdr/Swarm_MCP/main/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/AbdrAbdr/Swarm_MCP/main/install.sh | bash
 ```
 
-Установщик автоматически:
-- ✅ Проверит/установит Node.js
-- ✅ Найдёт ваши IDE (Claude Desktop, Cursor, Windsurf, OpenCode, VS Code)
-- ✅ Спросит Telegram ID для уведомлений
-- ✅ Добавит конфиг (не перезаписывая существующие MCP серверы!)
+The installer automatically:
+- ✅ Checks/installs Node.js
+- ✅ Finds your IDEs (Claude Desktop, Cursor, Windsurf, OpenCode, VS Code)
+- ✅ Asks for your Telegram ID for notifications
+- ✅ Adds config (without overwriting existing MCP servers!)
 
 ---
 
-### 📦 Альтернатива: через npx
+### 📦 Alternative: via npx
 
-Если Node.js уже установлен:
+If Node.js is already installed:
 
 ```bash
 npx mcp-swarm-install
 ```
 
-Или с параметрами:
+Or with parameters:
 ```bash
-npx mcp-swarm-install --telegram-user-id 513235861 --auto-install --yes
+npx mcp-swarm-install --telegram-user-id YOUR_TELEGRAM_ID --auto-install --yes
 ```
 
 ---
 
-### 🔧 Ручная установка
+### 🔧 Manual Installation
 
 <details>
-<summary><strong>Клонирование и сборка</strong></summary>
+<summary><strong>Clone and build</strong></summary>
 
 ```bash
 # Windows
@@ -517,7 +519,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 ```
 </details>
 
-### Конфигурация для вашей IDE
+### IDE Configuration
 
 <details>
 <summary><strong>🖥️ Claude Desktop</strong></summary>
@@ -547,7 +549,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 
 **Settings → Features → MCP Servers → Add New**
 
-Или создайте `.cursor/mcp.json` в домашней директории:
+Or create `.cursor/mcp.json` in your home directory:
 
 ```json
 {
@@ -570,7 +572,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 
 **Cascade → Settings → MCP Servers → Add Server**
 
-Или создайте `~/.codeium/windsurf/mcp_config.json`:
+Or create `~/.codeium/windsurf/mcp_config.json`:
 
 ```json
 {
@@ -591,7 +593,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 <details>
 <summary><strong>💻 OpenCode CLI</strong></summary>
 
-Создайте `~/.opencode/mcp.json`:
+Create `~/.opencode/mcp.json`:
 
 ```json
 {
@@ -612,7 +614,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 <details>
 <summary><strong>🤖 VS Code + Copilot/Continue</strong></summary>
 
-Создайте `.vscode/mcp.json` в домашней директории:
+Create `.vscode/mcp.json` in your home directory:
 
 ```json
 {
@@ -631,86 +633,86 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 ```
 </details>
 
-> **⚠️ Важно:** Замените `C:/MCP/Swarm_MCP` на актуальный путь к клонированному репозиторию!
+> **⚠️ Important:** Replace `C:/MCP/Swarm_MCP` with the actual path to your cloned repository!
 > - Windows: `C:/MCP/Swarm_MCP`
 > - macOS: `/Users/USERNAME/Documents/Swarm_MCP`
 > - Linux: `/home/USERNAME/mcp/Swarm_MCP`
 
 ---
 
-## ☁️ Установка (Remote — без локальных файлов)
+## ☁️ Installation (Remote — No Local Files)
 
-**v0.9.11 NEW:** Теперь используется **Streamable HTTP** транспорт вместо SSE для совместимости с Cloudflare Workers!
+**v0.9.11 NEW:** Now uses **Streamable HTTP** transport instead of SSE for Cloudflare Workers compatibility!
 
-### 🆓 Cloudflare Workers — ЭТО БЕСПЛАТНО!
+### 🆓 Cloudflare Workers — IT'S FREE!
 
-MCP Swarm использует Cloudflare Workers для облачной инфраструктуры. **Вам не нужно ничего платить!**
+MCP Swarm uses Cloudflare Workers for cloud infrastructure. **You don't need to pay anything!**
 
-**Free Tier лимиты (более чем достаточно для личного использования):**
+**Free Tier limits (more than enough for personal use):**
 
-| Ресурс | Бесплатный лимит | Для MCP Swarm |
-|--------|------------------|---------------|
-| **Workers Requests** | 100,000 / день | ~1000 агентов/день |
-| **Durable Objects Requests** | 1,000,000 / месяц | Хватит на большую команду |
-| **Durable Objects Storage** | 1 GB | Годы истории сообщений |
-| **WebSocket Messages** | Без лимита | ∞ |
-| **CPU Time** | 10ms / запрос | Достаточно |
+| Resource | Free Limit | For MCP Swarm |
+|----------|------------|---------------|
+| **Workers Requests** | 100,000 / day | ~1000 agents/day |
+| **Durable Objects Requests** | 1,000,000 / month | Enough for a large team |
+| **Durable Objects Storage** | 1 GB | Years of message history |
+| **WebSocket Messages** | Unlimited | ∞ |
+| **CPU Time** | 10ms / request | Sufficient |
 
-> 💡 **Для сравнения:** Если вы работаете 8 часов в день с 5 агентами, вы используете ~5% от бесплатного лимита.
+> 💡 **For reference:** If you work 8 hours a day with 5 agents, you use ~5% of the free limit.
 
-### Шаг 1: Создайте аккаунт Cloudflare (бесплатно)
+### Step 1: Create a Cloudflare Account (free)
 
-1. Перейдите на [dash.cloudflare.com](https://dash.cloudflare.com)
-2. Зарегистрируйтесь (email + пароль)
-3. Подтвердите email
-4. **Готово!** Карта не нужна.
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
+2. Sign up (email + password)
+3. Verify your email
+4. **Done!** No credit card needed.
 
-### Шаг 2: Задеплойте свою инфраструктуру
+### Step 2: Deploy Your Infrastructure
 
 ```bash
-# 1. Клонируйте репозиторий
+# 1. Clone the repository
 git clone https://github.com/AbdrAbdr/Swarm_MCP.git
 cd Swarm_MCP
 
-# 2. Залогиньтесь в Cloudflare (откроется браузер)
+# 2. Log in to Cloudflare (opens browser)
 npx wrangler login
 
-# 3. Задеплойте Hub (координация агентов)
+# 3. Deploy the Hub (agent coordination)
 cd cloudflare/hub
 npx wrangler deploy
-# ✅ Запишите URL: wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws
+# ✅ Note the URL: wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws
 
-# 4. Задеплойте MCP Server
+# 4. Deploy the MCP Server
 cd ../mcp-server
-# Откройте wrangler.toml и замените HUB_URL на ваш Hub URL из шага 3
+# Open wrangler.toml and replace HUB_URL with your Hub URL from step 3
 npx wrangler deploy
-# ✅ Запишите URL: https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp
+# ✅ Note the URL: https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp
 ```
 
-### Шаг 3: (Опционально) Telegram Bot
+### Step 3: (Optional) Telegram Bot
 
 ```bash
-# 1. Откройте Telegram, найдите @BotFather
-# 2. Отправьте /newbot, следуйте инструкциям
-# 3. Скопируйте токен (выглядит как: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
+# 1. Open Telegram, find @BotFather
+# 2. Send /newbot, follow the instructions
+# 3. Copy the token (looks like: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
 
 cd cloudflare/telegram-bot
-# Откройте wrangler.toml и замените SWARM_HUB_URL на ваш Hub URL
+# Open wrangler.toml and replace SWARM_HUB_URL with your Hub URL
 
-# Добавьте токен как секрет
+# Add the token as a secret
 npx wrangler secret put TELEGRAM_BOT_TOKEN
-# Вставьте токен и нажмите Enter
+# Paste the token and press Enter
 
 npx wrangler deploy
-# ✅ Запишите URL: https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev
+# ✅ Note the URL: https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev
 
-# 4. Установите webhook (замените YOUR_TOKEN и YOUR-SUBDOMAIN)
+# 4. Set the webhook (replace YOUR_TOKEN and YOUR-SUBDOMAIN)
 curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/webhook"
 ```
 
-### Шаг 4: Настройте IDE
+### Step 4: Configure Your IDE
 
-**Вариант A: Remote (рекомендуется)**
+**Option A: Remote (recommended)**
 
 ```bash
 npm install -g mcp-swarm
@@ -733,7 +735,7 @@ npm install -g mcp-swarm
 }
 ```
 
-**Вариант B: Локальный с Hub**
+**Option B: Local with Hub**
 
 ```json
 {
@@ -750,84 +752,84 @@ npm install -g mcp-swarm
 }
 ```
 
-### 🔄 Сравнение вариантов
+### 🔄 Comparison
 
-| Функция | Remote | Local+Hub |
+| Feature | Remote | Local+Hub |
 |---------|--------|-----------|
-| Установка | `npm i -g mcp-swarm` | `git clone && npm build` |
-| Конфиг | Короткий | Длинный |
-| Данные | Ваш Worker | Локально |
-| Offline | ❌ | ✅ (с Hub fallback) |
-| Latency | ~50-100ms | <10ms |
+| Setup | `npm i -g mcp-swarm` | `git clone && npm build` |
+| Config | Short | Longer |
+| Data | Your Worker | Local |
+| Offline | ❌ | ✅ (with Hub fallback) |
+| Latency | ~50–100ms | <10ms |
 
-### ❓ Что такое YOUR-SUBDOMAIN?
+### ❓ What is YOUR-SUBDOMAIN?
 
-Когда вы деплоите Worker, Cloudflare автоматически создаёт URL:
+When you deploy a Worker, Cloudflare automatically creates a URL:
 ```
-https://mcp-swarm-hub.abdr.workers.dev
-                      ^^^^
-                      Это ваш subdomain (имя аккаунта)
+https://mcp-swarm-hub.myaccount.workers.dev
+                      ^^^^^^^^^
+                      This is your subdomain (account name)
 ```
 
-Вы увидите его в выводе команды `npx wrangler deploy`.
+You'll see it in the output of `npx wrangler deploy`.
 
-> 📖 Подробная документация: [REMOTE.md](./REMOTE.md)
+> 📖 Detailed documentation: [REMOTE.md](./REMOTE.md)
 
 ---
 
 ## 🆔 Smart Project ID
 
-MCP Swarm автоматически определяет уникальный ID для каждого проекта:
+MCP Swarm automatically determines a unique ID for each project:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    getProjectId(repoPath)                    │
 ├─────────────────────────────────────────────────────────────┤
-│  1. SWARM_PROJECT env?  ──────► Использовать явно заданный  │
-│           ↓ нет                                              │
+│  1. SWARM_PROJECT env?  ──────► Use explicitly set value    │
+│           ↓ no                                               │
 │  2. git remote origin?  ──────► "github_user_repo"          │
-│           ↓ нет                                              │
-│  3. Имя папки + хеш     ──────► "MCP0_a1b2c3"               │
+│           ↓ no                                               │
+│  3. Folder name + hash  ──────► "MCP0_a1b2c3"               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Примеры:**
+**Examples:**
 - `https://github.com/user/my-repo.git` → `github_user_my-repo`
-- `C:\Users\abdr\Desktop\MCP\MCP0` → `MCP0_a1b2c3`
+- `C:\Users\user\Desktop\MCP\MCP0` → `MCP0_a1b2c3`
 - `SWARM_PROJECT="custom-id"` → `custom-id`
 
-Это гарантирует, что агенты из разных проектов не попадут в один Hub room.
+This ensures agents from different projects don't end up in the same Hub room.
 
 ---
 
-## 🚀 Как начать?
-Просто напишите любому агенту в любом проекте: 
-> **"Используй MCP Swarm. Зарегистрируйся и стань оркестратором, если ты первый."**
+## 🚀 How to Get Started?
+Simply tell any agent in any project:
+> **"Use MCP Swarm. Register and become the orchestrator if you're first."**
 
-Дальше магия произойдет сама. 🐝
+The magic happens from there. 🐝
 
 ---
 
-## 📱 Telegram Bot — Настройка
+## 📱 Telegram Bot — Setup
 
-MCP Swarm поддерживает Telegram уведомления через **вашего собственного бота**.
+MCP Swarm supports Telegram notifications via **your own bot**.
 
-### Создание бота
+### Creating a Bot
 
-1. Откройте Telegram и найдите **@BotFather**
-2. Отправьте `/newbot` и следуйте инструкциям
-3. Скопируйте токен (выглядит как `123456789:ABCdef...`)
-4. Задеплойте `cloudflare/telegram-bot` (см. инструкции выше)
+1. Open Telegram and find **@BotFather**
+2. Send `/newbot` and follow the instructions
+3. Copy the token (looks like `123456789:ABCdef...`)
+4. Deploy `cloudflare/telegram-bot` (see instructions above)
 
-### Получение User ID
+### Getting Your User ID
 
-1. Откройте **вашего бота** в Telegram
-2. Отправьте `/start`
-3. Бот покажет ваш **User ID** (число, например `987654321`)
+1. Open **your bot** in Telegram
+2. Send `/start`
+3. The bot will show your **User ID** (a number, e.g. `987654321`)
 
-### Добавьте User ID в конфигурацию
+### Add User ID to Configuration
 
-**Для локального MCP:**
+**For local MCP:**
 
 <details>
 <summary><strong>Windows (PowerShell)</strong></summary>
@@ -846,7 +848,7 @@ export TELEGRAM_USER_ID="987654321"
 </details>
 
 <details>
-<summary><strong>В конфиге MCP</strong></summary>
+<summary><strong>In MCP config</strong></summary>
 
 ```json
 {
@@ -864,9 +866,9 @@ export TELEGRAM_USER_ID="987654321"
 ```
 </details>
 
-**Для Remote MCP:**
+**For Remote MCP:**
 
-Добавьте `telegram_user_id` в URL:
+Add `telegram_user_id` to the URL:
 ```json
 {
   "mcpServers": {
@@ -878,107 +880,107 @@ export TELEGRAM_USER_ID="987654321"
 }
 ```
 
-### Шаг 3: Запустите MCP и проверьте
+### Step 3: Launch MCP and Verify
 
-1. Откройте проект в IDE
-2. Зарегистрируйте агента: `swarm_agent({ action: "register", repoPath })`
-3. Проект автоматически появится в Telegram боте
-4. В боте нажмите "📂 Мои проекты" или отправьте `/projects`
-5. Выберите проект для просмотра статуса
+1. Open your project in your IDE
+2. Register an agent: `swarm_agent({ action: "register", repoPath })`
+3. The project will automatically appear in the Telegram bot
+4. In the bot, press "📂 My Projects" or send `/projects`
+5. Select a project to view its status
 
-### 🔔 Уведомления
+### 🔔 Notifications
 
-Бот отправляет уведомления о:
-- 📋 Создании/завершении задач
-- 🤖 Присоединении/отключении агентов
-- 🚨 CI/CD ошибках
-- 👀 Запросах на review
-- 🗳 Голосованиях
+The bot sends notifications about:
+- 📋 Task creation/completion
+- 🤖 Agent joining/disconnection
+- 🚨 CI/CD errors
+- 👀 Review requests
+- 🗳 Votes
 
-### ⌨️ Команды бота
+### ⌨️ Bot Commands
 
-| Команда | Описание |
-|---------|----------|
-| `/start` | Показать User ID и инструкции |
-| `/projects` или `/link` | Список ваших проектов |
-| `/status` | Статус текущего проекта |
-| `/agents` | Список агентов |
-| `/tasks` | Список задач |
-| `/reviews` | Список pending code reviews (v0.9.12) |
-| `/approve [id]` | Одобрить code review (v0.9.12) |
-| `/reject [id] [reason]` | Отклонить code review (v0.9.12) |
-| `/stop` | Остановить Swarm |
-| `/resume` | Возобновить |
+| Command | Description |
+|---------|-------------|
+| `/start` | Show User ID and instructions |
+| `/projects` or `/link` | List your projects |
+| `/status` | Current project status |
+| `/agents` | List of agents |
+| `/tasks` | List of tasks |
+| `/reviews` | List pending code reviews (v0.9.12) |
+| `/approve [id]` | Approve code review (v0.9.12) |
+| `/reject [id] [reason]` | Reject code review (v0.9.12) |
+| `/stop` | Stop Swarm |
+| `/resume` | Resume |
 
-### 🔘 Inline кнопки
+### 🔘 Inline Buttons
 
-Все уведомления приходят с **интерактивными кнопками**:
-- **Claim** — взять задачу
-- **View** — посмотреть детали
-- **Approve/Reject** — одобрить/отклонить review
-- **Vote** — проголосовать за решение
-- **Priority** — установить приоритет (🔴Critical, 🟠High, 🟡Medium)
+All notifications come with **interactive buttons**:
+- **Claim** — take a task
+- **View** — see details
+- **Approve/Reject** — approve/reject a review
+- **Vote** — vote on a decision
+- **Priority** — set priority (🔴Critical, 🟠High, 🟡Medium)
 
 ---
 
-## 🔧 Troubleshooting / Решение проблем
+## 🔧 Troubleshooting
 
 <details>
-<summary><strong>❌ "Cannot find module" или "Error: ENOENT"</strong></summary>
+<summary><strong>❌ "Cannot find module" or "Error: ENOENT"</strong></summary>
 
-1. Проверьте, что проект собран:
+1. Make sure the project is built:
    ```bash
    cd /path/to/Swarm_MCP
    npm run build
    ```
-2. Убедитесь, что путь в конфигурации правильный и ведёт к `dist/serverSmart.js`
-3. Используйте абсолютный путь (не `./` или `~`)
+2. Verify the path in your config points to `dist/serverSmart.js`
+3. Use an absolute path (not `./` or `~`)
 
 </details>
 
 <details>
-<summary><strong>❌ Агент не становится оркестратором</strong></summary>
+<summary><strong>❌ Agent doesn't become orchestrator</strong></summary>
 
-Оркестратор может быть уже активен. Проверьте:
+An orchestrator may already be active. Check:
 ```bash
 cat .swarm/ORCHESTRATOR.json
 ```
 
-Если `lastHeartbeat` устарел более чем на 60 секунд, следующий агент автоматически возьмёт роль.
+If `lastHeartbeat` is older than 60 seconds, the next agent will automatically take the role.
 
-Чтобы форсировать смену: удалите файл `.swarm/ORCHESTRATOR.json` или вызовите `swarm_orchestrator({ action: "resign", repoPath })`.
+To force a change: delete `.swarm/ORCHESTRATOR.json` or call `swarm_orchestrator({ action: "resign", repoPath })`.
 
 </details>
 
 <details>
-<summary><strong>❌ "repoPath is required" ошибка</strong></summary>
+<summary><strong>❌ "repoPath is required" error</strong></summary>
 
-**КАЖДЫЙ** вызов MCP Swarm должен содержать `repoPath`:
+**EVERY** MCP Swarm call must include `repoPath`:
 ```typescript
-// ✅ Правильно
+// ✅ Correct
 swarm_agent({ action: "register", repoPath: "C:/projects/my-app" })
 
-// ❌ Неправильно
+// ❌ Wrong
 swarm_agent({ action: "register" })
 ```
 
 </details>
 
 <details>
-<summary><strong>❌ Cloudflare Hub недоступен</strong></summary>
+<summary><strong>❌ Cloudflare Hub unavailable</strong></summary>
 
-1. Проверьте интернет-соединение
-2. Убедитесь что ваш Hub задеплоен и URL правильный
-3. При проблемах система автоматически использует локальный Git-fallback
+1. Check your internet connection
+2. Make sure your Hub is deployed and the URL is correct
+3. The system automatically falls back to local Git when Hub is unavailable
 
 </details>
 
 <details>
-<summary><strong>❌ Папка swarm/ не создаётся автоматически</strong></summary>
+<summary><strong>❌ swarm/ folder not created automatically</strong></summary>
 
-При первом вызове `swarm_agent({ action: "register", repoPath })` папка `swarm/` и все файлы правил должны создаться автоматически.
+On first call to `swarm_agent({ action: "register", repoPath })`, the `swarm/` folder and all rule files should be created automatically.
 
-Если не работает — вызовите вручную:
+If it doesn't work — call manually:
 ```typescript
 swarm_agent({ action: "init", repoPath: "/path/to/project" })
 ```
@@ -986,30 +988,30 @@ swarm_agent({ action: "init", repoPath: "/path/to/project" })
 </details>
 
 <details>
-<summary><strong>❌ Файлы заблокированы другим агентом</strong></summary>
+<summary><strong>❌ Files locked by another agent</strong></summary>
 
-Проверьте кто держит блокировку:
+Check who holds the lock:
 ```typescript
 swarm_file({ action: "list", repoPath: "/path/to/project" })
 ```
 
-Если агент «мёртв» (heartbeat > 60 сек), система автоматически освободит файлы.
+If an agent is "dead" (heartbeat > 60 sec), the system will automatically release the files.
 
 </details>
 
 ---
 
-## 📊 Архитектура
+## 📊 Architecture
 
-### Cloudflare Workers (Ваши endpoints после деплоя)
+### Cloudflare Workers (Your endpoints after deployment)
 
-| Worker | URL (пример) | Назначение |
-|--------|-----|------------|
-| **Hub** | `wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws` | Координация агентов |
+| Worker | URL (example) | Purpose |
+|--------|---------------|---------|
+| **Hub** | `wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws` | Agent coordination |
 | **MCP Server** | `https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp` | Remote MCP (HTTP) |
-| **Telegram Bot** | `https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev` | Уведомления |
+| **Telegram Bot** | `https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev` | Notifications |
 
-### Схема
+### Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -1047,12 +1049,12 @@ swarm_file({ action: "list", repoPath: "/path/to/project" })
                     └─────────────────────┘
 ```
 
-### cloudflare/ структура
+### cloudflare/ structure
 
 ```
 cloudflare/
-├── hub/              # Координационный Hub (Durable Objects)
-│   ├── src/index.ts  # SwarmRoom - задачи, чат, locks
+├── hub/              # Coordination Hub (Durable Objects)
+│   ├── src/index.ts  # SwarmRoom — tasks, chat, locks
 │   └── wrangler.toml
 │
 ├── mcp-server/       # Remote MCP Server (Streamable HTTP)
@@ -1060,7 +1062,7 @@ cloudflare/
 │   └── wrangler.toml
 │
 └── telegram-bot/     # Telegram Bot (Webhook)
-    ├── worker.ts     # Команды: /status, /agents, /tasks
+    ├── worker.ts     # Commands: /status, /agents, /tasks
     └── wrangler.toml
 ```
 
@@ -1068,16 +1070,16 @@ cloudflare/
 
 ## 📝 Changelog
 
-См. [CHANGELOG.md](./CHANGELOG.md)
+See [CHANGELOG.md](./CHANGELOG.md)
 
 ---
 
 ## 🤝 Contributing
 
-PRs welcome! Основные принципы:
-1. Все tool'ы должны принимать `repoPath`
-2. Состояние сохраняется в файлы (не в память)
-3. Тесты перед мерджем
+PRs welcome! Core principles:
+1. All tools must accept `repoPath`
+2. State is saved to files (not memory)
+3. Tests before merging
 
 ---
 
