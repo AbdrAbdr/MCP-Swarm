@@ -1,10 +1,17 @@
 {
   "name": "mcp-swarm",
-  "version": "0.9.13",
+  "version": "0.9.14",
   "private": false,
   "type": "module",
   "description": "Universal AI agent coordination platform with 54+ smart tools",
-  "keywords": ["mcp", "ai", "agent", "swarm", "coordination", "cloudflare"],
+  "keywords": [
+    "mcp",
+    "ai",
+    "agent",
+    "swarm",
+    "coordination",
+    "cloudflare"
+  ],
   "author": "MCP Swarm Team",
   "license": "MIT",
   "repository": {

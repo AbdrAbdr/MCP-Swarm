@@ -79,6 +79,8 @@ npx wrangler deploy
     "mcp-swarm": {
       "command": "npx",
       "args": [
+        "-y",
+        "-p", "mcp-swarm",
         "mcp-swarm-remote",
         "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp",
         "--telegram-user-id", "YOUR_TELEGRAM_ID"
@@ -95,6 +97,8 @@ npx wrangler deploy
     "mcp-swarm": {
       "command": "npx",
       "args": [
+        "-y",
+        "-p", "mcp-swarm",
         "mcp-swarm-remote",
         "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp"
       ]
@@ -165,7 +169,7 @@ Add `--debug` to see detailed logs:
 
 ```json
 {
-  "args": ["mcp-swarm-remote", "--url", "...", "--debug"]
+  "args": ["-y", "-p", "mcp-swarm", "mcp-swarm-remote", "--url", "...", "--debug"]
 }
 ```
 
@@ -173,7 +177,7 @@ Add `--debug` to see detailed logs:
 
 1. Restart your IDE completely
 2. Check MCP server logs in IDE developer console
-3. Try running `npx mcp-swarm-remote --debug` manually
+3. Try running `npx -y -p mcp-swarm mcp-swarm-remote --debug` manually
 
 ---
 

@@ -1,4 +1,4 @@
-# 🐝 MCP Swarm v0.9.13 — Универсальная Платформа Координации AI-Агентов
+# 🐝 MCP Swarm v0.9.14 — Универсальная Платформа Координации AI-Агентов
 
 **MCP Swarm** — это глобальная «нервная система» для ваших AI-помощников. Она превращает разрозненных агентов (Claude, Cursor, Windsurf, OpenCode) в слаженную команду, способную работать над огромными проектами без конфликтов и потери контекста.
 
@@ -426,10 +426,10 @@ NEXT_PUBLIC_HUB_URL=wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev
 При запуске `mcp-swarm-remote` автоматически проверяет и запускает companion демон:
 ```bash
 # Companion запускается автоматически
-npx mcp-swarm-remote --url https://...
+npx -y -p mcp-swarm mcp-swarm-remote --url https://...
 
 # Отключить автозапуск
-npx mcp-swarm-remote --url https://... --no-companion
+npx -y -p mcp-swarm mcp-swarm-remote --url https://... --no-companion
 ```
 
 Companion работает на порту **37373** и обеспечивает:
@@ -722,6 +722,8 @@ npm install -g mcp-swarm
     "mcp-swarm": {
       "command": "npx",
       "args": [
+        "-y",
+        "-p", "mcp-swarm",
         "mcp-swarm-remote",
         "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp",
         "--telegram-user-id", "YOUR_TELEGRAM_ID"
