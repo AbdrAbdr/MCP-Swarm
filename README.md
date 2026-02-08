@@ -1,6 +1,8 @@
 > 🇷🇺 [Читать на русском](./README.ru.md)
 
-# 🐝 MCP Swarm v0.9.15 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v0.9.16 — Universal AI Agent Coordination Platform
+
+> ⚠️ **v0.9.16 — Critical Fix:** Previous versions (0.9.14–0.9.15) had a Zod compatibility bug that broke ALL Smart Tools. Update immediately: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -459,6 +461,25 @@ The first agent that becomes Orchestrator enters an **infinite loop**. It:
 ### 3. The Next Morning
 When you shut down your computer, the state is saved in Git/Files.
 In the morning, the first launched agent checks: "Is there a live Orchestrator?" If not — it takes the role, reads yesterday's tasks, and continues coordinating the team. **History is never reset.**
+
+---
+
+## 🔄 Upgrading from Previous Versions
+
+If you installed MCP Swarm via npm:
+```bash
+npm install -g mcp-swarm@latest
+```
+
+If you cloned the repository:
+```bash
+cd /path/to/Swarm_MCP
+git pull
+npm install
+npm run build
+```
+
+> 🙏 We apologize for the Zod compatibility issue in v0.9.14–0.9.15. The `zod@^3.23.8` semver range resolved to v3.25.76 (Zod v4 bridge), which removed the internal `_parse()` method used by IDE clients for schema validation, breaking all 54 Smart Tools.
 
 ---
 

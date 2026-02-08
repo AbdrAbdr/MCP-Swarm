@@ -5,3 +5,5 @@ dist/
 .swarm-local/
 12312.md
 *.draft
+test_schema*.json
+test-input.txt
