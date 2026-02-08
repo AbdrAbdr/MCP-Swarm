@@ -252,7 +252,7 @@ export function analyzeTaskComplexity(
   affectedFiles: string[] = []
 ): TaskComplexity {
   const text = `${taskTitle} ${taskDescription}`.toLowerCase();
-  
+
   let score = 50; // Start at medium
   const factors = {
     fileCount: affectedFiles.length,
@@ -343,10 +343,10 @@ export async function selectModel(
   requiredCapabilities: string[] = []
 ): Promise<ModelConfig | null> {
   const models = await getAvailableModels(repoPath);
-  
+
   // Filter by tier
   let candidates = models.filter((m) => m.tier === complexity.recommendedTier);
-  
+
   // If no candidates at recommended tier, try adjacent tiers
   if (candidates.length === 0) {
     if (complexity.recommendedTier === "cheap") {
@@ -418,7 +418,7 @@ export async function logUsage(
 
   const cost = model
     ? (record.inputTokens * model.costPer1kInput) / 1000 +
-      (record.outputTokens * model.costPer1kOutput) / 1000
+    (record.outputTokens * model.costPer1kOutput) / 1000
     : 0;
 
   const fullRecord: UsageRecord = {
@@ -718,8 +718,8 @@ export async function routeTask(
       recommendation.complexity.recommendedTier === "premium"
         ? "standard"
         : recommendation.complexity.recommendedTier === "standard"
-        ? "cheap"
-        : "cheap";
+          ? "cheap"
+          : "cheap";
 
     const cheaper = models.find((m) => m.tier === cheaperTier);
     if (cheaper) {
@@ -830,3 +830,112 @@ export async function generateCostReport(
 
   return report;
 }
+
+// ─── Legacy-compatible exports (merged from costTracker.ts) ───
+
+/**
+ * @deprecated Use logUsage instead
+ * Legacy wrapper for backward compatibility with costTracker.ts consumers
+ */
+export async function logApiUsage(input: {
+  repoPath?: string;
+  agent: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  taskId?: string;
+  tool?: string;
+}): Promise<{ logged: boolean; cost: number; totalTokens: number }> {
+  const repoPath = input.repoPath || process.cwd();
+  const record = await logUsage(repoPath, {
+    agentId: input.agent,
+    model: input.model,
+    inputTokens: input.inputTokens,
+    outputTokens: input.outputTokens,
+    taskId: input.taskId,
+    tier: "standard" as ModelTier,
+  });
+  return {
+    logged: true,
+    cost: record.cost,
+    totalTokens: input.inputTokens + input.outputTokens,
+  };
+}
+
+/**
+ * @deprecated Use getUsageStats with filter instead
+ */
+export async function getAgentCosts(input: {
+  repoPath?: string;
+  agent: string;
+  periodDays?: number;
+}): Promise<{ agent: string; totalCost: number; totalTokens: number; entries: number }> {
+  const repoPath = input.repoPath || process.cwd();
+  const since = new Date(Date.now() - (input.periodDays || 30) * 86400000).toISOString();
+  const usage = await getUsage(repoPath, { agentId: input.agent, since });
+  return {
+    agent: input.agent,
+    totalCost: usage.reduce((s, r) => s + r.cost, 0),
+    totalTokens: usage.reduce((s, r) => s + r.inputTokens + r.outputTokens, 0),
+    entries: usage.length,
+  };
+}
+
+/**
+ * @deprecated Use getUsageStats instead
+ */
+export async function getProjectCosts(input: {
+  repoPath?: string;
+  periodDays?: number;
+}): Promise<{ totalCost: number; totalTokens: number; entries: number; byAgent: Record<string, number> }> {
+  const repoPath = input.repoPath || process.cwd();
+  const since = new Date(Date.now() - (input.periodDays || 30) * 86400000).toISOString();
+  const usage = await getUsage(repoPath, { since });
+  const byAgent: Record<string, number> = {};
+  for (const r of usage) {
+    byAgent[r.agentId] = (byAgent[r.agentId] || 0) + r.cost;
+  }
+  return {
+    totalCost: usage.reduce((s, r) => s + r.cost, 0),
+    totalTokens: usage.reduce((s, r) => s + r.inputTokens + r.outputTokens, 0),
+    entries: usage.length,
+    byAgent,
+  };
+}
+
+/**
+ * @deprecated Use setBudgetConfig instead
+ */
+export async function setBudgetLimit(input: {
+  repoPath?: string;
+  dailyLimit?: number;
+  monthlyLimit?: number;
+  perAgentLimit?: number;
+  alertThreshold?: number;
+  commitMode?: "none" | "local" | "push";
+}): Promise<{ set: boolean }> {
+  const repoPath = input.repoPath || process.cwd();
+  await setBudgetConfig(repoPath, {
+    dailyLimit: input.dailyLimit,
+    monthlyLimit: input.monthlyLimit,
+  });
+  return { set: true };
+}
+
+/**
+ * @deprecated Use getRemainingBudget instead
+ */
+export async function checkBudgetRemaining(input: {
+  repoPath?: string;
+  agent?: string;
+}): Promise<{ remaining: number; limit: number; used: number; percentage: number }> {
+  const repoPath = input.repoPath || process.cwd();
+  const status = await checkBudget(repoPath);
+  return {
+    remaining: Math.max(0, status.daily.limit - status.daily.used),
+    limit: status.daily.limit,
+    used: status.daily.used,
+    percentage: status.daily.percentage,
+  };
+}
+

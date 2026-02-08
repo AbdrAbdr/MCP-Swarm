@@ -9,9 +9,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v0.9.18 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.0.0 — Universal AI Agent Coordination Platform
 
-> 🧠 **v0.9.18 — New AI Models:** Claude Opus 4.6 (1M context, adaptive thinking), GPT-5.3 Codex, Kimi K2.5. 19 models in MoE Router. Update: `npm install -g mcp-swarm@latest`
+> 🧠 **v1.0.0 — Major Release:** 21 AI models in MoE Router (Kimi K2.5 1T/32B MoE, GPT-5.3 Codex, Claude Opus 4.6). SONA Self-Learning with EWC++, Transfer Learning, Q-Learning. Smart Router Proxy with ML classification, tool compression, semantic caching. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -349,15 +349,17 @@ Instead of hundreds of small commands, we created **54 intelligent tools**. Each
     - Automatic routing to the best model
     - Cost/performance/quality optimization
     - Learning from feedback
-    - 16 built-in experts (verified prices: February 2026)
+    - 21 built-in experts (verified prices: February 2026)
     
     **Built-in experts (official prices):**
     
     | Provider | Model | Tier | Input $/MTok | Output $/MTok | Context |
     |----------|-------|------|--------------|---------------|---------|
+    | Anthropic | **Claude Opus 4.6** | flagship | $5 | $25 | **1M** |
     | Anthropic | Claude Opus 4.5 | flagship | $5 | $25 | 200K |
     | Anthropic | Claude Sonnet 4.5 | premium | $3 | $15 | 200K |
     | Anthropic | Claude Haiku 4.5 | economy | $1 | $5 | 200K |
+    | OpenAI | **GPT-5.3 Codex** | flagship | ~$2 | ~$15 | 128K |
     | OpenAI | GPT-5.2 | flagship | $1.75 | $14 | 256K |
     | OpenAI | GPT-5.2 Pro | flagship | $21 | $168 | 256K |
     | OpenAI | GPT-5 Mini | standard | $0.25 | $2 | 128K |
@@ -365,6 +367,7 @@ Instead of hundreds of small commands, we created **54 intelligent tools**. Each
     | OpenAI | GPT-4.1 Mini | standard | $0.80 | $3.20 | 128K |
     | OpenAI | GPT-4.1 Nano | economy | $0.20 | $0.80 | 128K |
     | OpenAI | o4-mini | reasoning | $4 | $16 | 128K |
+    | Moonshot | **Kimi K2.5** | premium | $0.60 | $3.00 | 256K |
     | Google | Gemini 3 Pro | flagship | $2 | $12 | **1M** |
     | Google | Gemini 3 Flash | standard | $0.50 | $3 | **1M** |
     | Google | Gemini 2.5 Pro | premium | $1.25 | $10 | **1M** |
@@ -398,16 +401,26 @@ Instead of hundreds of small commands, we created **54 intelligent tools**. Each
     // → { totalRequests: 150, successRate: 94%, totalCost: $1.23 }
     ```
 
-### 🧠 v0.9.18 — New AI Model Integrations
+### 🚀 v1.0.0 — Major Release
 
-**3 New Models in MoE Router (19 total):**
-- **Claude Opus 4.6** — Anthropic flagship, 1M context, adaptive thinking, context compaction, 128K output, agent teams
-- **GPT-5.3 Codex** — OpenAI agentic coding flagship, 256K context
-- **Kimi K2.5** — Moonshot AI code-focused premium model
+**🧠 MoE Router — 21 AI Models:**
+- **Kimi K2.5** — Moonshot 1T/32B MoE, 262K context, 9x cheaper than Opus ($0.55/$2.20)
+- Smart routing: Agent Swarm tasks → Kimi K2.5/Opus 4.6, multimodal → Kimi K2.5
+- 21 verified experts with official pricing (February 2026)
 
-**Model Tier Adjustments:**
-- Opus 4.5 downgraded from `flagship` → `premium` (Opus 4.6 takes flagship)
-- New `moonshot` provider added to `ModelProvider`
+**🧬 SONA Self-Learning v2 (EWC++ / Transfer / Q-Learning):**
+- **EWC++** — Progressive Fisher Information Matrix: per-parameter anti-forgetting
+- **Transfer Learning** — Cross-category knowledge propagation (10% transfer rate)
+- **Q-Learning** — Reward signals fed back to MoE Router for adaptive routing
+
+**⚡ Smart Router Proxy v2:**
+- **ML Task Classifier** — Pattern-based classification before LLM routing
+- **Tool Compression** — ClaudeSlim-style, saves 30-50% tokens
+- Semantic cache + Anthropic Prompt Caching integration
+
+**🧹 Tool Consolidation:**
+- Removed 5 deprecated shim files, direct imports to canonical modules
+- 10 import paths updated across `smartTools.ts` and `smartTools/*.ts`
 
 ---
 

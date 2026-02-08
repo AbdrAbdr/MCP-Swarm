@@ -16,6 +16,24 @@
  * 5. User clicks a project → sees status/agents/tasks for that project
  */
 
+// Cloudflare Workers ambient types (provided by wrangler at build time)
+declare class DurableObjectNamespace {
+  idFromName(name: string): DurableObjectId;
+  get(id: DurableObjectId): DurableObjectStub;
+}
+declare interface DurableObjectId { }
+declare interface DurableObjectStub {
+  fetch(request: Request): Promise<Response>;
+}
+declare class DurableObjectState {
+  storage: DurableObjectStorage;
+  blockConcurrencyWhile(callback: () => Promise<void>): void;
+}
+declare interface DurableObjectStorage {
+  get<T>(key: string): Promise<T | undefined>;
+  put(key: string, value: any): Promise<void>;
+}
+
 export interface Env {
   TELEGRAM_BOT_TOKEN: string;
   SWARM_HUB_URL: string;
@@ -112,7 +130,7 @@ async function editMessage(
 }
 
 // Fetch from Hub API
-async function fetchFromHub(hubUrl: string, project: string, endpoint: string, authToken?: string) {
+async function fetchFromHub(hubUrl: string, project: string, endpoint: string, authToken?: string): Promise<any> {
   try {
     const apiUrl = hubUrl.replace("wss://", "https://").replace("/ws", "");
     const headers: Record<string, string> = { "Accept": "application/json" };
@@ -708,9 +726,10 @@ export class UserProjects {
       const stored = await this.state.storage.get<Record<string, any>>("users");
       if (stored) {
         for (const [userId, record] of Object.entries(stored)) {
+          const r = record as any;
           this.users.set(userId, {
-            projects: new Map(Object.entries(record.projects || {})),
-            activeProject: record.activeProject || null,
+            projects: new Map(Object.entries(r.projects || {})),
+            activeProject: r.activeProject || null,
           });
         }
       }

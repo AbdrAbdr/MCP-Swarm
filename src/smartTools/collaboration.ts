@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { appendTeamChat, updateTeamStatus } from "../workflows/teamFiles.js";
 import { logSwarmThought, getRecentThoughts } from "../workflows/swarmThoughts.js";
-import { requestCrossAgentReview, respondToReview, listPendingReviews } from "../workflows/codeReview.js";
+import { requestCrossAgentReview, respondToReview, listPendingReviews } from "../workflows/autoReview.js";
 import { startVoting, castVote, getVotingSession, listOpenVotings } from "../workflows/voting.js";
 import { announceTaskForBidding, bidForTask, pollSwarmEvents } from "../workflows/auction.js";
 import { scanSystemMcps, authorizeMcpsForSwarm, getPolicy } from "../workflows/mcpScanner.js";

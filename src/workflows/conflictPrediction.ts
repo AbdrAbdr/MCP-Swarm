@@ -113,11 +113,11 @@ async function loadConflictDb(repoRoot: string): Promise<ConflictDb> {
 async function saveConflictDb(repoRoot: string, db: ConflictDb, commitMode: "none" | "local" | "push"): Promise<void> {
   const swarmDir = path.join(repoRoot, "swarm");
   await fs.mkdir(swarmDir, { recursive: true });
-  
+
   const dbPath = getConflictDbPath(repoRoot);
   db.lastAnalysis = new Date().toISOString();
   await fs.writeFile(dbPath, JSON.stringify(db, null, 2), "utf-8");
-  
+
   if (commitMode !== "none") {
     await gitTry(["add", dbPath], { cwd: repoRoot });
     await gitTry(["commit", "-m", "swarm: update conflict history"], { cwd: repoRoot });
@@ -138,25 +138,25 @@ export async function analyzeConflictHistory(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const lookbackDays = input.lookbackDays || 90;
   const since = `${lookbackDays} days ago`;
-  
+
   const db = await loadConflictDb(repoRoot);
-  
+
   // Get merge commits
   const mergeRes = await gitTry(["log", "--merges", "--format=%H", `--since=${since}`], { cwd: repoRoot });
   const mergeCommits = mergeRes.ok ? normalizeLineEndings(mergeRes.stdout).trim().split("\n").filter(Boolean) : [];
   db.totalMerges = mergeCommits.length;
-  
+
   const fileChangeCounts: Map<string, number> = new Map();
   const fileContributors: Map<string, Set<string>> = new Map();
-  
+
   for (const commit of mergeCommits.slice(0, 100)) {
     const filesRes = await gitTry(["diff-tree", "--no-commit-id", "--name-only", "-r", commit], { cwd: repoRoot });
     if (!filesRes.ok) continue;
-    
+
     const files = normalizeLineEndings(filesRes.stdout).trim().split("\n").filter(Boolean);
     const authorRes = await gitTry(["log", "-1", "--format=%an", commit], { cwd: repoRoot });
     const author = authorRes.ok ? authorRes.stdout.trim() : "unknown";
-    
+
     for (const file of files) {
       fileChangeCounts.set(file, (fileChangeCounts.get(file) || 0) + 1);
       if (!fileContributors.has(file)) {
@@ -165,11 +165,11 @@ export async function analyzeConflictHistory(input: {
       fileContributors.get(file)!.add(author);
     }
   }
-  
+
   // Search for conflict-related commits
   const conflictRes = await gitTry(["log", "--format=%H", `--since=${since}`, "--grep=conflict", "-i"], { cwd: repoRoot });
   const conflictCommits = conflictRes.ok ? normalizeLineEndings(conflictRes.stdout).trim().split("\n").filter(Boolean) : [];
-  
+
   const conflictFiles: Set<string> = new Set();
   for (const commit of conflictCommits.slice(0, 50)) {
     const filesRes = await gitTry(["diff-tree", "--no-commit-id", "--name-only", "-r", commit], { cwd: repoRoot });
@@ -178,17 +178,17 @@ export async function analyzeConflictHistory(input: {
     }
   }
   db.totalConflicts = conflictFiles.size;
-  
+
   // Calculate hotspot scores
   for (const [file, mergeCount] of fileChangeCounts) {
     const conflictCount = conflictFiles.has(file) ? 1 : 0;
     const contributors = [...(fileContributors.get(file) || [])];
-    
-    const hotspotScore = 
-      (mergeCount * 2) + 
-      (conflictCount * 10) + 
+
+    const hotspotScore =
+      (mergeCount * 2) +
+      (conflictCount * 10) +
       (contributors.length > 3 ? contributors.length * 3 : 0);
-    
+
     db.files[file] = {
       filePath: file,
       conflictCount,
@@ -199,14 +199,14 @@ export async function analyzeConflictHistory(input: {
       avgChangesPerCommit: 0,
     };
   }
-  
+
   await saveConflictDb(repoRoot, db, input.commitMode);
-  
+
   const hotspots = Object.values(db.files)
     .sort((a, b) => b.hotspotScore - a.hotspotScore)
     .slice(0, 10)
     .map(f => f.filePath);
-  
+
   return {
     analyzed: true,
     filesScanned: Object.keys(db.files).length,
@@ -221,30 +221,30 @@ export async function getConflictHotspots(input: { repoPath?: string; limit?: nu
   const repoRoot = await getRepoRoot(input.repoPath);
   const db = await loadConflictDb(repoRoot);
   const limit = input.limit || 20;
-  
+
   const hotspots = Object.values(db.files)
     .sort((a, b) => b.hotspotScore - a.hotspotScore)
     .slice(0, limit);
-  
+
   return { hotspots };
 }
 
 /**
  * Проверяет безопасность редактирования файла
  */
-export async function checkFileSafety(input: { 
-  repoPath?: string; 
+export async function checkFileSafety(input: {
+  repoPath?: string;
   file: string;
   agent: string;
 }): Promise<{ safe: boolean; warning: string | null; suggestedAction: string }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const db = await loadConflictDb(repoRoot);
   const stats = db.files[input.file];
-  
+
   if (!stats || stats.hotspotScore < 20) {
     return { safe: true, warning: null, suggestedAction: "Proceed with edit" };
   }
-  
+
   if (stats.hotspotScore >= 50) {
     return {
       safe: false,
@@ -252,7 +252,7 @@ export async function checkFileSafety(input: {
       suggestedAction: "Coordinate with other agents before editing. Use file_reserve to lock.",
     };
   }
-  
+
   return {
     safe: true,
     warning: `Medium-risk file: frequently edited by ${stats.contributors.slice(0, 3).join(", ")}`,
@@ -272,7 +272,7 @@ export async function recordConflictEvent(input: {
 }): Promise<{ recorded: boolean }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const db = await loadConflictDb(repoRoot);
-  
+
   if (!db.files[input.file]) {
     db.files[input.file] = {
       filePath: input.file,
@@ -284,18 +284,117 @@ export async function recordConflictEvent(input: {
       avgChangesPerCommit: 0,
     };
   }
-  
+
   db.files[input.file].conflictCount++;
   db.files[input.file].lastConflict = new Date().toISOString();
   db.files[input.file].hotspotScore += 10;
-  
+
   if (!db.files[input.file].contributors.includes(input.agent)) {
     db.files[input.file].contributors.push(input.agent);
   }
-  
+
   db.totalConflicts++;
-  
+
   await saveConflictDb(repoRoot, db, input.commitMode);
-  
+
   return { recorded: true };
 }
+
+// ─── Legacy-compatible exports (merged from conflictForecast.ts) ───
+
+export type FileForecast = {
+  id: string;
+  agent: string;
+  files: string[];
+  estimatedMinutesFromNow: number;
+  confidence: "low" | "medium" | "high";
+  createdAt: number;
+};
+
+/**
+ * @deprecated Use predictConflicts instead
+ * Legacy wrapper for backward compatibility with conflictForecast.ts consumers
+ */
+export async function forecastFileTouches(input: {
+  repoPath?: string;
+  agent: string;
+  taskId?: string;
+  files: string[];
+  estimatedMinutesFromNow?: number;
+  confidence?: "low" | "medium" | "high";
+  commitMode: "none" | "local" | "push";
+}): Promise<{ forecastId: string }> {
+  const repoRoot = await getRepoRoot(input.repoPath);
+  const forecastDir = path.join(repoRoot, "swarm", "forecasts");
+  await fs.mkdir(forecastDir, { recursive: true });
+
+  const forecastId = `forecast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const forecast: FileForecast = {
+    id: forecastId,
+    agent: input.agent,
+    files: input.files,
+    estimatedMinutesFromNow: input.estimatedMinutesFromNow || 30,
+    confidence: input.confidence || "medium",
+    createdAt: Date.now(),
+  };
+
+  await fs.writeFile(
+    path.join(forecastDir, `${forecastId}.json`),
+    JSON.stringify(forecast, null, 2),
+    "utf-8"
+  );
+
+  if (input.commitMode !== "none") {
+    await gitTry(["add", forecastDir], { cwd: repoRoot });
+    await gitTry(["commit", "-m", `swarm: forecast by ${input.agent}`], { cwd: repoRoot });
+    if (input.commitMode === "push") {
+      await gitTry(["push"], { cwd: repoRoot });
+    }
+  }
+
+  return { forecastId };
+}
+
+/**
+ * @deprecated Use predictConflicts instead
+ * Legacy wrapper: checks file conflicts based on forecasts
+ */
+export async function checkFileConflicts(input: {
+  repoPath?: string;
+  files: string[];
+  excludeAgent?: string;
+}): Promise<{ conflicts: Array<{ file: string; holders: string[] }> }> {
+  const repoRoot = await getRepoRoot(input.repoPath);
+  const forecastDir = path.join(repoRoot, "swarm", "forecasts");
+  const conflicts: Array<{ file: string; holders: string[] }> = [];
+
+  try {
+    const entries = await fs.readdir(forecastDir);
+    const forecasts: FileForecast[] = [];
+    for (const e of entries) {
+      if (!e.endsWith(".json")) continue;
+      try {
+        const raw = await fs.readFile(path.join(forecastDir, e), "utf-8");
+        forecasts.push(JSON.parse(raw));
+      } catch { /* skip */ }
+    }
+
+    const now = Date.now();
+    const activeForecasts = forecasts.filter(f => {
+      const expiresAt = f.createdAt + (f.estimatedMinutesFromNow * 60000);
+      return expiresAt > now && f.agent !== input.excludeAgent;
+    });
+
+    for (const file of input.files) {
+      const holders = activeForecasts
+        .filter(f => f.files.includes(file))
+        .map(f => f.agent);
+      if (holders.length > 0) {
+        conflicts.push({ file, holders: [...new Set(holders)] });
+      }
+    }
+  } catch { /* dir doesn't exist */ }
+
+  return { conflicts };
+}
+

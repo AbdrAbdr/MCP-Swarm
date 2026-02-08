@@ -98,7 +98,7 @@ async function loadReviewIndex(repoRoot: string): Promise<ReviewIndex> {
 async function saveReviewIndex(repoRoot: string, index: ReviewIndex): Promise<void> {
   const reviewsDir = path.join(repoRoot, REVIEWS_DIR);
   await fs.mkdir(reviewsDir, { recursive: true });
-  
+
   index.lastUpdated = Date.now();
   const indexPath = path.join(repoRoot, REVIEW_INDEX);
   await fs.writeFile(indexPath, JSON.stringify(index, null, 2), "utf8");
@@ -141,12 +141,12 @@ export async function createReviewRequest(input: {
 }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const reviewId = `review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  
+
   // Автоматический подбор ревьюера
   let reviewer: string | null = null;
-  
+
   if (input.autoAssign !== false) {
     // Ищем агента, который знает эти файлы, но НЕ автора
     const routing = await findBestAgent({
@@ -154,12 +154,12 @@ export async function createReviewRequest(input: {
       affectedPaths: input.changedFiles,
       excludeAgents: [input.codeAuthor],
     });
-    
+
     if (routing.recommendedAgent) {
       reviewer = routing.recommendedAgent;
     }
   }
-  
+
   const review: CodeReview = {
     id: reviewId,
     taskId: input.taskId,
@@ -176,31 +176,31 @@ export async function createReviewRequest(input: {
     priority: input.priority || "normal",
     autoAssigned: !!reviewer,
   };
-  
+
   // Добавляем в индексы
   index.reviews[reviewId] = review;
-  
+
   if (!index.byAuthor[input.codeAuthor]) {
     index.byAuthor[input.codeAuthor] = [];
   }
   index.byAuthor[input.codeAuthor].push(reviewId);
-  
+
   if (reviewer) {
     if (!index.byReviewer[reviewer]) {
       index.byReviewer[reviewer] = [];
     }
     index.byReviewer[reviewer].push(reviewId);
   }
-  
+
   updateStatusIndex(index, reviewId, null, review.status);
-  
+
   await saveReviewIndex(repoRoot, index);
-  
+
   return {
     success: true,
     reviewId,
     assignedTo: reviewer,
-    message: reviewer 
+    message: reviewer
       ? `Ревью создано и назначено ${reviewer}`
       : "Ревью создано, ожидает назначения ревьюера",
   };
@@ -216,42 +216,42 @@ export async function assignReviewer(input: {
 }): Promise<{ success: boolean; message: string }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const review = index.reviews[input.reviewId];
   if (!review) {
     return { success: false, message: "Ревью не найдено" };
   }
-  
+
   if (review.reviewer === input.reviewer) {
     return { success: false, message: "Этот ревьюер уже назначен" };
   }
-  
+
   if (review.codeAuthor === input.reviewer) {
     return { success: false, message: "Автор кода не может быть ревьюером" };
   }
-  
+
   // Удаляем из старого ревьюера
   if (review.reviewer && index.byReviewer[review.reviewer]) {
     index.byReviewer[review.reviewer] = index.byReviewer[review.reviewer]
       .filter(id => id !== input.reviewId);
   }
-  
+
   // Добавляем нового ревьюера
   review.reviewer = input.reviewer;
   review.assignedAt = Date.now();
-  
+
   const oldStatus = review.status;
   review.status = "in_progress";
-  
+
   if (!index.byReviewer[input.reviewer]) {
     index.byReviewer[input.reviewer] = [];
   }
   index.byReviewer[input.reviewer].push(input.reviewId);
-  
+
   updateStatusIndex(index, input.reviewId, oldStatus, review.status);
-  
+
   await saveReviewIndex(repoRoot, index);
-  
+
   return { success: true, message: `Ревьюер назначен: ${input.reviewer}` };
 }
 
@@ -269,14 +269,14 @@ export async function addReviewComment(input: {
 }): Promise<{ success: boolean; commentId: string }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const review = index.reviews[input.reviewId];
   if (!review) {
     return { success: false, commentId: "" };
   }
-  
+
   const commentId = `comment-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-  
+
   review.comments.push({
     id: commentId,
     author: input.author,
@@ -287,9 +287,9 @@ export async function addReviewComment(input: {
     resolved: false,
     createdAt: Date.now(),
   });
-  
+
   await saveReviewIndex(repoRoot, index);
-  
+
   return { success: true, commentId };
 }
 
@@ -307,16 +307,16 @@ export async function completeReview(input: {
 }): Promise<{ success: boolean; message: string }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const review = index.reviews[input.reviewId];
   if (!review) {
     return { success: false, message: "Ревью не найдено" };
   }
-  
+
   if (review.reviewer !== input.reviewer) {
     return { success: false, message: "Только назначенный ревьюер может завершить ревью" };
   }
-  
+
   const oldStatus = review.status;
   review.status = input.approved ? "approved" : "changes_requested";
   review.completedAt = Date.now();
@@ -326,14 +326,14 @@ export async function completeReview(input: {
     blockers: input.blockers || [],
     suggestions: input.suggestions || [],
   };
-  
+
   updateStatusIndex(index, input.reviewId, oldStatus, review.status);
-  
+
   await saveReviewIndex(repoRoot, index);
-  
+
   return {
     success: true,
-    message: input.approved 
+    message: input.approved
       ? "Ревью завершено: APPROVED"
       : `Ревью завершено: CHANGES REQUESTED (${input.blockers?.length || 0} блокеров)`,
   };
@@ -349,21 +349,21 @@ export async function resolveComment(input: {
 }): Promise<{ success: boolean }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const review = index.reviews[input.reviewId];
   if (!review) {
     return { success: false };
   }
-  
+
   const comment = review.comments.find(c => c.id === input.commentId);
   if (!comment) {
     return { success: false };
   }
-  
+
   comment.resolved = true;
-  
+
   await saveReviewIndex(repoRoot, index);
-  
+
   return { success: true };
 }
 
@@ -377,16 +377,16 @@ export async function getReviewsForReviewer(input: {
 }): Promise<{ reviews: CodeReview[] }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const reviewIds = index.byReviewer[input.reviewer] || [];
   let reviews = reviewIds
     .map(id => index.reviews[id])
     .filter((r): r is CodeReview => r !== undefined);
-  
+
   if (input.status) {
     reviews = reviews.filter(r => r.status === input.status);
   }
-  
+
   // Сортируем по приоритету и дате
   const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
   reviews.sort((a, b) => {
@@ -394,7 +394,7 @@ export async function getReviewsForReviewer(input: {
     if (priorityDiff !== 0) return priorityDiff;
     return a.createdAt - b.createdAt;
   });
-  
+
   return { reviews };
 }
 
@@ -408,18 +408,18 @@ export async function getReviewsForAuthor(input: {
 }): Promise<{ reviews: CodeReview[] }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const reviewIds = index.byAuthor[input.author] || [];
   let reviews = reviewIds
     .map(id => index.reviews[id])
     .filter((r): r is CodeReview => r !== undefined);
-  
+
   if (input.status) {
     reviews = reviews.filter(r => r.status === input.status);
   }
-  
+
   reviews.sort((a, b) => b.createdAt - a.createdAt);
-  
+
   return { reviews };
 }
 
@@ -431,12 +431,12 @@ export async function getPendingReviews(input: {
 }): Promise<{ reviews: CodeReview[] }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const pendingIds = index.byStatus["pending"] || [];
   const reviews = pendingIds
     .map(id => index.reviews[id])
     .filter((r): r is CodeReview => r !== undefined);
-  
+
   return { reviews };
 }
 
@@ -456,19 +456,19 @@ export async function getReviewStats(input: {
 }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const index = await loadReviewIndex(repoRoot);
-  
+
   const reviews = Object.values(index.reviews);
-  
+
   const pending = reviews.filter(r => r.status === "pending").length;
   const inProgress = reviews.filter(r => r.status === "in_progress").length;
   const approved = reviews.filter(r => r.status === "approved").length;
   const changesRequested = reviews.filter(r => r.status === "changes_requested").length;
-  
+
   // Среднее время ревью
   const completedReviews = reviews.filter(r => r.completedAt && r.assignedAt);
   const totalTime = completedReviews.reduce((sum, r) => sum + (r.completedAt! - r.assignedAt!), 0);
   const avgReviewTime = completedReviews.length > 0 ? totalTime / completedReviews.length : 0;
-  
+
   // Топ ревьюеров
   const reviewerStats: Record<string, { count: number; approved: number }> = {};
   for (const review of reviews) {
@@ -481,7 +481,7 @@ export async function getReviewStats(input: {
       reviewerStats[review.reviewer].approved++;
     }
   }
-  
+
   const topReviewers = Object.entries(reviewerStats)
     .map(([reviewer, stats]) => ({
       reviewer,
@@ -490,7 +490,7 @@ export async function getReviewStats(input: {
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-  
+
   return {
     total: reviews.length,
     pending,
@@ -501,3 +501,70 @@ export async function getReviewStats(input: {
     topReviewers,
   };
 }
+
+// ─── Legacy-compatible exports (merged from codeReview.ts) ───
+
+/**
+ * @deprecated Use createReviewRequest instead
+ * Legacy wrapper for backward compatibility with codeReview.ts consumers
+ */
+export async function requestCrossAgentReview(input: {
+  repoPath?: string;
+  fromAgent: string;
+  toAgent?: string;
+  commitMode: "none" | "local" | "push";
+}): Promise<{ reviewId: string; reviewPath: string }> {
+  const result = await createReviewRequest({
+    repoPath: input.repoPath,
+    taskId: `task-${Date.now()}`,
+    taskTitle: `Review requested by ${input.fromAgent}`,
+    codeAuthor: input.fromAgent,
+    changedFiles: [],
+    changesSummary: "Cross-agent review request (legacy)",
+    autoAssign: !input.toAgent,
+  });
+  return { reviewId: result.reviewId, reviewPath: `.swarm/reviews/${result.reviewId}.json` };
+}
+
+/**
+ * @deprecated Use completeReview instead
+ */
+export async function respondToReview(input: {
+  repoPath?: string;
+  reviewId: string;
+  status: "approved" | "rejected";
+  comment?: string;
+  commitMode: "none" | "local" | "push";
+}): Promise<{ updated: boolean }> {
+  const repoRoot = await getRepoRoot(input.repoPath);
+  const index = await loadReviewIndex(repoRoot);
+  const review = index.reviews[input.reviewId];
+  if (!review || !review.reviewer) return { updated: false };
+
+  await completeReview({
+    repoPath: input.repoPath,
+    reviewId: input.reviewId,
+    reviewer: review.reviewer,
+    approved: input.status === "approved",
+    summary: input.comment || (input.status === "approved" ? "Approved" : "Changes requested"),
+  });
+  return { updated: true };
+}
+
+/**
+ * @deprecated Use getPendingReviews instead
+ */
+export async function listPendingReviews(input: {
+  repoPath?: string;
+}): Promise<{ reviews: Array<{ id: string; fromAgent: string; reviewPath: string; createdAt: string }> }> {
+  const result = await getPendingReviews(input);
+  return {
+    reviews: result.reviews.map(r => ({
+      id: r.id,
+      fromAgent: r.codeAuthor,
+      reviewPath: `.swarm/reviews/${r.id}.json`,
+      createdAt: new Date(r.createdAt).toISOString(),
+    })),
+  };
+}
+

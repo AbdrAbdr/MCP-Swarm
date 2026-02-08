@@ -9,6 +9,54 @@
 
 ---
 
+## [0.9.19] - 2026-02-08
+
+### 🚀 Большой релиз: Smart Routing, Память, Agent Teams, MCP-мосты
+
+#### Добавлено
+
+- **Smart Router Proxy** (`smartRouterProxy.ts`) — движок оптимизации расходов (distiq-code)
+  - Автоматический даунгрейд модели (Opus → Sonnet если задача простая)
+  - Семантический кэш для повторяющихся запросов (SHA-256 + similarity)
+  - Подсказки по промпт-кэшированию (cache_control breakpoints для Anthropic API)
+  - Классификация запросов: анализ сложности, оценка токенов, рекомендация тира
+  - Трекинг экономии в реальном времени
+
+- **Swarm Memory** (`swarmMemory.ts`) — гибридная система памяти (claude-mem + claude-cognitive)
+  - 3-уровневый Context Router: hot (текущая сессия) / warm (24ч) / cold (архив)
+  - Pool Coordinator для синхронизации памяти между агентами
+  - Lifecycle hooks: session_start, prompt_submit, response_ready, session_end
+  - 3-слойный поиск: keyword/tag → timeline → полные наблюдения
+  - Авто-компрессия старых записей (экономия контекстного окна)
+
+- **MCP Linear Bridge** (`mcpLinearBridge.ts`) — синхронизация задач ↔ Linear
+  - Маппинг статусов: open → Todo, in_progress → In Progress, done → Done
+  - Регистрация задач и двусторонняя синхронизация
+  - Пассивная активация (только при обнаружении mcp-linear)
+
+- **MCP Context7 Bridge** (`mcpContext7Bridge.ts`) — актуальная документация
+  - Авто-определение стека (React, Next.js, Express, Prisma, Supabase, Tailwind...)
+  - Кэш документации с настраиваемым TTL (по умолчанию 24ч)
+  - Стратегия cache-first при поиске
+
+- **Claude-Flow Bridge** (`claudeFlowBridge.ts`) — маршрутизация навыков и RAG
+  - Q-learning роутинг (epsilon-greedy exploration/exploitation)
+  - Реестр навыков с трекингом качества (Q-values, success rates)
+  - Конфигурация RAG для vector search → context injection
+
+- **Agent Teams** (`agentTeams.ts`) — координация мульти-агентных команд
+  - Создание команд с ролями: lead, developer, reviewer, tester, specialist
+  - Делегирование задач с поддержкой зависимостей
+  - Авто-ребалансировка: перераспределение задач при уходе агента в offline
+  - Командный broadcast messaging
+  - RAC (Retrieval Augmented Coding) — плейсхолдер для vector search
+
+- **Skills Discovery** (`skillsDiscovery.ts`) — обнаружение навыков из IDE
+  - Сканирование 6+ форматов: Gemini, Antigravity, Claude, Cursor, Codex, Windsurf
+  - Нормализация в единый формат
+  - Рекомендация навыков по описанию задачи
+  - Кросс-IDE импорт/экспорт
+
 ## [0.9.18] - 2026-02-08
 
 ### 🧠 Интеграция новых AI-моделей
@@ -328,12 +376,14 @@ npm update mcp-swarm
   - 4 model tiers: economy, standard, premium, flagship
   - 6 providers: anthropic, openai, google, mistral, local, custom
 
-- **Built-in Experts (16 models, verified pricing February 2026)**
-  - **Anthropic Claude 4.5 Series:**
+- **Built-in Experts (19 models, verified pricing February 2026)**
+  - **Anthropic Claude Series:**
+    - Claude Opus 4.6 (flagship, 1M, $5/$25 MTok) ← NEW
     - Claude Opus 4.5 (flagship, 200K, $5/$25 MTok)
     - Claude Sonnet 4.5 (premium, 200K, $3/$15 MTok)
     - Claude Haiku 4.5 (economy, 200K, $1/$5 MTok)
   - **OpenAI GPT-5.x Series:**
+    - GPT-5.3 Codex (flagship, 256K, ~$2/~$15 MTok) ← NEW
     - GPT-5.2 (flagship, 256K, $1.75/$14 MTok)
     - GPT-5.2 Pro (flagship, 256K, $21/$168 MTok)
     - GPT-5 Mini (standard, 128K, $0.25/$2 MTok)
@@ -342,6 +392,8 @@ npm update mcp-swarm
     - GPT-4.1 Nano (economy, 128K, $0.20/$0.80 MTok)
   - **OpenAI Reasoning Models:**
     - o4-mini (reasoning, 128K, $4/$16 MTok)
+  - **Moonshot AI:**
+    - Kimi K2.5 (premium, 128K, ~$1/~$5 MTok) ← NEW
   - **Google Gemini 3.x Series:**
     - Gemini 3 Pro (flagship, 1M, $2/$12 MTok)
     - Gemini 3 Flash (standard, 1M, $0.50/$3 MTok)

@@ -9,7 +9,7 @@ import { analyzeTaskComplexity, getAvailableModels, selectModel, recommendModel,
 import { handleSONATool } from "../workflows/sona.js";
 import { handleMoETool } from "../workflows/moeRouter.js";
 import { runQualityGate, getQualityReport, setQualityThreshold, checkPrReady } from "../workflows/qualityGate.js";
-import { logApiUsage, getAgentCosts, getProjectCosts, setBudgetLimit, checkBudgetRemaining } from "../workflows/costTracker.js";
+import { logApiUsage, getAgentCosts, getProjectCosts, setBudgetLimit, checkBudgetRemaining } from "../workflows/costOptimization.js";
 import { saveBaseline, checkRegression, listRegressions, resolveRegression, listBaselines } from "../workflows/regressionDetector.js";
 
 // Helper to wrap results

@@ -6,7 +6,7 @@
 import { z } from "zod";
 
 import { fileReserve, fileRelease, listFileLocks } from "../workflows/fileLocks.js";
-import { forecastFileTouches, checkFileConflicts } from "../workflows/conflictForecast.js";
+import { forecastFileTouches, checkFileConflicts } from "../workflows/conflictPrediction.js";
 import { checkFileSafety } from "../workflows/conflictPrediction.js";
 import { createWorktree, listWorktrees, removeWorktree } from "../workflows/worktree.js";
 import { createSnapshot, triggerRollback, listSnapshots } from "../workflows/snapshot.js";

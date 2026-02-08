@@ -89,6 +89,12 @@ export interface AgentCategoryProfile {
   taskCount: number;         // Total tasks in this category
   lastUpdated: number;
   confidence: number;        // Statistical confidence 0-1
+  // EWC++ Progressive Fisher Information
+  fisherDiag?: {
+    successRate: number;     // Accumulated Fisher weight for successRate
+    avgQuality: number;      // Accumulated Fisher weight for avgQuality
+    avgTimeMinutes: number;  // Accumulated Fisher weight for avgTimeMinutes
+  };
 }
 
 /**
@@ -131,6 +137,15 @@ export interface SONAConfig {
   enabled: boolean;
   autoLearn: boolean;        // Auto-update from task completions
   preferSpecialists: boolean; // Prefer agents specialized in category
+  // EWC++ Progressive mode
+  ewcPlusPlus: boolean;      // Use Progressive Fisher IM (default: true)
+  fisherDecay: number;       // Decay rate for Fisher IM accumulators (0.95)
+  // Transfer Learning
+  transferEnabled: boolean;  // Cross-category knowledge transfer
+  transferRate: number;      // How much to transfer (0.1 = 10%)
+  // Q-Learning feedback
+  qLearningEnabled: boolean; // Send reward signals to MoE Router
+  qLearningGamma: number;    // Discount factor for future rewards (0.9)
 }
 
 /**
@@ -180,7 +195,7 @@ async function getSONADir(repoRoot: string): Promise<string> {
 async function loadModel(repoRoot: string): Promise<SONAModel> {
   const sonaDir = await getSONADir(repoRoot);
   const modelPath = path.join(sonaDir, MODEL_FILE);
-  
+
   try {
     const raw = await fs.readFile(modelPath, "utf8");
     return JSON.parse(raw) as SONAModel;
@@ -213,6 +228,15 @@ function createDefaultModel(): SONAModel {
     enabled: true,
     autoLearn: true,
     preferSpecialists: true,
+    // EWC++ defaults
+    ewcPlusPlus: true,
+    fisherDecay: 0.95,
+    // Transfer Learning defaults
+    transferEnabled: true,
+    transferRate: 0.1,
+    // Q-Learning defaults
+    qLearningEnabled: true,
+    qLearningGamma: 0.9,
   };
 
   const categoryWeights: Record<TaskCategory, number> = {
@@ -232,7 +256,7 @@ function createDefaultModel(): SONAModel {
   };
 
   return {
-    version: "0.9.5",
+    version: "1.0.0",
     agents: {},
     categoryWeights,
     globalStats: {
@@ -377,7 +401,7 @@ export async function classifyTask(input: {
   const text = `${input.title} ${input.description}`.toLowerCase();
   const scores: Record<TaskCategory, number> = {} as any;
   const keywords: string[] = [];
-  
+
   // Score each category
   for (const [category, patterns] of Object.entries(CATEGORY_PATTERNS)) {
     let score = 0;
@@ -390,7 +414,7 @@ export async function classifyTask(input: {
     }
     scores[category as TaskCategory] = score;
   }
-  
+
   // Find best category
   let bestCategory: TaskCategory = "unknown";
   let bestScore = 0;
@@ -400,11 +424,11 @@ export async function classifyTask(input: {
       bestCategory = cat as TaskCategory;
     }
   }
-  
+
   // Calculate confidence (normalized)
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
   const confidence = totalScore > 0 ? bestScore / totalScore : 0;
-  
+
   // Determine complexity
   let complexity: TaskComplexity = "medium";
   for (const [level, config] of Object.entries(COMPLEXITY_INDICATORS)) {
@@ -415,7 +439,7 @@ export async function classifyTask(input: {
       }
     }
   }
-  
+
   // Use file count as additional complexity signal
   if (input.affectedFiles) {
     const fileCount = input.affectedFiles.length;
@@ -425,7 +449,7 @@ export async function classifyTask(input: {
     else if (fileCount <= 20) complexity = "complex";
     else complexity = "epic";
   }
-  
+
   // Affected areas from file paths
   const affectedAreas: string[] = [];
   if (input.affectedFiles) {
@@ -436,7 +460,7 @@ export async function classifyTask(input: {
       }
     }
   }
-  
+
   return {
     category: bestCategory,
     confidence: Math.min(confidence + 0.2, 1), // Boost confidence slightly
@@ -458,38 +482,38 @@ function updateAgentProfile(
 ): AgentProfile {
   const category = outcome.category;
   const catProfile = profile.categories[category];
-  
+
   // Apply exponential moving average for online learning
   const alpha = config.learningRate;
   const n = catProfile.taskCount + 1;
-  
+
   // Update rolling metrics with decay
-  catProfile.successRate = catProfile.successRate * (1 - alpha) + 
+  catProfile.successRate = catProfile.successRate * (1 - alpha) +
     (outcome.success ? 1 : 0) * alpha;
-  
-  catProfile.avgQuality = catProfile.avgQuality * (1 - alpha) + 
+
+  catProfile.avgQuality = catProfile.avgQuality * (1 - alpha) +
     outcome.qualityScore * alpha;
-  
-  catProfile.avgTimeMinutes = catProfile.avgTimeMinutes * (1 - alpha) + 
+
+  catProfile.avgTimeMinutes = catProfile.avgTimeMinutes * (1 - alpha) +
     outcome.timeMinutes * alpha;
-  
+
   catProfile.taskCount = n;
   catProfile.lastUpdated = Date.now();
-  
+
   // Calculate confidence (based on sample size)
   // Uses Wilson score interval approximation
   const z = 1.96; // 95% confidence
   const phat = catProfile.successRate;
   catProfile.confidence = Math.min(
     1,
-    phat - z * Math.sqrt((phat * (1 - phat) + z * z / (4 * n)) / n) / 
-      (1 + z * z / n)
+    phat - z * Math.sqrt((phat * (1 - phat) + z * z / (4 * n)) / n) /
+    (1 + z * z / n)
   );
-  
+
   // Update overall stats
   profile.totalTasks++;
   profile.lastActive = Date.now();
-  
+
   // Recalculate overall score (weighted average)
   let totalWeight = 0;
   let weightedSum = 0;
@@ -501,7 +525,7 @@ function updateAgentProfile(
     }
   }
   profile.overallScore = totalWeight > 0 ? weightedSum / totalWeight : 0.5;
-  
+
   // Update specializations (top 3 categories by score)
   const categoryScores = Object.entries(profile.categories)
     .filter(([_, cp]) => cp.taskCount >= 3)
@@ -510,16 +534,17 @@ function updateAgentProfile(
       score: cp.successRate * 0.6 + cp.avgQuality * 0.4,
     }))
     .sort((a, b) => b.score - a.score);
-  
+
   profile.specializations = categoryScores
     .slice(0, 3)
     .map(cs => cs.category);
-  
+
   return profile;
 }
 
 /**
  * Apply Elastic Weight Consolidation to prevent catastrophic forgetting
+ * (Legacy — kept for backward compat when ewcPlusPlus=false)
  */
 function applyEWC(
   oldProfile: AgentCategoryProfile,
@@ -527,22 +552,196 @@ function applyEWC(
   fisherWeight: number,
   lambda: number
 ): AgentCategoryProfile {
-  // EWC adds a penalty for moving away from old weights
-  // proportional to their importance (Fisher information)
   const ewcPenalty = lambda * fisherWeight;
-  
-  // Blend old and new values based on importance
   const blend = 1 / (1 + ewcPenalty);
-  
+
   return {
     ...newProfile,
-    successRate: newProfile.successRate * blend + 
+    successRate: newProfile.successRate * blend +
       oldProfile.successRate * (1 - blend),
-    avgQuality: newProfile.avgQuality * blend + 
+    avgQuality: newProfile.avgQuality * blend +
       oldProfile.avgQuality * (1 - blend),
-    avgTimeMinutes: newProfile.avgTimeMinutes * blend + 
+    avgTimeMinutes: newProfile.avgTimeMinutes * blend +
       oldProfile.avgTimeMinutes * (1 - blend),
   };
+}
+
+/**
+ * EWC++ — Progressive Elastic Weight Consolidation
+ * 
+ * Improvements over basic EWC:
+ * 1. Online Fisher Information Matrix — accumulates importance over time
+ * 2. Progressive consolidation — newer experiences decay older Fisher weights
+ * 3. Per-parameter Fisher diagonals — each metric has its own importance
+ * 
+ * Paper: Schwarz et al. (2018) "Progress & Compress: A scalable framework
+ * for continual learning"
+ */
+function applyEWCPlusPlus(
+  oldProfile: AgentCategoryProfile,
+  newProfile: AgentCategoryProfile,
+  fisherWeight: number,
+  lambda: number,
+  fisherDecay: number
+): AgentCategoryProfile {
+  // Initialize Fisher diagonals if missing
+  const oldFisher = oldProfile.fisherDiag || {
+    successRate: 1.0,
+    avgQuality: 1.0,
+    avgTimeMinutes: 0.5,
+  };
+
+  // Calculate gradient (change) for each parameter
+  const gradSR = Math.abs(newProfile.successRate - oldProfile.successRate);
+  const gradQ = Math.abs(newProfile.avgQuality - oldProfile.avgQuality);
+  const gradT = Math.abs(newProfile.avgTimeMinutes - oldProfile.avgTimeMinutes) / 60;
+
+  // Online Fisher update: F_new = decay * F_old + gradient²
+  // This accumulates importance progressively, with older info decaying
+  const newFisher = {
+    successRate: fisherDecay * oldFisher.successRate + gradSR * gradSR,
+    avgQuality: fisherDecay * oldFisher.avgQuality + gradQ * gradQ,
+    avgTimeMinutes: fisherDecay * oldFisher.avgTimeMinutes + gradT * gradT,
+  };
+
+  // Per-parameter EWC penalty: stronger penalty for high-Fisher params
+  const penaltySR = lambda * fisherWeight * newFisher.successRate;
+  const penaltyQ = lambda * fisherWeight * newFisher.avgQuality;
+  const penaltyT = lambda * fisherWeight * newFisher.avgTimeMinutes;
+
+  const blendSR = 1 / (1 + penaltySR);
+  const blendQ = 1 / (1 + penaltyQ);
+  const blendT = 1 / (1 + penaltyT);
+
+  return {
+    ...newProfile,
+    successRate: newProfile.successRate * blendSR +
+      oldProfile.successRate * (1 - blendSR),
+    avgQuality: newProfile.avgQuality * blendQ +
+      oldProfile.avgQuality * (1 - blendQ),
+    avgTimeMinutes: newProfile.avgTimeMinutes * blendT +
+      oldProfile.avgTimeMinutes * (1 - blendT),
+    fisherDiag: newFisher,
+  };
+}
+
+// ============ TRANSFER LEARNING ============
+
+/**
+ * Category adjacency map — defines which categories share transferable knowledge
+ * E.g., frontend_ui and feature often share similar skills
+ */
+const CATEGORY_ADJACENCY: Partial<Record<TaskCategory, TaskCategory[]>> = {
+  frontend_ui: ["feature", "refactoring", "bugfix"],
+  backend_api: ["feature", "database", "security", "performance"],
+  database: ["backend_api", "performance"],
+  testing: ["bugfix", "refactoring"],
+  devops: ["infrastructure", "security"],
+  refactoring: ["frontend_ui", "backend_api", "testing", "performance"],
+  bugfix: ["testing", "frontend_ui", "backend_api"],
+  feature: ["frontend_ui", "backend_api"],
+  security: ["backend_api", "devops"],
+  performance: ["backend_api", "database", "refactoring"],
+  infrastructure: ["devops"],
+  documentation: [],
+  unknown: [],
+};
+
+/**
+ * Transfer learning: when an agent learns in one category,
+ * partially propagate gains to adjacent categories.
+ *
+ * This prevents cold-start effect when an agent switches task types.
+ */
+function applyTransferLearning(
+  profile: AgentProfile,
+  learnedCategory: TaskCategory,
+  outcome: TaskOutcome,
+  transferRate: number
+): AgentProfile {
+  const adjacentCategories = CATEGORY_ADJACENCY[learnedCategory] || [];
+
+  for (const adjCat of adjacentCategories) {
+    const adjProfile = profile.categories[adjCat];
+    if (!adjProfile) continue;
+
+    // Transfer only positive signals (success + quality)
+    if (outcome.success && outcome.qualityScore > 0.6) {
+      // Partial transfer: small improvement to adjacent categories
+      const transferAmount = transferRate * (1 / (1 + adjProfile.taskCount * 0.1));
+      adjProfile.successRate += (outcome.qualityScore - adjProfile.successRate) * transferAmount;
+      adjProfile.avgQuality += (outcome.qualityScore - adjProfile.avgQuality) * transferAmount * 0.5;
+      adjProfile.lastUpdated = Date.now();
+    }
+  }
+
+  return profile;
+}
+
+// ============ Q-LEARNING FEEDBACK ============
+
+/**
+ * Q-Learning reward signal for MoE Router integration.
+ * After each task, compute a reward and store it for the MoE router
+ * to adjust model selection weights.
+ *
+ * Reward formula:
+ *   R = success * quality - (1-success) * errorPenalty - timePenalty
+ *   Q(s,a) = Q(s,a) + alpha * (R + gamma * maxQ - Q(s,a))
+ */
+interface QLearningReward {
+  taskId: string;
+  category: TaskCategory;
+  agentName: string;
+  reward: number;           // [-1, +1] normalized reward
+  timestamp: number;
+  modelUsed?: string;       // Which MoE model was used
+}
+
+function computeQLearningReward(
+  outcome: TaskOutcome,
+  gamma: number
+): number {
+  // Positive reward for success, negative for failure
+  let reward = outcome.success ? 0.5 : -0.5;
+
+  // Quality bonus [0, 0.3]
+  reward += outcome.qualityScore * 0.3;
+
+  // Error penalty [-0.2, 0]
+  const errorPenalty = Math.min(outcome.errorCount || 0, 5) / 5 * 0.2;
+  reward -= errorPenalty;
+
+  // Time efficiency bonus — fast completion earns extra reward
+  if (outcome.timeMinutes < 15) reward += 0.1;
+  else if (outcome.timeMinutes > 120) reward -= 0.1;
+
+  // Review score bonus if available [0, 0.1]
+  if (outcome.reviewScore !== undefined) {
+    reward += (outcome.reviewScore - 0.5) * 0.2;
+  }
+
+  // Clamp to [-1, +1]
+  return Math.max(-1, Math.min(1, reward));
+}
+
+async function saveQLearningReward(
+  repoRoot: string,
+  reward: QLearningReward
+): Promise<void> {
+  const sonaDir = await getSONADir(repoRoot);
+  const rewardPath = path.join(sonaDir, "qlearning_rewards.json");
+
+  let rewards: QLearningReward[] = [];
+  try {
+    const raw = await fs.readFile(rewardPath, "utf8");
+    rewards = JSON.parse(raw);
+  } catch { }
+
+  rewards.push(reward);
+  // Keep last 500 rewards
+  if (rewards.length > 500) rewards = rewards.slice(-500);
+  await fs.writeFile(rewardPath, JSON.stringify(rewards, null, 2), "utf8");
 }
 
 // ============ ROUTING FUNCTIONS ============
@@ -557,27 +756,27 @@ function calculateAgentScore(
   categoryWeight: number
 ): number {
   const catProfile = profile.categories[category];
-  
+
   // Base score from success rate and quality
   let score = catProfile.successRate * 0.5 + catProfile.avgQuality * 0.3;
-  
+
   // Confidence bonus
   score += catProfile.confidence * 0.1;
-  
+
   // Specialization bonus
   if (profile.specializations.includes(category)) {
     const specIndex = profile.specializations.indexOf(category);
     score += (3 - specIndex) * 0.05; // Top spec gets +0.15
   }
-  
+
   // Recency bonus (agents active recently get slight boost)
   const hoursSinceActive = (Date.now() - profile.lastActive) / (1000 * 60 * 60);
   if (hoursSinceActive < 1) score += 0.05;
   else if (hoursSinceActive < 24) score += 0.02;
-  
+
   // Apply category weight
   score *= categoryWeight;
-  
+
   // Complexity adjustment
   const complexityMultipliers: Record<TaskComplexity, number> = {
     trivial: 0.8,
@@ -586,12 +785,12 @@ function calculateAgentScore(
     complex: 1.1,
     epic: 1.2,
   };
-  
+
   // For complex tasks, prefer agents with high confidence
   if (complexity === "complex" || complexity === "epic") {
     score *= catProfile.confidence + 0.5;
   }
-  
+
   return score * complexityMultipliers[complexity];
 }
 
@@ -608,7 +807,7 @@ export async function route(input: {
 }): Promise<SONARecommendation> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const model = await loadModel(repoRoot);
-  
+
   if (!model.config.enabled) {
     return {
       recommendedAgent: null,
@@ -622,7 +821,7 @@ export async function route(input: {
       expectedTimeMinutes: 30,
     };
   }
-  
+
   // Classify the task
   const classification = await classifyTask({
     repoPath: input.repoPath,
@@ -630,7 +829,7 @@ export async function route(input: {
     description: input.description,
     affectedFiles: input.affectedFiles,
   });
-  
+
   // Filter available agents
   const availableAgents = input.availableAgents || Object.keys(model.agents);
   if (availableAgents.length === 0) {
@@ -646,38 +845,38 @@ export async function route(input: {
       expectedTimeMinutes: 30,
     };
   }
-  
+
   // Score each agent
   const scores: Array<{
     agent: string;
     score: number;
     profile: AgentProfile;
   }> = [];
-  
+
   for (const agentName of availableAgents) {
     let profile = model.agents[agentName];
     if (!profile) {
       // Unknown agent gets default profile
       profile = createDefaultAgentProfile(agentName);
     }
-    
+
     const score = calculateAgentScore(
       profile,
       classification.category,
       classification.complexity,
       model.categoryWeights[classification.category]
     );
-    
+
     scores.push({ agent: agentName, score, profile });
   }
-  
+
   // Sort by score
   scores.sort((a, b) => b.score - a.score);
-  
+
   // Decide: exploit (best agent) or explore (random agent)
   let selectedIndex = 0;
   let isExploration = false;
-  
+
   if (input.forceExplore || Math.random() < model.config.explorationRate) {
     // Exploration: pick a random agent (with some bias toward better ones)
     const weights = scores.map((s, i) => Math.pow(0.7, i)); // Exponential decay
@@ -692,10 +891,10 @@ export async function route(input: {
     }
     isExploration = selectedIndex !== 0;
   }
-  
+
   const selected = scores[selectedIndex];
   const catProfile = selected.profile.categories[classification.category];
-  
+
   // Build alternatives list
   const alternatives = scores
     .filter((_, i) => i !== selectedIndex)
@@ -707,7 +906,7 @@ export async function route(input: {
         ? `Specialist in ${classification.category}`
         : `Score: ${Math.round(s.score * 100)}%`,
     }));
-  
+
   // Build reasoning
   let reasoning = `Best match for ${classification.category} task`;
   if (isExploration) {
@@ -717,7 +916,7 @@ export async function route(input: {
   } else if (catProfile.taskCount > 10 && catProfile.successRate > 0.8) {
     reasoning = `Proven track record: ${Math.round(catProfile.successRate * 100)}% success`;
   }
-  
+
   return {
     recommendedAgent: selected.agent,
     confidence: catProfile.confidence,
@@ -754,18 +953,18 @@ export async function learn(input: {
 }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const model = await loadModel(repoRoot);
-  
+
   if (!model.config.autoLearn) {
     return { success: false, message: "Auto-learning is disabled" };
   }
-  
+
   // Classify the task
   const classification = await classifyTask({
     repoPath: input.repoPath,
     title: input.title,
     description: input.description,
   });
-  
+
   // Create outcome record
   const outcome: TaskOutcome = {
     taskId: input.taskId,
@@ -779,47 +978,83 @@ export async function learn(input: {
     reviewScore: input.reviewScore,
     timestamp: Date.now(),
   };
-  
+
   // Get or create agent profile
   if (!model.agents[input.agentName]) {
     model.agents[input.agentName] = createDefaultAgentProfile(input.agentName);
   }
-  
+
   const oldProfile = JSON.parse(JSON.stringify(
     model.agents[input.agentName]
   )) as AgentProfile;
-  
+
   // Update profile with online learning
   model.agents[input.agentName] = updateAgentProfile(
     model.agents[input.agentName],
     outcome,
     model.config
   );
-  
-  // Apply EWC to prevent forgetting
+
+  // Apply EWC or EWC++ to prevent forgetting
   const catProfile = model.agents[input.agentName].categories[classification.category];
   const oldCatProfile = oldProfile.categories[classification.category];
-  const ewcApplied = applyEWC(
-    oldCatProfile,
-    catProfile,
-    model.categoryWeights[classification.category],
-    model.config.ewcLambda
-  );
-  model.agents[input.agentName].categories[classification.category] = ewcApplied;
-  
+
+  if (model.config.ewcPlusPlus) {
+    // EWC++ — Progressive Fisher Information Matrix
+    const ewcPPApplied = applyEWCPlusPlus(
+      oldCatProfile,
+      catProfile,
+      model.categoryWeights[classification.category],
+      model.config.ewcLambda,
+      model.config.fisherDecay ?? 0.95
+    );
+    model.agents[input.agentName].categories[classification.category] = ewcPPApplied;
+  } else {
+    // Legacy EWC
+    const ewcApplied = applyEWC(
+      oldCatProfile,
+      catProfile,
+      model.categoryWeights[classification.category],
+      model.config.ewcLambda
+    );
+    model.agents[input.agentName].categories[classification.category] = ewcApplied;
+  }
+
+  // Transfer learning: propagate gains to adjacent categories
+  if (model.config.transferEnabled) {
+    model.agents[input.agentName] = applyTransferLearning(
+      model.agents[input.agentName],
+      classification.category,
+      outcome,
+      model.config.transferRate ?? 0.1
+    );
+  }
+
+  // Q-Learning reward signal (for MoE Router integration)
+  if (model.config.qLearningEnabled) {
+    const reward = computeQLearningReward(outcome, model.config.qLearningGamma ?? 0.9);
+    await saveQLearningReward(repoRoot, {
+      taskId: input.taskId,
+      category: classification.category,
+      agentName: input.agentName,
+      reward,
+      timestamp: Date.now(),
+    });
+  }
+
   // Update global stats
   model.globalStats.totalTasks++;
   const alpha = 0.05; // Slow update for global stats
-  model.globalStats.avgSuccessRate = 
-    model.globalStats.avgSuccessRate * (1 - alpha) + 
+  model.globalStats.avgSuccessRate =
+    model.globalStats.avgSuccessRate * (1 - alpha) +
     (input.success ? 1 : 0) * alpha;
-  model.globalStats.avgQuality = 
-    model.globalStats.avgQuality * (1 - alpha) + 
+  model.globalStats.avgQuality =
+    model.globalStats.avgQuality * (1 - alpha) +
     input.qualityScore * alpha;
-  
+
   // Save updated model
   await saveModel(repoRoot, model);
-  
+
   // Save to history
   const sonaDir = await getSONADir(repoRoot);
   const historyPath = path.join(sonaDir, HISTORY_FILE);
@@ -827,11 +1062,11 @@ export async function learn(input: {
   try {
     const raw = await fs.readFile(historyPath, "utf8");
     history = JSON.parse(raw);
-  } catch {}
+  } catch { }
   history.push(outcome);
   if (history.length > 1000) history = history.slice(-1000);
   await fs.writeFile(historyPath, JSON.stringify(history, null, 2), "utf8");
-  
+
   return {
     success: true,
     message: `Learned from ${input.agentName}'s ${input.success ? "success" : "failure"} on ${classification.category} task`,
@@ -864,7 +1099,7 @@ export async function getAllProfiles(input: {
 }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const model = await loadModel(repoRoot);
-  
+
   return {
     agents: Object.values(model.agents).sort(
       (a, b) => b.overallScore - a.overallScore
@@ -888,7 +1123,7 @@ export async function getSpecialists(input: {
 }>> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const model = await loadModel(repoRoot);
-  
+
   const specialists = Object.values(model.agents)
     .map(profile => ({
       agent: profile.agentName,
@@ -899,7 +1134,7 @@ export async function getSpecialists(input: {
     }))
     .filter(s => s.taskCount > 0)
     .sort((a, b) => b.score - a.score);
-  
+
   return specialists.slice(0, input.limit || 5);
 }
 
@@ -915,13 +1150,13 @@ export async function getHistory(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const sonaDir = await getSONADir(repoRoot);
   const historyPath = path.join(sonaDir, HISTORY_FILE);
-  
+
   let history: TaskOutcome[] = [];
   try {
     const raw = await fs.readFile(historyPath, "utf8");
     history = JSON.parse(raw);
-  } catch {}
-  
+  } catch { }
+
   // Filter by agent/category if specified
   if (input.agentName) {
     history = history.filter(h => h.agentName === input.agentName);
@@ -929,7 +1164,7 @@ export async function getHistory(input: {
   if (input.category) {
     history = history.filter(h => h.category === input.category);
   }
-  
+
   return history.slice(-(input.limit || 100));
 }
 
@@ -955,10 +1190,10 @@ export async function setConfig(input: {
 }): Promise<{ success: boolean; config: SONAConfig }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const model = await loadModel(repoRoot);
-  
+
   model.config = { ...model.config, ...input.config };
   await saveModel(repoRoot, model);
-  
+
   return { success: true, config: model.config };
 }
 
@@ -971,19 +1206,19 @@ export async function reset(input: {
 }): Promise<{ success: boolean; message: string }> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const oldModel = await loadModel(repoRoot);
-  
+
   const newModel = createDefaultModel();
   if (input.keepConfig) {
     newModel.config = oldModel.config;
   }
-  
+
   await saveModel(repoRoot, newModel);
-  
+
   // Clear history
   const sonaDir = await getSONADir(repoRoot);
   const historyPath = path.join(sonaDir, HISTORY_FILE);
   await fs.writeFile(historyPath, "[]", "utf8");
-  
+
   return { success: true, message: "SONA model reset successfully" };
 }
 
@@ -1005,23 +1240,23 @@ export async function getStats(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const model = await loadModel(repoRoot);
   const history = await getHistory({ repoPath: input.repoPath, limit: 1000 });
-  
+
   // Count tasks per category
   const categoryCounts: Record<TaskCategory, number> = {} as any;
   for (const h of history) {
     categoryCounts[h.category] = (categoryCounts[h.category] || 0) + 1;
   }
-  
+
   const topCategories = Object.entries(categoryCounts)
     .map(([category, count]) => ({ category: category as TaskCategory, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-  
+
   const topAgents = Object.values(model.agents)
     .map(a => ({ agent: a.agentName, score: a.overallScore }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
-  
+
   return {
     totalAgents: Object.keys(model.agents).length,
     totalTasks: model.globalStats.totalTasks,

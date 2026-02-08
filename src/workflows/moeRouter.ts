@@ -95,6 +95,17 @@ export interface Expert {
   lastUsed: number;
   totalCalls: number;
   successRate: number;       // 0-1
+  /** Special features unique to this model */
+  specialFeatures?: {
+    agentTeams?: boolean;        // Claude Opus 4.6 / Kimi K2.5: parallel agent orchestration
+    adaptiveThinking?: boolean;  // Claude Opus 4.6: dynamic reasoning depth
+    contextCompaction?: boolean; // Claude Opus 4.6: on-the-fly context compression
+    effortLevels?: string[];     // e.g., ["low","medium","high"]
+    longContextOptimized?: boolean; // Optimized for 200K+ context
+    agenticCoding?: boolean;     // GPT-5.3 Codex: autonomous coding loops
+    nativeMultimodal?: boolean;  // Kimi K2.5: vision + text + video in single model
+    moeArchitecture?: boolean;   // Kimi K2.5: MoE 1T total / 32B active params
+  };
 }
 
 /**
@@ -262,6 +273,13 @@ const DEFAULT_EXPERTS: Expert[] = [
     lastUsed: 0,
     totalCalls: 0,
     successRate: 1.0,
+    specialFeatures: {
+      agentTeams: true,           // Parallel agent orchestration
+      adaptiveThinking: true,     // Dynamic reasoning depth (/effort)
+      contextCompaction: true,    // On-the-fly context compression
+      effortLevels: ["low", "medium", "high"],
+      longContextOptimized: true, // 1M context with minimal drift
+    },
   },
   // Claude Opus 4.5 — downgraded to premium (replaced by Opus 4.6 as flagship)
   {
@@ -623,7 +641,7 @@ const DEFAULT_EXPERTS: Expert[] = [
       planning: 0.96,
       documentation: 0.94,
     },
-    contextWindow: 256000,
+    contextWindow: 128000,   // 128K context (official)
     costPer1kInput: 0.002,   // ~$2/MTok (estimated)
     costPer1kOutput: 0.015,  // ~$15/MTok (estimated)
     avgLatencyMs: 2500,
@@ -632,6 +650,10 @@ const DEFAULT_EXPERTS: Expert[] = [
     lastUsed: 0,
     totalCalls: 0,
     successRate: 1.0,
+    specialFeatures: {
+      agenticCoding: true,        // Autonomous coding loops
+      effortLevels: ["low", "medium", "high"],
+    },
   },
 
   // ============ GOOGLE (Gemini 3.x and 2.5.x Series) ============
@@ -814,38 +836,48 @@ const DEFAULT_EXPERTS: Expert[] = [
 
   // ============ MOONSHOT AI (Kimi K2.5) ============
   // Source: platform.moonshot.ai (Feb 2026)
+  // MoE architecture: 1T total params, 32B active per request
+  // Agent Swarm: up to 100 sub-agents for parallel task execution
+  // Native multimodal: text + image + video in single model
+  // SWE-Bench Verified: 76.8%
   {
     id: "kimi-k2.5",
     name: "Kimi K2.5",
     provider: "moonshot",
     modelId: "kimi-k2.5",
     tier: "premium",
-    capabilities: ["code_generation", "code_review", "debugging", "reasoning", "planning"],
+    capabilities: ["code_generation", "code_review", "code_refactor", "debugging", "reasoning", "planning", "data_analysis", "creative"],
     strengthScores: {
-      code_generation: 0.94,
-      code_review: 0.91,
-      code_refactor: 0.89,
-      debugging: 0.90,
-      reasoning: 0.92,
-      math: 0.88,
-      creative: 0.85,
-      summarization: 0.88,
+      code_generation: 0.95,
+      code_review: 0.92,
+      code_refactor: 0.90,
+      debugging: 0.91,
+      reasoning: 0.93,
+      math: 0.90,
+      creative: 0.87,
+      summarization: 0.89,
       translation: 0.90,
-      data_analysis: 0.88,
-      quick_answer: 0.88,
-      conversation: 0.87,
-      planning: 0.90,
-      documentation: 0.88,
+      data_analysis: 0.91,
+      quick_answer: 0.89,
+      conversation: 0.88,
+      planning: 0.92,
+      documentation: 0.89,
     },
-    contextWindow: 128000,
-    costPer1kInput: 0.001,   // ~$1/MTok (estimated)
-    costPer1kOutput: 0.005,  // ~$5/MTok (estimated)
+    contextWindow: 262000,   // 262K context (official Jan 2026)
+    costPer1kInput: 0.0006,  // $0.60/MTok (official: platform.moonshot.ai)
+    costPer1kOutput: 0.0025, // $2.50/MTok (official: platform.moonshot.ai)
     avgLatencyMs: 1500,
     rateLimit: 100,
     available: true,
     lastUsed: 0,
     totalCalls: 0,
     successRate: 1.0,
+    specialFeatures: {
+      agentTeams: true,           // Agent Swarm: up to 100 parallel sub-agents
+      nativeMultimodal: true,     // Vision + Text + Video natively
+      moeArchitecture: true,      // 1T total / 32B active (efficient)
+      longContextOptimized: true, // 262K with minimal drift
+    },
   },
 ];
 
@@ -1156,23 +1188,109 @@ export async function route(input: {
   // Estimate costs
   const inputTokens = estimateTokens(task.content);
   const outputTokens = Math.ceil(inputTokens * 0.5); // Rough estimate
-  const estimatedCost =
+  let estimatedCost =
     (inputTokens / 1000) * selected.expert.costPer1kInput +
     (outputTokens / 1000) * selected.expert.costPer1kOutput;
+
+  // ============ EFFORT-LEVEL AUTO-DOWNGRADE ============
+  // Claude Opus 4.6 supports /effort parameter — use medium for simple tasks
+  // to reduce cost (~40%) and latency without significant quality loss
+  const costOptimizationHints: string[] = [];
+  const sf = selected.expert.specialFeatures;
+
+  if (sf?.effortLevels && sf.effortLevels.length > 0) {
+    const complexity = task.complexity || "medium";
+    if (complexity === "trivial" || complexity === "simple") {
+      costOptimizationHints.push(
+        `💡 Рекомендация: Используйте /effort medium для ${selected.expert.name} — ` +
+        `экономия ~40% стоимости на ${complexity} задачах`
+      );
+      // Adjust estimated cost to reflect effort medium savings
+      estimatedCost *= 0.6;
+    }
+  }
+
+  // Agent Teams hint for complex multi-file tasks
+  if (sf?.agentTeams && (task.complexity === "complex" || task.complexity === "extreme")) {
+    costOptimizationHints.push(
+      `🤖 Agent Teams доступны: ${selected.expert.name} может orchestrate параллельные sub-agents`
+    );
+  }
+
+  // Agent Swarm preference: for complex tasks requiring parallel decomposition,
+  // prefer models with agentTeams (Kimi K2.5 = up to 100 sub-agents, 9x cheaper than Opus)
+  if ((task.complexity === "complex" || task.complexity === "extreme") && !sf?.agentTeams) {
+    const swarmCapable = candidates.filter(e => e.specialFeatures?.agentTeams);
+    if (swarmCapable.length > 0) {
+      const cheapest = swarmCapable.sort((a, b) => a.costPer1kInput - b.costPer1kInput)[0];
+      costOptimizationHints.push(
+        `🐝 Agent Swarm: ${cheapest.name} поддерживает параллельную декомпозицию ` +
+        `(${cheapest.costPer1kInput * 1000}$/MTok vs ${selected.expert.costPer1kInput * 1000}$/MTok — ` +
+        `${(selected.expert.costPer1kInput / cheapest.costPer1kInput).toFixed(1)}x дешевле)`
+      );
+    }
+  }
+
+  // Native multimodal hint for image/video tasks
+  if (sf?.nativeMultimodal && /\b(image|screenshot|diagram|video|visual|ui|design|mockup)\b/i.test(task.content)) {
+    costOptimizationHints.push(
+      `🖼️ Native Multimodal: ${selected.expert.name} оптимален для visual → code задач`
+    );
+  } else if (/\b(image|screenshot|diagram|video|visual|ui|design|mockup)\b/i.test(task.content)) {
+    const multimodalExperts = candidates.filter(e => e.specialFeatures?.nativeMultimodal);
+    if (multimodalExperts.length > 0) {
+      costOptimizationHints.push(
+        `🖼️ Multimodal задача: рассмотрите ${multimodalExperts[0].name} для native visual processing`
+      );
+    }
+  }
+
+  // MoE architecture hint — efficient for large workloads
+  if (sf?.moeArchitecture) {
+    costOptimizationHints.push(
+      `⚡ MoE Architecture: ${selected.expert.name} активирует только 32B из 1T параметров — эффективнее dense моделей`
+    );
+  }
+
+  // Context compaction hint for large contexts
+  if (sf?.contextCompaction && inputTokens > 50000) {
+    costOptimizationHints.push(
+      `📦 Context Compaction: ${selected.expert.name} автоматически сжимает контекст для длинных сессий`
+    );
+  }
+
+  // Long context preference: if required context > 200K, boost 1M models
+  if (task.requiredContext && task.requiredContext > 200000) {
+    const longContextExperts = candidates.filter(
+      e => e.contextWindow >= 1000000 || e.specialFeatures?.longContextOptimized
+    );
+    if (longContextExperts.length > 0 && !longContextExperts.includes(selected.expert)) {
+      costOptimizationHints.push(
+        `⚠️ Контекст ${(task.requiredContext / 1000).toFixed(0)}K: рассмотрите модели с 1M контекстом`
+      );
+    }
+  }
 
   // Update stats
   stats.totalRequests++;
   stats.lastUpdated = Date.now();
   await saveStats(repoRoot, stats);
 
+  const reasoningParts = [
+    `Selected ${selected.expert.name} for ${task.category} task.`,
+    `Task match: ${(selected.taskMatch * 100).toFixed(0)}%,`,
+    `Tier: ${selected.expert.tier},`,
+    `Estimated cost: $${estimatedCost.toFixed(4)}`,
+  ];
+  if (costOptimizationHints.length > 0) {
+    reasoningParts.push(`Hints: ${costOptimizationHints.join("; ")}`);
+  }
+
   return {
     selectedExpert: selected.expert,
     confidence: selected.score,
     alternatives,
-    reasoning: `Selected ${selected.expert.name} for ${task.category} task. ` +
-      `Task match: ${(selected.taskMatch * 100).toFixed(0)}%, ` +
-      `Tier: ${selected.expert.tier}, ` +
-      `Estimated cost: $${estimatedCost.toFixed(4)}`,
+    reasoning: reasoningParts.join(" "),
     estimatedCost,
     estimatedLatency: selected.expert.avgLatencyMs,
     estimatedTokens: {

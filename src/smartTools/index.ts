@@ -1,5 +1,5 @@
 /**
- * MCP Swarm v0.9.17 - Smart Tools Index
+ * MCP Swarm v1.0.0 - Smart Tools Index
  * Modular re-export of all 54 Smart Tools
  */
 
