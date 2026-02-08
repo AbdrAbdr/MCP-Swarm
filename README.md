@@ -2,8 +2,12 @@
 
 [![npm version](https://img.shields.io/npm/v/mcp-swarm.svg)](https://www.npmjs.com/package/mcp-swarm)
 [![npm downloads](https://img.shields.io/npm/dm/mcp-swarm.svg)](https://www.npmjs.com/package/mcp-swarm)
-[![license](https://img.shields.io/npm/l/mcp-swarm.svg)](https://github.com/AbdrAbdr/Swarm_MCP/blob/main/LICENSE)
-[![CI](https://github.com/AbdrAbdr/Swarm_MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdrAbdr/Swarm_MCP/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/mcp-swarm.svg)](https://github.com/AbdrAbdr/MCP-Swarm/blob/main/LICENSE)
+[![CI](https://github.com/AbdrAbdr/MCP-Swarm/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdrAbdr/MCP-Swarm/actions/workflows/ci.yml)
+
+<p align="center">
+  <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
+</p>
 
 # 🐝 MCP Swarm v0.9.18 — Universal AI Agent Coordination Platform
 
@@ -527,12 +531,12 @@ npm run build
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/AbdrAbdr/Swarm_MCP/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/AbdrAbdr/MCP-Swarm/main/install.ps1 | iex
 ```
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AbdrAbdr/Swarm_MCP/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/AbdrAbdr/MCP-Swarm/main/install.sh | bash
 ```
 
 The installer automatically:
@@ -565,15 +569,15 @@ npx mcp-swarm-install --telegram-user-id YOUR_TELEGRAM_ID --auto-install --yes
 
 ```bash
 # Windows
-git clone https://github.com/AbdrAbdr/Swarm_MCP.git C:/MCP/Swarm_MCP
+git clone https://github.com/AbdrAbdr/MCP-Swarm.git C:/MCP/Swarm_MCP
 cd C:/MCP/Swarm_MCP && npm install && npm run build
 
 # macOS
-git clone https://github.com/AbdrAbdr/Swarm_MCP.git ~/Documents/Swarm_MCP
+git clone https://github.com/AbdrAbdr/MCP-Swarm.git ~/Documents/Swarm_MCP
 cd ~/Documents/Swarm_MCP && npm install && npm run build
 
 # Linux
-git clone https://github.com/AbdrAbdr/Swarm_MCP.git ~/mcp/Swarm_MCP
+git clone https://github.com/AbdrAbdr/MCP-Swarm.git ~/mcp/Swarm_MCP
 cd ~/mcp/Swarm_MCP && npm install && npm run build
 ```
 </details>
@@ -730,7 +734,7 @@ MCP Swarm uses Cloudflare Workers for cloud infrastructure. **You don't need to 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/AbdrAbdr/Swarm_MCP.git
+git clone https://github.com/AbdrAbdr/MCP-Swarm.git
 cd Swarm_MCP
 
 # 2. Log in to Cloudflare (opens browser)
