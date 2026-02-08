@@ -7,6 +7,78 @@
 
 ---
 
+## [0.9.17] - 2026-02-08
+
+### 🏗️ Модуляризация Smart Tools
+
+#### Изменено
+
+- **`src/smartTools.ts`** — разбит на **9 модулей** в `src/smartTools/`:
+  - `core.ts` — swarm_agent, swarm_control, swarm_pulse, swarm_companion
+  - `tasks.ts` — swarm_task, swarm_plan, swarm_briefing, swarm_spec
+  - `files.ts` — swarm_file, swarm_worktree, swarm_snapshot
+  - `git.ts` — swarm_git, swarm_hooks, swarm_dependency
+  - `collaboration.ts` — swarm_chat, swarm_message, swarm_review, swarm_voting, swarm_auction, swarm_brainstorm
+  - `security.ts` — swarm_defence, swarm_consensus, swarm_mcp
+  - `analytics.ts` — swarm_cost, swarm_quality, swarm_regression, swarm_session
+  - `intelligence.ts` — swarm_sona, swarm_moe, swarm_vector, swarm_booster, swarm_context_pool, swarm_context
+  - `infra.ts` — swarm_health, swarm_immune, swarm_external, swarm_platform, swarm_knowledge и др.
+- **`src/smartTools/index.ts`** — центральный re-export всех модулей
+- **`src/serverSmart.ts`** — обновлён на импорт из `smartTools/index.js`
+
+### 🔒 Cloudflare Workers с Аутентификацией
+
+#### Добавлено
+
+- **`cloudflare/abdr-hub/`** — новый Cloudflare Worker `abdr-swarm-hub`
+  - Bearer Token + Query параметр аутентификация
+  - WebSocket bridge для агентов
+  - REST API для управления роем
+- **`cloudflare/abdr-server/`** — новый Cloudflare Worker `abdr-swarm-server`
+  - Streamable HTTP Transport (MCP spec 2025-03-26)
+  - Все 54 Smart Tools
+  - Автоматический проброс Bearer Token к Hub
+- **`cloudflare/telegram-bot/`** → переименован в `abdr-swarm-telegram`
+  - `SWARM_AUTH_TOKEN` для защиты `/register` endpoint
+  - Bearer Token при вызовах Hub API
+
+### 🔄 CI/CD Pipeline
+
+#### Изменено
+
+- **`.github/workflows/ci.yml`** — улучшения:
+  - Триггер на `main` и `develop` ветки
+  - TypeScript проверка (`tsc --noEmit`) перед билдом
+  - Матрица Node.js: 18, 20, 22
+  - Автоматический npm publish при push в `main`
+
+### 🗑️ Удалён Legacy Код
+
+#### Удалено
+
+- **`src/tools.ts`** — старые 41 инструментов (заменены на `smartTools/`)
+- **`src/server.ts`** — старый сервер (заменён на `serverSmart.ts`)
+
+### 📊 Dashboard
+
+#### Изменено
+
+- Обновлена версия в footer: v0.9.12 → v0.9.17
+
+### 📦 Обновления
+
+- `package.json` → версия `0.9.17`
+
+### 🔄 Обновление
+
+```bash
+npm install -g mcp-swarm@latest
+# или
+npm update mcp-swarm
+```
+
+---
+
 ## [0.9.16] - 2026-02-08
 
 ### 🐛 Критический фикс: Zod совместимость

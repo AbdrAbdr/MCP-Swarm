@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# abdr-swarm-hub - Персональный Cloudflare Worker (Hub)
+# ═══════════════════════════════════════════════════════════════════════════
+# 
+# ДЕПЛОЙ:
+# 1. cd cloudflare/abdr-hub
+# 2. npx wrangler login
+# 3. npx wrangler secret put SWARM_AUTH_TOKEN  (введите ваш токен)
+# 4. npx wrangler deploy
+# 5. Hub будет доступен: wss://abdr-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws
+#
+# КОНФИГУРАЦИЯ КЛИЕНТА (mcp_config.json):
+#   "env": {
+#     "SWARM_HUB_URL": "wss://abdr-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
+#     "SWARM_AUTH_TOKEN": "ваш-секретный-токен"
+#   }
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+name = "abdr-swarm-hub"
+main = "src/index.ts"
+compatibility_date = "2025-12-01"
+
+[durable_objects]
+bindings = [
+  { name = "SWARM_ROOM", class_name = "SwarmRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SwarmRoom"]

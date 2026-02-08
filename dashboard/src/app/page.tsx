@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { 
-  Activity, 
-  Users, 
-  CheckSquare, 
-  MessageSquare, 
-  Cpu, 
+import {
+  Activity,
+  Users,
+  CheckSquare,
+  MessageSquare,
+  Cpu,
   Zap,
   Crown,
   Clock,
@@ -26,13 +26,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { formatRelativeTime, getStatusColor, cn } from "@/lib/utils"
-import { 
-  SONAWidget, 
-  BoosterWidget, 
-  VectorWidget, 
-  DefenceWidget, 
-  ConsensusWidget, 
-  MoEWidget 
+import {
+  SONAWidget,
+  BoosterWidget,
+  VectorWidget,
+  DefenceWidget,
+  ConsensusWidget,
+  MoEWidget
 } from "@/components/widgets/AdvancedWidgets"
 import {
   FileLocksWidget,
@@ -129,11 +129,11 @@ const DEMO_MESSAGES: Message[] = [
   { id: "m3", from: "SwiftEagle", to: "*", subject: "Тесты проходят", importance: "normal", ts: Date.now() - 900000, acknowledged: true },
 ]
 
-function StatCard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon: Icon, 
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
   trend,
   color = "primary"
 }: {
@@ -150,7 +150,7 @@ function StatCard({
     warning: "text-yellow-500 glow-warning",
     danger: "text-red-500 glow-danger"
   }
-  
+
   return (
     <Card className="hover:border-primary/50 transition-all duration-300">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -188,8 +188,8 @@ function AgentCard({ agent }: { agent: Agent }) {
         <div className={cn(
           "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold",
           agent.status === "active" ? "bg-green-500/20 text-green-500" :
-          agent.status === "idle" ? "bg-yellow-500/20 text-yellow-500" :
-          "bg-red-500/20 text-red-500"
+            agent.status === "idle" ? "bg-yellow-500/20 text-yellow-500" :
+              "bg-red-500/20 text-red-500"
         )}>
           {agent.name.slice(0, 2)}
         </div>
@@ -198,7 +198,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           getStatusColor(agent.status)
         )} />
       </div>
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-semibold truncate">{agent.name}</span>
@@ -215,16 +215,16 @@ function AgentCard({ agent }: { agent: Agent }) {
           </div>
         )}
       </div>
-      
+
       <div className="text-right">
         <Badge variant={
           agent.status === "active" ? "success" :
-          agent.status === "idle" ? "warning" :
-          "destructive"
+            agent.status === "idle" ? "warning" :
+              "destructive"
         }>
           {agent.status === "active" ? "Активен" :
-           agent.status === "idle" ? "Ожидает" :
-           "Мёртв"}
+            agent.status === "idle" ? "Ожидает" :
+              "Мёртв"}
         </Badge>
         <div className="text-xs text-muted-foreground mt-1">
           {formatRelativeTime(agent.lastSeen)}
@@ -241,7 +241,7 @@ function TaskRow({ task }: { task: Task }) {
     high: "bg-yellow-500",
     critical: "bg-red-500 animate-pulse"
   }
-  
+
   return (
     <div className="flex items-center gap-3 py-3 border-b border-border/50 last:border-0">
       <div className={cn("w-2 h-2 rounded-full", priorityColors[task.priority])} />
@@ -253,14 +253,14 @@ function TaskRow({ task }: { task: Task }) {
       </div>
       <Badge variant={
         task.status === "done" ? "success" :
-        task.status === "in_progress" ? "default" :
-        task.status === "cancelled" ? "destructive" :
-        "secondary"
+          task.status === "in_progress" ? "default" :
+            task.status === "cancelled" ? "destructive" :
+              "secondary"
       }>
         {task.status === "done" ? "Готово" :
-         task.status === "in_progress" ? "В работе" :
-         task.status === "cancelled" ? "Отменено" :
-         "Ожидает"}
+          task.status === "in_progress" ? "В работе" :
+            task.status === "cancelled" ? "Отменено" :
+              "Ожидает"}
       </Badge>
     </div>
   )
@@ -275,8 +275,8 @@ function MessageRow({ message }: { message: Message }) {
       <div className={cn(
         "w-2 h-2 rounded-full",
         message.importance === "urgent" ? "bg-red-500 animate-pulse" :
-        message.importance === "high" ? "bg-yellow-500" :
-        "bg-gray-500"
+          message.importance === "high" ? "bg-yellow-500" :
+            "bg-gray-500"
       )} />
       <div className="flex-1 min-w-0">
         <div className="font-medium truncate">{message.subject}</div>
@@ -298,7 +298,7 @@ export default function Dashboard() {
   const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES)
   const [loading, setLoading] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
-  
+
   // WebSocket for real-time updates
   const { connected, lastEvent } = useWebSocket({
     onEvent: (event) => {
@@ -306,7 +306,7 @@ export default function Dashboard() {
       setLastUpdate(Date.now())
     }
   })
-  
+
   // Auto-refresh каждые 5 секунд
   useEffect(() => {
     const interval = setInterval(() => {
@@ -315,13 +315,13 @@ export default function Dashboard() {
     }, 5000)
     return () => clearInterval(interval)
   }, [])
-  
+
   const formatUptime = (ms: number) => {
     const hours = Math.floor(ms / 3600000)
     const minutes = Math.floor((ms % 3600000) / 60000)
     return `${hours}ч ${minutes}м`
   }
-  
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -335,7 +335,7 @@ export default function Dashboard() {
             Центр управления AI-агентами
           </p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground flex items-center gap-2">
             {connected && (
@@ -354,7 +354,7 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
-      
+
       {/* Orchestrator Status Banner */}
       {stats.orchestratorName && (
         <Card className={cn(
@@ -384,7 +384,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
-      
+
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -416,7 +416,7 @@ export default function Dashboard() {
           color="success"
         />
       </div>
-      
+
       {/* System Resources */}
       <Card>
         <CardHeader className="pb-2">
@@ -435,7 +435,7 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Agents */}
@@ -455,7 +455,7 @@ export default function Dashboard() {
             ))}
           </CardContent>
         </Card>
-        
+
         {/* Tasks & Messages */}
         <div className="space-y-6">
           {/* Tasks */}
@@ -475,7 +475,7 @@ export default function Dashboard() {
               ))}
             </CardContent>
           </Card>
-          
+
           {/* Messages */}
           <Card>
             <CardHeader>
@@ -495,7 +495,7 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-      
+
       {/* Core Widgets - Real-time */}
       <Card>
         <CardHeader>
@@ -517,7 +517,7 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Advanced AI Modules */}
       <Card>
         <CardHeader>
@@ -540,13 +540,13 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Footer */}
       <div className="text-center text-sm text-muted-foreground pt-4 border-t">
         <div className="flex items-center justify-center gap-4">
           <span className="flex items-center gap-1">
             <GitBranch className="w-4 h-4" />
-            MCP Swarm v0.9.12
+            MCP Swarm v0.9.17
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">

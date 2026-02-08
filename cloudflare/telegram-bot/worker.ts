@@ -19,6 +19,7 @@
 export interface Env {
   TELEGRAM_BOT_TOKEN: string;
   SWARM_HUB_URL: string;
+  SWARM_AUTH_TOKEN?: string;
   USER_PROJECTS: DurableObjectNamespace;
 }
 
@@ -72,11 +73,11 @@ async function sendMessage(
     text,
     parse_mode: "HTML",
   };
-  
+
   if (keyboard) {
     params.reply_markup = { inline_keyboard: keyboard };
   }
-  
+
   return callTelegram(token, "sendMessage", params);
 }
 
@@ -102,21 +103,23 @@ async function editMessage(
     text,
     parse_mode: "HTML",
   };
-  
+
   if (keyboard) {
     params.reply_markup = { inline_keyboard: keyboard };
   }
-  
+
   return callTelegram(token, "editMessageText", params);
 }
 
 // Fetch from Hub API
-async function fetchFromHub(hubUrl: string, project: string, endpoint: string) {
+async function fetchFromHub(hubUrl: string, project: string, endpoint: string, authToken?: string) {
   try {
     const apiUrl = hubUrl.replace("wss://", "https://").replace("/ws", "");
-    const response = await fetch(`${apiUrl}/api/${endpoint}?project=${project}`, {
-      headers: { "Accept": "application/json" },
-    });
+    const headers: Record<string, string> = { "Accept": "application/json" };
+    if (authToken) {
+      headers["Authorization"] = `Bearer ${authToken}`;
+    }
+    const response = await fetch(`${apiUrl}/api/${endpoint}?project=${project}`, { headers });
     if (response.ok) {
       return await response.json();
     }
@@ -226,7 +229,7 @@ async function handleProjects(
     const isActive = project.projectId === activeProject;
     const icon = isActive ? "✅" : "📁";
     const lastSeen = new Date(project.lastSeen).toLocaleDateString();
-    
+
     text += `${icon} <b>${project.name}</b>\n`;
     text += `   <code>${project.projectId}</code>\n`;
     text += `   Последняя активность: ${lastSeen}\n\n`;
@@ -260,8 +263,8 @@ async function handleStatus(
     };
   }
 
-  const data = await fetchFromHub(env.SWARM_HUB_URL, activeProject, "stats");
-  
+  const data = await fetchFromHub(env.SWARM_HUB_URL, activeProject, "stats", env.SWARM_AUTH_TOKEN);
+
   if (!data) {
     return {
       text:
@@ -277,7 +280,7 @@ async function handleStatus(
   }
 
   const status = data.stopped ? "🔴 Остановлен" : "🟢 Работает";
-  
+
   return {
     text:
       `📊 <b>Статус Swarm</b>\n\n` +
@@ -315,8 +318,8 @@ async function handleAgents(
     };
   }
 
-  const data = await fetchFromHub(env.SWARM_HUB_URL, activeProject, "agents");
-  
+  const data = await fetchFromHub(env.SWARM_HUB_URL, activeProject, "agents", env.SWARM_AUTH_TOKEN);
+
   if (!data || !data.agents || data.agents.length === 0) {
     return {
       text:
@@ -368,8 +371,8 @@ async function handleTasks(
     };
   }
 
-  const data = await fetchFromHub(env.SWARM_HUB_URL, activeProject, "tasks");
-  
+  const data = await fetchFromHub(env.SWARM_HUB_URL, activeProject, "tasks", env.SWARM_AUTH_TOKEN);
+
   if (!data || !data.tasks || data.tasks.length === 0) {
     return {
       text:
@@ -439,7 +442,7 @@ function handleHelp(): { text: string; keyboard?: InlineButton[][] } {
       `/tasks - Список задач\n` +
       `/myid - Показать User ID\n\n` +
       `<b>Поддержка:</b>\n` +
-      `github.com/AbrAbdr/Swarm_MCP`,
+      `github.com/AbdrAbdr/MCP-Swarm`,
     keyboard: [
       [{ text: "🔙 Назад", callback_data: "start" }],
     ],
@@ -455,7 +458,7 @@ async function handleCommand(
   args: string[]
 ): Promise<{ text: string; keyboard?: InlineButton[][] }> {
   const userData = await getUserData(env, userId);
-  
+
   switch (command) {
     case "/start":
     case "/help":
@@ -506,10 +509,10 @@ async function handleCallback(
   if (callbackData.startsWith("select:")) {
     const projectId = callbackData.slice(7);
     await setActiveProject(env, userId, projectId);
-    
+
     // Refresh user data after setting
     const newUserData = await getUserData(env, userId);
-    
+
     return {
       text: `✅ Проект выбран:\n<code>${projectId}</code>`,
       keyboard: [
@@ -613,13 +616,20 @@ export default {
 
     // POST /register - Called from MCP to register a project
     if (request.method === "POST" && url.pathname === "/register") {
+      // Authenticate register endpoint
+      if (env.SWARM_AUTH_TOKEN) {
+        const auth = request.headers.get("Authorization");
+        if (!auth || auth !== `Bearer ${env.SWARM_AUTH_TOKEN}`) {
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      }
       try {
         const body = await request.json() as {
           userId: number;
           projectId: string;
           name: string;
         };
-        
+
         if (!body.userId || !body.projectId) {
           return Response.json({ error: "Missing userId or projectId" }, { status: 400 });
         }
@@ -714,7 +724,7 @@ export class UserProjects {
     if (url.pathname.startsWith("/user/")) {
       const userId = url.pathname.slice(6);
       const record = this.users.get(userId);
-      
+
       if (!record) {
         return Response.json({ projects: [], activeProject: null });
       }
@@ -757,20 +767,20 @@ export class UserProjects {
     // POST /set-active - Set active project
     if (url.pathname === "/set-active" && request.method === "POST") {
       const body = await request.json() as { userId: string; projectId: string };
-      
+
       const record = this.users.get(body.userId);
       if (record) {
         record.activeProject = body.projectId;
-        
+
         // Update lastSeen
         const project = record.projects.get(body.projectId);
         if (project) {
           project.lastSeen = Date.now();
         }
-        
+
         await this.save();
       }
-      
+
       return Response.json({ ok: true });
     }
 

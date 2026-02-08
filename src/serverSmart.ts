@@ -1,15 +1,15 @@
 /**
- * MCP Swarm v0.9.16 - Smart Tools Server
+ * MCP Swarm v0.9.17 - Smart Tools Server (Modular)
  * 
- * Consolidates 168+ individual tools into 54 Smart Tools with `action` parameter.
- * Each Smart Tool groups related functionality for better UX.
+ * 54 Smart Tools organized into 9 modular categories:
+ * core, tasks, files, git, collaboration, security, analytics, intelligence, infra
  * 
  * Usage: node dist/serverSmart.js
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { allSmartTools } from "./smartTools.js";
+import { allSmartTools } from "./smartTools/index.js";
 import { readFileSync } from "fs";
 
 // Dynamic version from package.json

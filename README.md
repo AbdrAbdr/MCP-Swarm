@@ -1,8 +1,8 @@
 > 🇷🇺 [Читать на русском](./README.ru.md)
 
-# 🐝 MCP Swarm v0.9.16 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v0.9.17 — Universal AI Agent Coordination Platform
 
-> ⚠️ **v0.9.16 — Critical Fix:** Previous versions (0.9.14–0.9.15) had a Zod compatibility bug that broke ALL Smart Tools. Update immediately: `npm install -g mcp-swarm@latest`
+> ✅ **v0.9.17 — Architecture Update:** Modular codebase, Cloudflare Workers with `SWARM_AUTH_TOKEN` auth, CI/CD pipeline, legacy cleanup. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -388,6 +388,26 @@ Instead of hundreds of small commands, we created **54 intelligent tools**. Each
     swarm_moe({ action: "stats", repoPath })
     // → { totalRequests: 150, successRate: 94%, totalCost: $1.23 }
     ```
+
+### 🏗️ v0.9.17 — Modular Architecture & Cloudflare Auth
+
+**Code Modularization:**
+- `smartTools.ts` split into **9 focused modules** in `src/smartTools/`
+- Clean re-exports via `index.ts` — no breaking API changes
+- Removed legacy `tools.ts` and `server.ts` (~5000 lines of dead code)
+
+**Cloudflare Workers with Authentication:**
+- **`abdr-swarm-hub`** — WebSocket bridge + REST API with `SWARM_AUTH_TOKEN`
+- **`abdr-swarm-server`** — Streamable HTTP MCP Server, auto-forwards Bearer Token
+- **`abdr-swarm-telegram`** — Bot with protected `/register` endpoint
+
+**CI/CD Pipeline:**
+- GitHub Actions: `main` + `develop` branches
+- TypeScript check (`tsc --noEmit`) before build
+- Node.js matrix: 18, 20, 22
+- Auto npm publish on `main` push
+
+---
 
 ### 📊 v0.9.12 — Real-time Dashboard & Enhanced Controls
 

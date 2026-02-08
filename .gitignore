@@ -7,3 +7,5 @@ dist/
 *.draft
 test_schema*.json
 test-input.txt
+ts-errors.txt
+build-output.txt
