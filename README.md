@@ -12,9 +12,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.1.3 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.1.4 — Universal AI Agent Coordination Platform
 
-> 🐝 **v1.1.3 — Telegram Bot + Full Documentation:** Real-time Telegram notifications for tasks, agents, and errors. Web Dashboard at `localhost:37373`. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.1.4 — Telegram Bot + Full Documentation:** Real-time Telegram notifications for tasks, agents, and errors. Web Dashboard at `localhost:37373`. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
