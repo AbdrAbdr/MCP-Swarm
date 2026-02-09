@@ -4,12 +4,21 @@
  * Каскадная логика:
  * 1. SWARM_PROJECT env → использовать как есть
  * 2. git remote origin → нормализовать в ID
- * 3. Имя папки + короткий хеш пути
+ * 3. Нет git? → предложить git init + gh repo create
+ * 4. Fallback: имя папки (без хеша)
  */
 
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { gitTry } from "./git.js";
+
+export type ProjectIdResult = {
+    id: string;
+    source: "env" | "git" | "path";
+    details: string;
+    /** Suggestions for the agent if git is not configured */
+    suggestions?: string[];
+};
 
 /**
  * Получить уникальный Project ID для репозитория
@@ -27,7 +36,7 @@ export async function getProjectId(repoPath: string): Promise<string> {
         return remoteId;
     }
 
-    // 3. Fallback: имя папки + хеш пути
+    // 3. Fallback: имя папки
     return getPathBasedId(repoPath);
 }
 
@@ -90,14 +99,13 @@ export function normalizeGitRemote(url: string): string {
 }
 
 /**
- * Получить ID из локального пути
+ * Получить ID из локального пути (только имя папки, без хеша)
  * 
- * C:\Users\abdr\Desktop\MCP\MCP0 → "MCP0_a1b2c3"
+ * C:\Users\abdr\Desktop\Intop Saas → "intop_saas"
  */
 function getPathBasedId(repoPath: string): string {
     const basename = path.basename(repoPath);
-    const hash = shortHash(repoPath);
-    return sanitizeId(`${basename}_${hash}`);
+    return sanitizeId(basename);
 }
 
 /**
@@ -123,29 +131,86 @@ function sanitizeId(id: string): string {
 }
 
 /**
- * Получить описание источника Project ID (для логирования)
+ * Проверить наличие git в каталоге
  */
-export async function getProjectIdSource(repoPath: string): Promise<{
-    id: string;
-    source: "env" | "git" | "path";
-    details: string;
-}> {
+async function isGitInitialized(repoPath: string): Promise<boolean> {
+    const result = await gitTry(["rev-parse", "--is-inside-work-tree"], { cwd: repoPath });
+    return result.ok && result.stdout?.trim() === "true";
+}
+
+/**
+ * Проверить наличие remote origin
+ */
+async function hasRemoteOrigin(repoPath: string): Promise<boolean> {
+    const result = await gitTry(["remote", "get-url", "origin"], { cwd: repoPath });
+    return result.ok && !!result.stdout?.trim();
+}
+
+/**
+ * Получить описание источника Project ID + предложения если git не настроен
+ */
+export async function getProjectIdSource(repoPath: string): Promise<ProjectIdResult> {
+    // 1. Из env
     const envProject = process.env.SWARM_PROJECT;
     if (envProject && envProject !== "default") {
         return { id: envProject, source: "env", details: "SWARM_PROJECT" };
     }
 
-    try {
-        const result = await gitTry(["remote", "get-url", "origin"], { cwd: repoPath });
-        if (result.ok && result.stdout?.trim()) {
-            const url = result.stdout.trim();
-            const id = normalizeGitRemote(url);
-            return { id, source: "git", details: url };
+    // 2. Проверяем git
+    const gitInited = await isGitInitialized(repoPath);
+
+    if (gitInited) {
+        const hasRemote = await hasRemoteOrigin(repoPath);
+
+        if (hasRemote) {
+            // Git + remote → идеальный случай 
+            try {
+                const result = await gitTry(["remote", "get-url", "origin"], { cwd: repoPath });
+                if (result.ok && result.stdout?.trim()) {
+                    const url = result.stdout.trim();
+                    const id = normalizeGitRemote(url);
+                    return { id, source: "git", details: url };
+                }
+            } catch {
+                // ignore
+            }
         }
-    } catch {
-        // ignore
+
+        // Git есть, но remote нет → предложить добавить remote
+        const folderName = path.basename(repoPath);
+        const id = getPathBasedId(repoPath);
+        return {
+            id,
+            source: "path",
+            details: repoPath,
+            suggestions: [
+                `⚠️ Git-репозиторий без remote origin. Project ID = "${id}" (имя папки).`,
+                `Для лучшей идентификации проекта, добавьте GitHub remote:`,
+                `  1. Создайте репозиторий: gh repo create ${folderName} --private --source=. --push`,
+                `  2. Или добавьте существующий: git remote add origin https://github.com/YOUR_USER/${folderName}.git`,
+                `После этого Project ID будет автоматически определён из GitHub.`,
+            ],
+        };
     }
 
+    // 3. Git не инициализирован → предложить полную инициализацию
+    const folderName = path.basename(repoPath);
     const id = getPathBasedId(repoPath);
-    return { id, source: "path", details: repoPath };
+    return {
+        id,
+        source: "path",
+        details: repoPath,
+        suggestions: [
+            `⚠️ Каталог "${folderName}" не является Git-репозиторием. Project ID = "${id}" (имя папки).`,
+            `Рекомендуем инициализировать Git + GitHub для надёжной идентификации:`,
+            `  1. git init`,
+            `  2. git add -A`,
+            `  3. git commit -m "Initial commit"`,
+            `  4. gh repo create ${folderName} --private --source=. --push`,
+            `Это создаст приватный репозиторий на GitHub и автоматически настроит remote.`,
+            `Project ID станет "github_YOUR_USER_${sanitizeId(folderName)}".`,
+            ``,
+            `Если вы хотите работать только локально, текущий Project ID "${id}" будет использован.`,
+        ],
+    };
 }

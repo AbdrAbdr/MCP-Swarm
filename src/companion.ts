@@ -41,7 +41,7 @@ async function registerProjectInTelegram(
         name: projectName,
       }),
     });
-    
+
     if (response.ok) {
       return true;
     }
@@ -131,6 +131,11 @@ async function run() {
   const projectInfo = await getProjectIdSource(repoRoot);
   const projectId = projectInfo.id;
   log("info", `📁 Project ID: ${colors.bright}${projectId}${colors.reset} (source: ${projectInfo.source})`);
+
+  // Show suggestions if git is not configured
+  if (projectInfo.suggestions && projectInfo.suggestions.length > 0) {
+    log("warn", `\n${projectInfo.suggestions.join("\n")}\n`);
+  }
 
   // ============ TELEGRAM REGISTRATION ============
   // If TELEGRAM_USER_ID is set, register this project for the user
