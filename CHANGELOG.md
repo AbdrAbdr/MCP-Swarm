@@ -1,4 +1,4 @@
-> 🇷🇺 [Читать на русском](./CHANGELOG.ru.md)
+> <img src="https://flagcdn.com/20x15/ru.png" alt="RU" /> [Читать на русском](./CHANGELOG.ru.md)
 
 # Changelog
 
@@ -6,6 +6,65 @@ All notable changes to the MCP Swarm project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [1.0.11] - 2026-02-09
+
+### 🎨 Flag Badges & Community CTA
+
+#### Changed
+
+- **Flag badges** — Replaced Unicode country flag emoji (🇷🇺/🇬🇧) with `<img>` badges from flagcdn.com. Flags now display correctly on npm, GitHub, and all platforms.
+- **Community CTA section** — Added "⭐ Support the Project" section to both README (EN + RU) with links to Issues, Discussions, and Fork & PR.
+
+---
+
+## [1.0.10] - 2026-02-09
+
+### 🔄 CI/CD Auto-Publish & Docs Update
+
+#### Changed
+
+- **CI/CD fully automated** — GitHub Actions now auto-publishes to npm AND creates GitHub Release when a new version is pushed to `main`. Skips gracefully if version already exists.
+- **README updated** — Both README.md and README.ru.md updated from v1.0.7 → v1.0.10 with current feature descriptions.
+
+---
+
+## [1.0.9] - 2026-02-09
+
+### 🧭 Smart Project ID with Git Init Suggestions
+
+#### Added
+
+- **Git init suggestions** — When a project directory has no git repo, companion now prints step-by-step instructions: `git init` → `git add -A` → `git commit` → `gh repo create`.
+- **Remote-only suggestions** — When git exists but no remote origin, suggests `gh repo create` or `git remote add origin`.
+- **`ProjectIdResult.suggestions`** — New `suggestions[]` field in project ID resolution result, available to tools and agents.
+
+#### Changed
+
+- **Clean folder-based IDs** — Path-based project IDs no longer include hash suffix. `Intop Saas` → `intop_saas` (was `intop_saas_a1b2c3`).
+- **`isGitInitialized()` and `hasRemoteOrigin()`** — New helper functions for granular git status detection.
+
+---
+
+## [1.0.8] - 2026-02-09
+
+### 🔧 Companion Bridge Auto-Restart
+
+#### Fixed
+
+- **Critical: Bridge auto-restart** — If companion is running but bridge is disconnected (e.g. old companion without `MCP_SERVER_URL`), `ensureCompanion()` now kills the old process and restarts with correct environment variables.
+- **`isBridgeConnected()`** — New function to verify bridge WebSocket status via companion control API.
+- **`killCompanion()`** — New function to gracefully shut down companion before restart.
+
+#### Changed
+
+- **ensureCompanion() logic rewritten:**
+  1. Check if companion process is running
+  2. Check if bridge is actually connected
+  3. If running but disconnected → kill + restart with `MCP_SERVER_URL`
+  4. If not running → start fresh
 
 ---
 
