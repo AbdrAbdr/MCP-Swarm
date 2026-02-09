@@ -12,9 +12,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.1.0 — Универсальная Платформа Координации AI-Агентов
+# 🐝 MCP Swarm v1.1.3 — Универсальная Платформа Координации AI-Агентов
 
-> 🐝 **v1.1.0 — Web Dashboard + DX улучшения:** Web Dashboard на `localhost:37373`, PID-файл, `--version`, примеры конфигов IDE, issue templates, дополнительные бейджи. Все **26 Smart Tools** через Remote Bridge. Обновитесь: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.1.3 — Telegram Bot + Полная документация:** Telegram уведомления о задачах, агентах и ошибках. Web Dashboard на `localhost:37373`. Все **26 Smart Tools** через Remote Bridge. Обновитесь: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** — это глобальная «нервная система» для ваших AI-помощников. Она превращает разрозненных агентов (Claude, Cursor, Windsurf, OpenCode) в слаженную команду, способную работать над огромными проектами без конфликтов и потери контекста.
 
@@ -360,7 +360,9 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -383,7 +385,9 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -406,7 +410,9 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -427,7 +433,9 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -449,7 +457,9 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -466,7 +476,7 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
 
 ## ☁️ Установка (Remote — без локальных файлов)
 
-**v0.9.11 NEW:** Теперь используется **Streamable HTTP** транспорт вместо SSE для совместимости с Cloudflare Workers!
+Теперь используется **Streamable HTTP** транспорт вместо SSE для совместимости с Cloudflare Workers!
 
 ### 🆓 Cloudflare Workers — ЭТО БЕСПЛАТНО!
 
@@ -513,26 +523,87 @@ npx wrangler deploy
 # ✅ Запишите URL: https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp
 ```
 
-### Шаг 3: (Опционально) Telegram Bot
+### Шаг 3: Telegram Bot (Опционально, но рекомендуется)
+
+Получайте уведомления в реальном времени о задачах, агентах, ошибках и код-ревью в Telegram.
+
+#### Куда добавлять каждый Telegram-параметр:
+
+| Параметр | Куда добавлять | Как получить |
+|----------|---------------|--------------|
+| **`TELEGRAM_USER_ID`** | `mcp_config.json` → `env` | Отправьте `/start` боту [@userinfobot](https://t.me/userinfobot) |
+| **`TELEGRAM_BOT_URL`** | `mcp_config.json` → `env` | URL вашего задеплоенного worker-а бота |
+| **`TELEGRAM_BOT_TOKEN`** | **Cloudflare Secret** (через CLI) | Создайте бота в [@BotFather](https://t.me/BotFather) |
+| **Имя бота** | Нигде — только в Telegram | Задаётся при создании в @BotFather |
+
+> ⚠️ **Безопасность:** `TELEGRAM_BOT_TOKEN` — это **секрет**, он хранится в Cloudflare через `npx wrangler secret put`, **НИКОГДА** не добавляйте его в `mcp_config.json` или любой конфиг-файл!
+
+#### 3.1: Получите ваш Telegram User ID
+
+1. Откройте Telegram
+2. Найдите **@userinfobot** или перейдите по ссылке [t.me/userinfobot](https://t.me/userinfobot)
+3. Нажмите **Start**
+4. Скопируйте **User ID** (число, например `513235861`)
+
+#### 3.2: Создайте бота через @BotFather
+
+1. Откройте Telegram, найдите [@BotFather](https://t.me/BotFather)
+2. Отправьте `/newbot`
+3. Выберите отображаемое имя (например «My Swarm Bot»)
+4. Выберите username (например `@MySwarmbotBot`) — это **имя бота**, используется только для поиска в Telegram
+5. Скопируйте **токен бота** (выглядит как `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+#### 3.3: Задеплойте Telegram worker
 
 ```bash
-# 1. Откройте Telegram, найдите @BotFather
-# 2. Отправьте /newbot, следуйте инструкциям
-# 3. Скопируйте токен (выглядит как: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
-
 cd cloudflare/telegram-bot
-# Откройте wrangler.toml и замените SWARM_HUB_URL на ваш Hub URL
+```
 
-# Добавьте токен как секрет
+**Установите Hub URL в `wrangler.toml`:**
+```toml
+[vars]
+SWARM_HUB_URL = "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
+```
+
+**Сохраните токен бота как Cloudflare secret:**
+```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
-# Вставьте токен и нажмите Enter
+# Вставьте токен из шага 3.2 и нажмите Enter
+# ⚠️ Токен хранится БЕЗОПАСНО в Cloudflare, НЕ в файлах
+```
 
+**Задеплойте worker:**
+```bash
 npx wrangler deploy
 # ✅ Запишите URL: https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev
+```
 
-# 4. Установите webhook (замените YOUR_TOKEN и YOUR-SUBDOMAIN)
+#### 3.4: Настройте webhook
+
+```bash
+# Вариант A: Используйте упрощённый endpoint
+curl https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/setup
+
+# Вариант B: Вручную (замените YOUR_TOKEN)
 curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/webhook"
 ```
+
+#### 3.5: Откройте бота в Telegram
+
+Найдите бота по username (например `@MySwarmbotBot`), нажмите **Start** и убедитесь, что он отвечает.
+
+Доступные команды:
+
+| Команда | Описание |
+|---------|----------|
+| `/start` | Главное меню + ваш User ID |
+| `/projects` | Список зарегистрированных проектов |
+| `/status` | Статус активного проекта |
+| `/agents` | Подключённые агенты |
+| `/tasks` | Текущие задачи |
+| `/myid` | Ваш Telegram User ID |
+
+> 📱 Подробнее: [TELEGRAM.md](./TELEGRAM.md).
 
 ### Шаг 4: Настройте IDE
 
@@ -548,16 +619,21 @@ npm install -g mcp-swarm
     "mcp-swarm": {
       "command": "npx",
       "args": [
-        "-y",
-        "-p", "mcp-swarm",
+        "-y", "-p", "mcp-swarm",
         "mcp-swarm-remote",
-        "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp",
-        "--telegram-user-id", "YOUR_TELEGRAM_ID"
-      ]
+        "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp"
+      ],
+      "env": {
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
+      }
     }
   }
 }
 ```
+
+> 💡 `npx -y -p mcp-swarm` автоматически скачивает **последнюю версию** из npm.
 
 **Вариант B: Локальный с Hub**
 
@@ -569,7 +645,8 @@ npm install -g mcp-swarm
       "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_ID"
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -634,83 +711,9 @@ MCP Swarm автоматически определяет уникальный I
 
 ---
 
-## 📱 Telegram Bot — Настройка
+## 📱 Telegram Bot — Краткая справка
 
-MCP Swarm поддерживает Telegram уведомления через **вашего собственного бота**.
-
-### Создание бота
-
-1. Откройте Telegram и найдите **@BotFather**
-2. Отправьте `/newbot` и следуйте инструкциям
-3. Скопируйте токен (выглядит как `123456789:ABCdef...`)
-4. Задеплойте `cloudflare/telegram-bot` (см. инструкции выше)
-
-### Получение User ID
-
-1. Откройте **вашего бота** в Telegram
-2. Отправьте `/start`
-3. Бот покажет ваш **User ID** (число, например `987654321`)
-
-### Добавьте User ID в конфигурацию
-
-**Для локального MCP:**
-
-<details>
-<summary><strong>Windows (PowerShell)</strong></summary>
-
-```powershell
-$env:TELEGRAM_USER_ID = "987654321"
-```
-</details>
-
-<details>
-<summary><strong>macOS / Linux</strong></summary>
-
-```bash
-export TELEGRAM_USER_ID="987654321"
-```
-</details>
-
-<details>
-<summary><strong>В конфиге MCP</strong></summary>
-
-```json
-{
-  "mcpServers": {
-    "mcp-swarm": {
-      "command": "node",
-      "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
-      "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "TELEGRAM_USER_ID": "987654321"
-      }
-    }
-  }
-}
-```
-</details>
-
-**Для Remote MCP:**
-
-Добавьте `telegram_user_id` в URL:
-```json
-{
-  "mcpServers": {
-    "mcp-swarm": {
-      "url": "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp/sse?telegram_user_id=YOUR_USER_ID",
-      "transport": "sse"
-    }
-  }
-}
-```
-
-### Шаг 3: Запустите MCP и проверьте
-
-1. Откройте проект в IDE
-2. Зарегистрируйте агента: `swarm_agent({ action: "register", repoPath })`
-3. Проект автоматически появится в Telegram боте
-4. В боте нажмите "📂 Мои проекты" или отправьте `/projects`
-5. Выберите проект для просмотра статуса
+MCP Swarm поддерживает Telegram уведомления через **вашего собственного бота**. Полная инструкция по настройке — см. [**Шаг 3**](#шаг-3-telegram-bot-опционально-но-рекомендуется) выше или [TELEGRAM.md](./TELEGRAM.md).
 
 ### 🔔 Уведомления
 
@@ -724,15 +727,13 @@ export TELEGRAM_USER_ID="987654321"
 ### ⌨️ Команды бота
 
 | Команда | Описание |
-|---------|----------|
-| `/start` | Показать User ID и инструкции |
-| `/projects` или `/link` | Список ваших проектов |
-| `/status` | Статус текущего проекта |
-| `/agents` | Список агентов |
-| `/tasks` | Список задач |
-| `/reviews` | Список pending code reviews (v0.9.12) |
-| `/approve [id]` | Одобрить code review (v0.9.12) |
-| `/reject [id] [reason]` | Отклонить code review (v0.9.12) |
+|---------|-----------|
+| `/start` | Главное меню + ваш User ID |
+| `/projects` | Список зарегистрированных проектов |
+| `/status` | Статус активного проекта |
+| `/agents` | Подключённые агенты |
+| `/tasks` | Текущие задачи |
+| `/myid` | Ваш Telegram User ID |
 | `/stop` | Остановить Swarm |
 | `/resume` | Возобновить |
 

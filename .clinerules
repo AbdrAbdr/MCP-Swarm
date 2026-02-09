@@ -1,105 +1,76 @@
-# MCP Swarm Agent Rules
+# MCP Swarm Agent Rules (v1.1.3)
 
 ## CRITICAL: Always Start with MCP Swarm
 
 Before ANY coding task, you MUST:
 
-1. **Register yourself** - Call `agent_register` to get your unique agent name
-2. **Check swarm status** - Call `swarm_stop_status` to ensure swarm is active
-3. **Check task list** - Call `task_list` to see available tasks
-4. **Reserve files** - Before editing any file, call `file_reserve` with your agent name
+1. **Register yourself** - Call `swarm_agent({ action: "register", repoPath })` to get your unique agent name
+2. **Try to become Orchestrator** - Call `swarm_orchestrator({ action: "elect", repoPath })`
+3. **Check task list** - Call `swarm_task({ action: "list", repoPath })` to see available tasks
+4. **Reserve files** - Before editing any file, call `swarm_file({ action: "reserve", repoPath, filePath, agent })` with your agent name
+
+**CRITICAL:** Every tool call MUST include `repoPath` — the absolute path to your project!
 
 ## Workflow Rules
 
 ### Starting Work
 ```
-1. agent_register → Get your name (e.g., "RadiantWolf")
-2. task_list → See what needs to be done
-3. task_assign → Claim a task with your agent name
-4. file_reserve → Lock files you'll edit (exclusive=true)
-5. Do your work
-6. file_release → Unlock files
-7. task_mark_done → Complete the task
-8. sync_with_base_branch → Rebase before push
-9. create_github_pr → Open PR for review
+1. swarm_agent({ action: "register", repoPath }) → Get your name (e.g., "RadiantWolf")
+2. swarm_orchestrator({ action: "elect", repoPath }) → Try to become orchestrator
+3. swarm_task({ action: "list", repoPath }) → See what needs to be done
+4. swarm_task({ action: "update", repoPath, taskId, status: "in_progress", assignee: "YourName" })
+5. swarm_file({ action: "reserve", repoPath, filePath, agent: "YourName", exclusive: true })
+6. Do your work
+7. swarm_file({ action: "release", repoPath, filePath, agent: "YourName" })
+8. swarm_task({ action: "update", repoPath, taskId, status: "done" })
+9. swarm_git({ action: "sync", repoPath })
+10. swarm_git({ action: "pr", repoPath, title: "...", body: "..." })
 ```
 
 ### Collaboration Rules
-- **Never edit files locked by another agent** - Check `list_file_locks` first
-- **Broadcast important changes** - Use `broadcast_chat` to notify team
-- **Request reviews** - Use `request_cross_agent_review` before finalizing
-- **Share screenshots** - Use `share_screenshot` for visual issues
-- **Log your reasoning** - Use `log_swarm_thought` to explain decisions
+- **Never edit files locked by another agent** - Check `swarm_file({ action: "list", repoPath })` first
+- **Broadcast important changes** - Use `swarm_chat({ action: "broadcast", repoPath, message: "..." })`
+- **Request reviews** - Use `swarm_chat({ action: "review_request", repoPath })`
+- **Log your reasoning** - Use `swarm_chat({ action: "thought", repoPath, message: "..." })`
 
 ### Safety Rules
-- **Dangerous actions require voting** - Use `start_voting` before deleting files/folders
-- **Check main health** - Use `check_main_health` before rebasing
-- **Signal dependency changes** - Use `signal_dependency_change` after adding packages
+- **Dangerous actions require voting** - Use `swarm_voting({ action: "start", repoPath, ... })`
+- **Check main health** - Use `swarm_git({ action: "health", repoPath })`
+- **Scan for threats** - Use `swarm_defence({ action: "scan", repoPath, text: "..." })`
 
 ### Ghost Mode
 When no tasks are assigned to you:
-- Run `patrol_mode` to check for lint errors
+- Run `swarm_quality({ action: "run", repoPath })` to check code quality
 - Help review other agents' code
 - Optimize imports and formatting
 
-## Available Tools (100+)
+## 26 Smart Tools (v1.1.3)
 
-### Core
-- agent_register, agent_whoami, health_check
-
-### Tasks
-- task_create, task_list, task_assign, task_set_status, task_mark_done, task_cancel
-- decompose_task, get_decomposition
-
-### Files & Locks
-- file_reserve, file_release, list_file_locks
-- forecast_file_touches, check_file_conflicts
-
-### Git & GitHub
-- worktree_create, worktree_list, worktree_remove
-- sync_with_base_branch, create_github_pr
-- auto_delete_merged_branch, cleanup_all_merged_branches
-
-### Collaboration
-- broadcast_chat, update_team_dashboard
-- request_cross_agent_review, respond_to_review, list_pending_reviews
-- share_screenshot, list_screenshots
-- log_swarm_thought, get_recent_thoughts
-
-### Safety & Voting
-- start_voting, cast_vote, list_open_votings
-- check_main_health, report_ci_alert, get_immune_status
-
-### Orchestration
-- save_briefing, load_briefing
-- update_swarm_pulse, get_swarm_pulse
-- archive_finding, search_knowledge
-- trigger_urgent_preemption, get_active_urgent
-- create_snapshot, trigger_rollback
-
-### v0.5 New Features
-- check_agent_health, get_dead_agents, force_reassign_task
-- start_session_recording, log_session_action, stop_session_recording, replay_session
-- run_quality_gate, get_quality_report, check_pr_ready
-- log_api_usage, get_agent_costs, get_project_costs, check_budget_remaining
-- estimate_context_size, compress_briefing
-- save_baseline, check_regression, list_regressions
-
-### v0.6 Brainstorming & Writing Plans
-- start_brainstorm, ask_brainstorm_question, answer_brainstorm_question
-- propose_approaches, present_design_section, validate_design_section
-- create_implementation_plan, add_plan_task, get_next_task, complete_step
-- generate_subagent_prompt, export_plan_as_markdown
-
-### v0.6 Systematic Debugging (4 Phases)
-- start_debug_session, log_investigation, add_evidence, complete_phase_1
-- log_patterns, complete_phase_2, form_hypothesis, test_hypothesis
-- implement_fix, verify_fix, check_red_flags
-
-### v0.7 Spec Pipeline & QA Loop
-- start_spec_pipeline, start_spec_phase, complete_spec_phase, export_spec_as_markdown
-- start_qa_loop, run_qa_iteration, log_qa_fix, get_qa_fix_suggestions, generate_qa_report
-
-### v0.7 Guard Hooks & Tool Clusters
-- install_guard_hooks, uninstall_guard_hooks, run_guard_hooks, get_guard_config
-- init_tool_clusters, list_tool_clusters, get_cluster_tools, find_tool_cluster
+| Tool | Key Actions |
+|------|-------------|
+| swarm_agent | register, whoami, init, companion_status |
+| swarm_control | stop, resume, status, pulse_update, pulse_get |
+| swarm_task | create, list, update, decompose, briefing_save |
+| swarm_plan | create, add, next, start, complete, spec_start |
+| swarm_file | reserve, release, list, forecast, snapshot_create |
+| swarm_worktree | create, list, remove, hooks_install, hooks_run |
+| swarm_git | sync, pr, health, cleanup, dep_signal |
+| swarm_chat | broadcast, dashboard, thought, review_request |
+| swarm_voting | start, vote, list, auction_announce, auction_bid |
+| swarm_orchestrator | elect, info, heartbeat, resign, executors |
+| swarm_message | send, inbox, ack, reply, mcp_scan |
+| swarm_defence | scan, validate_agent, quarantine, trust, immune_alert |
+| swarm_brain | start, ask, answer, debug_start, debug_fix |
+| swarm_health | check, dead, reassign, summary, preempt_trigger |
+| swarm_session | start, log, stop, replay, screenshot_share |
+| swarm_quality | run, report, threshold, pr_ready, regression_check |
+| swarm_budget | analyze, route, log_usage, cost_limit |
+| swarm_knowledge | archive, search, docs_generate, advice_request |
+| swarm_context | estimate, compress, pool_add, pool_search |
+| swarm_expertise | track, suggest, route_find_agent, route_auto_assign |
+| swarm_moe | route, feedback, sona_route, sona_classify |
+| swarm_external | sync_github, create_issue, platform_request |
+| swarm_telegram | setup, send, notify_*, qa_start |
+| swarm_vector | init, add, search, delete, stats |
+| swarm_clusters | init, list, tools, conflict_predict |
+| swarm_booster | execute, can_boost, stats |

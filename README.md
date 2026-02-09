@@ -12,9 +12,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.1.0 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.1.3 — Universal AI Agent Coordination Platform
 
-> 🐝 **v1.1.0 — Web Dashboard + DX Improvements:** Web Dashboard at `localhost:37373`, PID file management, `--version` support, IDE config examples, issue templates, additional badges. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.1.3 — Telegram Bot + Full Documentation:** Real-time Telegram notifications for tasks, agents, and errors. Web Dashboard at `localhost:37373`. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -451,7 +451,9 @@ cd ~/mcp/Swarm_MCP && npm install && npm run build
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -474,7 +476,9 @@ Or create `.cursor/mcp.json` in your home directory:
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -497,7 +501,9 @@ Or create `~/.codeium/windsurf/mcp_config.json`:
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -518,7 +524,9 @@ Create `~/.opencode/mcp.json`:
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -540,7 +548,9 @@ Create `.vscode/mcp.json` in your home directory:
       "args": ["C:/MCP/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "SWARM_PROJECT": "default"
+        "SWARM_PROJECT": "default",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -557,7 +567,7 @@ Create `.vscode/mcp.json` in your home directory:
 
 ## ☁️ Installation (Remote — No Local Files)
 
-**v0.9.11 NEW:** Now uses **Streamable HTTP** transport instead of SSE for Cloudflare Workers compatibility!
+Now uses **Streamable HTTP** transport instead of SSE for Cloudflare Workers compatibility!
 
 ### 🆓 Cloudflare Workers — IT'S FREE!
 
@@ -604,30 +614,91 @@ npx wrangler deploy
 # ✅ Note the URL: https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp
 ```
 
-### Step 3: (Optional) Telegram Bot
+### Step 3: Telegram Bot (Optional but Recommended)
+
+Get real-time notifications about tasks, agents, errors, and code reviews in Telegram.
+
+#### Where each Telegram credential goes:
+
+| Credential | Where to store | How to get |
+|------------|---------------|------------|
+| **`TELEGRAM_USER_ID`** | `mcp_config.json` → `env` | Send `/start` to [@userinfobot](https://t.me/userinfobot) |
+| **`TELEGRAM_BOT_URL`** | `mcp_config.json` → `env` | URL of your deployed bot worker |
+| **`TELEGRAM_BOT_TOKEN`** | **Cloudflare Secret** (via CLI) | Create bot in [@BotFather](https://t.me/BotFather) |
+| **Bot Username** | Nowhere — Telegram only | Set during creation in @BotFather |
+
+> ⚠️ **Security:** `TELEGRAM_BOT_TOKEN` is a **secret** — it goes into Cloudflare via `npx wrangler secret put`, **never** into `mcp_config.json` or any config file!
+
+#### 3.1: Get your Telegram User ID
+
+1. Open Telegram
+2. Search for **@userinfobot** or go to [t.me/userinfobot](https://t.me/userinfobot)
+3. Press **Start**
+4. Copy the **User ID** (a number like `513235861`)
+
+#### 3.2: Create a bot via @BotFather
+
+1. Open Telegram, find [@BotFather](https://t.me/BotFather)
+2. Send `/newbot`
+3. Choose a display name (e.g. "My Swarm Bot")
+4. Choose a username (e.g. `@MySwarmbotBot`) — this is the **bot username**, used only to find the bot in Telegram
+5. Copy the **bot token** (looks like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+#### 3.3: Deploy the Telegram bot worker
 
 ```bash
-# 1. Open Telegram, find @BotFather
-# 2. Send /newbot, follow the instructions
-# 3. Copy the token (looks like: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
-
 cd cloudflare/telegram-bot
-# Open wrangler.toml and replace SWARM_HUB_URL with your Hub URL
+```
 
-# Add the token as a secret
+**Set the Hub URL in `wrangler.toml`:**
+```toml
+[vars]
+SWARM_HUB_URL = "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
+```
+
+**Store the bot token as a Cloudflare secret:**
+```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
-# Paste the token and press Enter
+# Paste the token from step 3.2 and press Enter
+# ⚠️ This stores the token SECURELY in Cloudflare, NOT in any file
+```
 
+**Deploy the worker:**
+```bash
 npx wrangler deploy
 # ✅ Note the URL: https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev
+```
 
-# 4. Set the webhook (replace YOUR_TOKEN and YOUR-SUBDOMAIN)
+#### 3.4: Set up the webhook
+
+```bash
+# Option A: Use the simplified setup endpoint
+curl https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/setup
+
+# Option B: Manual webhook (replace YOUR_TOKEN)
 curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-telegram.YOUR-SUBDOMAIN.workers.dev/webhook"
 ```
 
+#### 3.5: Open the bot in Telegram
+
+Find your bot by username (e.g. `@MySwarmbotBot`), press **Start**, and verify it responds.
+
+Available commands:
+
+| Command | Description |
+|---------|-------------|
+| `/start` | Main menu + your User ID |
+| `/projects` | List registered projects |
+| `/status` | Active project status |
+| `/agents` | Connected agents |
+| `/tasks` | Current tasks |
+| `/myid` | Your Telegram User ID |
+
+> 📱 For more details, see [TELEGRAM.md](./TELEGRAM.md).
+
 ### Step 4: Configure Your IDE
 
-**Option A: Remote (recommended) — v1.0.5**
+**Option A: Remote (recommended)**
 
 ```json
 {
@@ -640,7 +711,9 @@ curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-te
         "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp"
       ],
       "env": {
-        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
@@ -675,7 +748,8 @@ curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-te
       "args": ["C:/path/to/Swarm_MCP/dist/serverSmart.js"],
       "env": {
         "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws",
-        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_ID"
+        "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+        "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
       }
     }
   }
