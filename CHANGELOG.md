@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.5] - 2026-02-09
+
+### 🌉 Full Bridge Coverage — All 26 Smart Tools via Remote
+
+#### Fixed
+
+- **Critical: Bridge auto-start** — `mcp-swarm-remote` now passes `MCP_SERVER_URL` to companion daemon. Previously the companion couldn't know where to connect the bridge, so all remote tool calls returned `{ bridgeConnected: false }`.
+
+#### Changed
+
+- **Universal bridge delegation** — `bridge.ts` now imports `allSmartTools` handlers and delegates ALL tool calls through them instead of manually implementing 3 tools with limited actions.
+  - Before: only `swarm_file` (read/write/list), `swarm_git` (status/sync), `swarm_agent` (register/whoami) worked through bridge
+  - After: all 26 tools × all actions work through bridge (swarm_task, swarm_plan, swarm_quality, swarm_vector, etc.)
+- **Simplified tool routing** — `toolNeedsBridge()` on Cloudflare Worker simplified from 21-line selective logic to `toolName.startsWith("swarm_")` — routes ALL swarm tools through bridge.
+
+#### How It Works
+
+```
+IDE → npx mcp-swarm-remote --url https://server.workers.dev/mcp
+       ↓ auto-starts companion with MCP_SERVER_URL
+Companion → BridgeManager → WebSocket → server/bridge
+       ↓ server receives tool call → routes through bridge
+Companion → allSmartTools[toolName](args) → result
+       ↓ returns via WebSocket through server back to IDE
+```
+
+---
+
 ## [0.9.19] - 2026-02-08
 
 ### 🚀 Major Release: Smart Routing, Memory, Agent Teams, MCP Bridges

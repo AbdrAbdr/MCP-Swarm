@@ -822,26 +822,10 @@ function generateProjectId(repoPath: string): string {
     return `${name}_${Math.abs(hash).toString(36).slice(0, 6)}`;
 }
 
-function toolNeedsBridge(toolName: string, args: Record<string, unknown>): boolean {
-    // Tools that require file system access
-    const fsTools = [
-        "swarm_file",
-        "swarm_git",
-        "swarm_worktree",
-    ];
-
-    // Some actions within tools need bridge
-    if (toolName === "swarm_agent") {
-        const action = args.action as string;
-        return action === "init" || action === "register";
-    }
-
-    // swarm_file includes snapshot actions which also need FS
-    if (toolName === "swarm_file") {
-        return true;
-    }
-
-    return fsTools.includes(toolName);
+function toolNeedsBridge(toolName: string, _args: Record<string, unknown>): boolean {
+    // ALL swarm tools need local filesystem access via bridge companion.
+    // The bridge's smart tool handlers provide full coverage of all 26 tools.
+    return toolName.startsWith("swarm_");
 }
 
 async function executeCloudTool(

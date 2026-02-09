@@ -9,9 +9,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.0.4 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.0.5 — Universal AI Agent Coordination Platform
 
-> 🧠 **v1.0.4 — Tool Consolidation & Stability:** 54 → **26 Smart Tools** (zero feature loss). Fixed MCP protocol compliance (jsonrpc 2.0). 21 AI models in MoE Router. Update: `npm install -g mcp-swarm@latest`
+> 🌉 **v1.0.5 — Full Remote Bridge:** All **26 Smart Tools** now work through Remote Bridge (was 3). Auto-start companion with `MCP_SERVER_URL` passthrough. Zero-config setup — just `npx mcp-swarm-remote --url https://...`. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -275,19 +275,36 @@ You: /approve abc123
 Bot: ✅ Review abc123 approved!
 ```
 
-**Auto-start Companion (NEW):**
-When launching `mcp-swarm-remote`, it automatically checks and starts the companion daemon:
-```bash
-# Companion starts automatically
-npx -y -p mcp-swarm mcp-swarm-remote --url https://...
+**Auto-start Companion + Bridge (v1.0.5):**
+When launching `mcp-swarm-remote`, it automatically:
+1. Starts the companion daemon
+2. Passes `MCP_SERVER_URL` so the bridge auto-connects
+3. All **26 smart tools** work through the bridge (was only 3 in v1.0.4)
 
-# Disable auto-start
+```bash
+# Everything starts automatically — bridge included!
+npx -y -p mcp-swarm mcp-swarm-remote --url https://your-server.workers.dev/mcp
+
+# Disable auto-start if needed
 npx -y -p mcp-swarm mcp-swarm-remote --url https://... --no-companion
 ```
 
+**How the Remote Bridge works (v1.0.5):**
+```
+IDE → mcp-swarm-remote → HTTP POST → Cloudflare Worker
+                                          ↓ toolNeedsBridge("swarm_*") = true
+                                     WebSocket → Companion (local)
+                                          ↓ executeLocalTool()
+                                     allSmartTools handler(args)
+                                          ↓ result
+                                     WebSocket ← Companion
+                                          ↓
+IDE ← mcp-swarm-remote ← HTTP response ← Cloudflare Worker
+```
+
 Companion runs on port **37373** and provides:
-- Local file operations execution
-- Bridge between IDE and Hub
+- **Full bridge** — all 26 tools × all actions via local filesystem
+- Auto-reconnect on disconnect
 - Health checks on `/health` endpoint
 
 ---

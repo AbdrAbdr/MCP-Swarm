@@ -6,8 +6,6 @@
  */
 
 import { createRequire } from "node:module";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { getRepoRoot } from "./workflows/repo.js";
 
 const require = createRequire(import.meta.url);
@@ -208,87 +206,46 @@ export class BridgeManager {
         }
     }
 
+    /**
+     * Universal tool execution via smart tool handlers.
+     * Instead of manually implementing each tool/action,
+     * we delegate to the same handlers used by the local MCP server.
+     */
     private async executeLocalTool(tool: string, args: Record<string, unknown>): Promise<unknown> {
-        const repoPath = args.repoPath as string;
-
-        // File operations
-        if (tool === "swarm_file") {
-            const action = args.action as string;
-
-            if (action === "read") {
-                const filePath = path.resolve(repoPath, args.filePath as string);
-                const content = await fs.readFile(filePath, "utf-8");
-                return { ok: true, content };
-            }
-
-            if (action === "write") {
-                const filePath = path.resolve(repoPath, args.filePath as string);
-                await fs.mkdir(path.dirname(filePath), { recursive: true });
-                await fs.writeFile(filePath, args.content as string, "utf-8");
-                return { ok: true, written: filePath };
-            }
-
-            if (action === "list") {
-                const dirPath = path.resolve(repoPath, (args.dirPath as string) || ".");
-                const entries = await fs.readdir(dirPath, { withFileTypes: true });
-                return {
-                    ok: true,
-                    files: entries.map(e => ({
-                        name: e.name,
-                        isDir: e.isDirectory(),
-                    })),
-                };
-            }
-
-            return { ok: false, error: `Unknown file action: ${action}` };
+        // Lazy-load tool handlers on first call
+        if (!this.toolHandlers) {
+            await this.buildToolHandlers();
         }
 
-        // Git operations
-        if (tool === "swarm_git") {
-            // Delegate to existing git workflows
-            const { gitTry } = await import("./workflows/git.js");
-            const action = args.action as string;
-
-            if (action === "status") {
-                const result = await gitTry(["status", "--porcelain"], { cwd: repoPath });
-                return { ok: true, status: result };
-            }
-
-            if (action === "sync") {
-                await gitTry(["add", "-A"], { cwd: repoPath });
-                await gitTry(["commit", "-m", args.message as string || "swarm sync"], { cwd: repoPath });
-                await gitTry(["push"], { cwd: repoPath });
-                return { ok: true, synced: true };
-            }
-
-            return { ok: false, error: `Unknown git action: ${action}` };
+        const handler = this.toolHandlers!.get(tool);
+        if (!handler) {
+            return { ok: false, error: `Unknown tool: ${tool}. Available: ${[...this.toolHandlers!.keys()].join(", ")}` };
         }
 
-        // Agent operations
-        if (tool === "swarm_agent") {
-            const action = args.action as string;
-
-            if (action === "init" || action === "register") {
-                const { registerAgent, whoami } = await import("./workflows/agentRegistry.js");
-                const existing = await whoami(repoPath);
-                if (existing.agent) {
-                    return { ok: true, agent: existing.agent };
-                }
-                const result = await registerAgent({ repoPath, commitMode: "push" });
-                return { ok: true, agent: result.agent };
+        try {
+            const result = await handler(args);
+            // Smart tools return { content: [...], structuredContent: ... }
+            // Bridge needs the structured data, not the MCP wrapper
+            if (result && typeof result === "object" && "structuredContent" in result) {
+                return (result as any).structuredContent;
             }
-
-            if (action === "whoami") {
-                const { whoami } = await import("./workflows/agentRegistry.js");
-                const result = await whoami(repoPath);
-                return { ok: true, ...result };
-            }
-
-            return { ok: false, error: `Unknown agent action: ${action}` };
+            return result;
+        } catch (err: any) {
+            return { ok: false, error: err.message || String(err) };
         }
+    }
 
-        // Unknown tool - return error
-        return { ok: false, error: `Unknown tool: ${tool}` };
+    private toolHandlers: Map<string, (input: any) => Promise<any>> | null = null;
+
+    private async buildToolHandlers() {
+        const { allSmartTools } = await import("./smartTools/index.js");
+        this.toolHandlers = new Map();
+        for (const tool of allSmartTools) {
+            // Each smart tool is [name, schema, handler]
+            const [name, , handler] = tool as unknown as [string, unknown, (input: any) => Promise<any>];
+            this.toolHandlers.set(name, handler);
+        }
+        console.log(`🔧 Loaded ${this.toolHandlers.size} smart tool handlers for bridge`);
     }
 
     private runHealthCheck() {

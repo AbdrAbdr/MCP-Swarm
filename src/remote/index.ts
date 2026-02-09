@@ -119,7 +119,7 @@ async function startCompanion(): Promise<void> {
         stdio: "ignore",
         env: {
             ...process.env,
-            // SWARM_HUB_URL must be set by user - no default hardcoded URL
+            MCP_SERVER_URL: serverUrl!, // Auto-Bridge: передаём URL сервера для подключения бриджа
         },
     });
 
@@ -130,7 +130,7 @@ async function startCompanion(): Promise<void> {
 
     // Verify it started
     if (await isCompanionRunning()) {
-        log("Companion daemon started successfully");
+        log("Companion daemon started successfully (bridge enabled)");
     } else {
         log("Warning: Companion daemon may not have started correctly");
     }
