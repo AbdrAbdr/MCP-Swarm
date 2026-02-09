@@ -12,9 +12,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.1.4 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.1.5 — Universal AI Agent Coordination Platform
 
-> 🐝 **v1.1.4 — Telegram Bot + Full Documentation:** Real-time Telegram notifications for tasks, agents, and errors. Web Dashboard at `localhost:37373`. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.1.5 — Interactive Telegram Bot:** Create tasks from chat, AI intent matching (RU/EN), push notifications from Hub, Mini App dashboard, inline task management. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -634,7 +634,7 @@ Get real-time notifications about tasks, agents, errors, and code reviews in Tel
 1. Open Telegram
 2. Search for **@userinfobot** or go to [t.me/userinfobot](https://t.me/userinfobot)
 3. Press **Start**
-4. Copy the **User ID** (a number like `513235861`)
+4. Copy the **User ID** (a number like `123456789`)
 
 #### 3.2: Create a bot via @BotFather
 
@@ -692,7 +692,17 @@ Available commands:
 | `/status` | Active project status |
 | `/agents` | Connected agents |
 | `/tasks` | Current tasks |
+| `/new` | Create a new task |
+| `/logs` | View recent event logs |
 | `/myid` | Your Telegram User ID |
+
+**v1.1.5 Interactive Features:**
+- 💬 **Free text → Task creation** — just type a task description, the bot will ask to confirm
+- 🤖 **AI Intent Matching** — type "статус" or "status" and get instant response without commands
+- 📊 **Mini App Dashboard** — real-time WebSocket dashboard inside Telegram
+- 🔔 **Push Notifications** — Hub automatically notifies about task events, agent deaths, swarm stop/resume
+- ⏹ **Stop/Resume** — control the swarm directly from Telegram buttons
+- 📋 **Inline Task Management** — view details, mark done, cancel, change priority via buttons
 
 > 📱 For more details, see [TELEGRAM.md](./TELEGRAM.md).
 

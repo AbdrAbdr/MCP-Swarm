@@ -5,7 +5,7 @@
 # ИНСТРУКЦИЯ ПО ДЕПЛОЮ:
 # 1. Создайте бота через @BotFather в Telegram
 # 2. Скопируйте токен бота
-# 3. Сначала задеплойте Hub (cloudflare/abdr-hub) и скопируйте его URL
+# 3. Сначала задеплойте Hub (cloudflare/hub-latest) и скопируйте его URL
 # 4. Замените SWARM_HUB_URL ниже на URL вашего Hub
 # 5. npx wrangler login
 # 6. npx wrangler secret put TELEGRAM_BOT_TOKEN
@@ -14,11 +14,11 @@
 #    (тот же токен, что в Hub и Server)
 # 8. npx wrangler deploy
 # 9. Установите webhook:
-#    curl "https://abdr-swarm-telegram.<YOUR-SUBDOMAIN>.workers.dev/setup"
+#    curl "https://mcp-swarm-telegram.<YOUR-SUBDOMAIN>.workers.dev/setup"
 #
 # ═══════════════════════════════════════════════════════════════════════════
 
-name = "abdr-swarm-telegram"
+name = "mcp-swarm-telegram"
 main = "worker.ts"
 compatibility_date = "2024-01-01"
 
@@ -26,8 +26,8 @@ compatibility_date = "2024-01-01"
 # НАСТРОЙКИ - ЗАМЕНИТЕ НА СВОИ!
 # ═══════════════════════════════════════════════════════════════════════════
 [vars]
-# URL вашего Hub (задеплойте сначала cloudflare/abdr-hub)
-SWARM_HUB_URL = "wss://mcp-swarm-hub.unilife-ch.workers.dev/ws"
+# URL вашего Hub (задеплойте сначала cloudflare/hub-latest)
+SWARM_HUB_URL = "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
 SWARM_PROJECT = "default"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -46,3 +46,7 @@ bindings = [
 [[migrations]]
 tag = "v1"
 new_classes = ["UserProjects"]
+
+# Cron triggers для scheduled handler (P3-11)
+[triggers]
+crons = ["*/10 * * * *"]  # Каждые 10 минут

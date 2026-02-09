@@ -9,7 +9,7 @@
  * 
  * Usage:
  *   npx mcp-swarm-install
- *   npx mcp-swarm-install --telegram-user-id 513235861
+ *   npx mcp-swarm-install --telegram-user-id 123456789
  *   npx mcp-swarm-install --auto-install -y
  */
 
@@ -274,12 +274,12 @@ Options:
 
 Examples:
   npx mcp-swarm-install                          # Interactive
-  npx mcp-swarm-install -t 513235861             # With Telegram
+  npx mcp-swarm-install -t 123456789             # With Telegram
   npx mcp-swarm-install -a -y                    # Auto-install to all IDEs
-  npx mcp-swarm-install -t 513235861 -a -y       # Full auto with Telegram
+  npx mcp-swarm-install -t 123456789 -a -y       # Full auto with Telegram
 
 Get your Telegram User ID:
-  1. Open Telegram and find @MyCFSwarmBot
+  1. Open Telegram and find @MySwarmBot
   2. Send /start
   3. Bot will show your User ID
 `);
@@ -359,7 +359,7 @@ ${c.reset}`);
         // Step 3: Telegram
         if (!telegramId && !nonInteractive && rl) {
             logHeader("Step 3: Telegram Integration (Optional)");
-            log("Get notifications via @MyCFSwarmBot");
+            log("Get notifications via @MySwarmBot");
             log("Send /start to the bot to get your User ID");
             log("");
             telegramId = await ask(rl, "Telegram User ID (Enter to skip): ") || null;
@@ -456,7 +456,7 @@ ${c.reset}`);
             log(`📱 Notifications → Telegram user ${telegramId}`);
         }
         log("📖 Docs: https://github.com/AbdrAbdr/Swarm_MCP");
-        log("💬 Bot: @MyCFSwarmBot");
+        log("💬 Bot: @MySwarmBot");
         log("");
 
     } finally {

@@ -9,6 +9,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.5] - 2026-02-09
+
+### What's New
+
+#### 📱 Interactive Telegram Bot
+- **Task creation from chat** — Send `/new` or just type a task description; the bot confirms and creates it via Hub API.
+- **AI Intent Matching** — Natural language recognition for Russian and English. Type "статус", "задачи", "agents", "stop", "logs" — no slash commands needed.
+- **Push notifications from Hub** — Hub automatically sends real-time events (task created/completed, agent died, swarm stopped/resumed) to your Telegram via `POST /notify`.
+- **Inline task management** — View details, mark as done, cancel, or change priority using inline buttons directly in chat.
+- **Stop/Resume from Telegram** — Control the swarm with buttons, no need to open IDE.
+- **Event logs** — `/logs` command to view recent swarm events.
+
+#### 📊 Mini App Dashboard
+- **Telegram Web App** — Real-time dashboard accessible via `/app` endpoint inside Telegram.
+- **WebSocket connection** — Live updates of agents, tasks, and events from Hub.
+- **Dark theme** — Adapts to Telegram's theme variables (`--tg-theme-*`).
+- **Control buttons** — Refresh status and stop swarm directly from the Mini App.
+
+#### ⚡ Performance & Reliability
+- **Notification batching** — Uses Durable Object Alarm API to batch multiple events into a single message (2s debounce).
+- **Hub response caching** — Cached responses in Durable Object with 30s TTL to reduce Hub load.
+- **Cron heartbeat** — Scheduled handler runs every 10 minutes; sends status digest if agents are active.
+
+#### 🏗️ Hub Enhancements
+- **Task CRUD API** — `POST /api/create_task`, `POST /api/update_task`, `GET /api/task/:id`, `GET /api/logs` endpoints.
+- **Telegram webhook integration** — Hub calls `notifyTelegram()` on key events via `appendEvent()` hook.
+- **Simplified config** — Only `TELEGRAM_BOT_URL` needed in Hub (no more `TELEGRAM_CHAT_ID`); chatId comes from Telegram updates.
+
+#### 🔧 Deploy Your Own Telegram Bot
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) and copy the token
+2. Deploy the worker:
+   ```bash
+   cd cloudflare/telegram-bot
+   npx wrangler secret put TELEGRAM_BOT_TOKEN
+   npx wrangler deploy
+   ```
+3. Set up the webhook:
+   ```bash
+   curl https://YOUR-TELEGRAM-BOT.workers.dev/setup
+   ```
+4. Add to your MCP config:
+   ```json
+   "TELEGRAM_USER_ID": "YOUR_TELEGRAM_USER_ID",
+   "TELEGRAM_BOT_URL": "https://YOUR-TELEGRAM-BOT.workers.dev"
+   ```
+
+> 📱 See [TELEGRAM.md](./TELEGRAM.md) for detailed instructions (English + Russian).
+
+---
+
 ## [1.1.3] - 2026-02-09
 
 ### What's New
