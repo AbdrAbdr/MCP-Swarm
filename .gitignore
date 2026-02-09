@@ -9,3 +9,9 @@ test_schema*.json
 test-input.txt
 ts-errors.txt
 build-output.txt
+
+# Personal Cloudflare Workers (contain private Worker names)
+cloudflare/server-latest/
+cloudflare/hub-latest/
+cloudflare/abdr-server/
+cloudflare/abdr-hub/
