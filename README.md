@@ -9,9 +9,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.0.5 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.0.6 — Universal AI Agent Coordination Platform
 
-> 🌉 **v1.0.5 — Full Remote Bridge:** All **26 Smart Tools** now work through Remote Bridge (was 3). Auto-start companion with `MCP_SERVER_URL` passthrough. Zero-config setup — just `npx mcp-swarm-remote --url https://...`. Update: `npm install -g mcp-swarm@latest`
+> 🌉 **v1.0.6 — Full Remote Bridge:** All **26 Smart Tools** now work through Remote Bridge (was 3). Auto-start companion with `MCP_SERVER_URL` passthrough. Zero-config setup — just `npx mcp-swarm-remote --url https://...`. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
