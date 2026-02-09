@@ -4,18 +4,47 @@
 [![npm downloads](https://img.shields.io/npm/dm/mcp-swarm.svg)](https://www.npmjs.com/package/mcp-swarm)
 [![license](https://img.shields.io/npm/l/mcp-swarm.svg)](https://github.com/AbdrAbdr/MCP-Swarm/blob/main/LICENSE)
 [![CI](https://github.com/AbdrAbdr/MCP-Swarm/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdrAbdr/MCP-Swarm/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-blueviolet)](https://modelcontextprotocol.io)
 
 <p align="center">
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.0.10 — Универсальная Платформа Координации AI-Агентов
+# 🐝 MCP Swarm v1.1.0 — Универсальная Платформа Координации AI-Агентов
 
-> 🌉 **v1.0.10 — Full Remote Bridge + Smart Project ID:** Все **26 Smart Tools** через Remote Bridge. Авто-запуск companion с проверкой bridge health. Smart Project ID с предложениями git init. Обновитесь: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.1.0 — Web Dashboard + DX улучшения:** Web Dashboard на `localhost:37373`, PID-файл, `--version`, примеры конфигов IDE, issue templates, дополнительные бейджи. Все **26 Smart Tools** через Remote Bridge. Обновитесь: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** — это глобальная «нервная система» для ваших AI-помощников. Она превращает разрозненных агентов (Claude, Cursor, Windsurf, OpenCode) в слаженную команду, способную работать над огромными проектами без конфликтов и потери контекста.
 
 ---
+
+## 🎬 Быстрое демо
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Claude Code (Агент 1)         Cursor (Агент 2)              │
+│  ┌─────────────────────┐        ┌─────────────────────┐     │
+│  │ swarm_task create    │        │ swarm_task list      │     │
+│  │ "Починить auth"       │───────▶│ → берёт задачу       │     │
+│  │                      │        │                      │     │
+│  │ swarm_file reserve   │        │ swarm_file reserve   │     │
+│  │ auth.ts ✅ заблок.   │        │ utils.ts ✅ заблок.  │     │
+│  │                      │        │                      │     │
+│  │ swarm_chat broadcast │◄──────▶│ swarm_chat broadcast │     │
+│  │ "Auth готов!"        │        │ "Utils готовы!"       │     │
+│  └─────────────────────┘        └─────────────────────┘     │
+│                                                              │
+│  🌐 Hub (Cloudflare)  ←→  🐝 Companion (localhost:37373)   │
+│  Синхронизация            Web Dashboard + Bridge            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Откройте `http://localhost:37373` чтобы увидеть дашборд в реальном времени!**
+
+---
+
 
 ## 🧠 Что это такое?
 

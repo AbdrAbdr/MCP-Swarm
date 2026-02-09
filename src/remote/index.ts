@@ -25,6 +25,7 @@
  */
 
 import { spawn } from "child_process";
+import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -50,6 +51,15 @@ for (let i = 0; i < args.length; i++) {
         debug = true;
     } else if (args[i] === "--no-companion") {
         noCompanion = true;
+    } else if (args[i] === "--version" || args[i] === "-v" || args[i] === "-V") {
+        const pkgPath = join(__dirname, "..", "package.json");
+        try {
+            const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+            console.log(`mcp-swarm-remote v${pkg.version}`);
+        } catch {
+            console.log("mcp-swarm-remote (unknown version)");
+        }
+        process.exit(0);
     } else if (args[i] === "--help" || args[i] === "-h") {
         console.error(`
 MCP Swarm Remote - Connect to your Cloudflare MCP Server

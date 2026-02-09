@@ -4,16 +4,44 @@
 [![npm downloads](https://img.shields.io/npm/dm/mcp-swarm.svg)](https://www.npmjs.com/package/mcp-swarm)
 [![license](https://img.shields.io/npm/l/mcp-swarm.svg)](https://github.com/AbdrAbdr/MCP-Swarm/blob/main/LICENSE)
 [![CI](https://github.com/AbdrAbdr/MCP-Swarm/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdrAbdr/MCP-Swarm/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-blueviolet)](https://modelcontextprotocol.io)
 
 <p align="center">
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.0.10 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.1.0 — Universal AI Agent Coordination Platform
 
-> 🌉 **v1.0.10 — Full Remote Bridge + Smart Project ID:** All **26 Smart Tools** through Remote Bridge. Auto-start companion with bridge health check. Smart Project ID with git init suggestions. Update: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.1.0 — Web Dashboard + DX Improvements:** Web Dashboard at `localhost:37373`, PID file management, `--version` support, IDE config examples, issue templates, additional badges. All **26 Smart Tools** via Remote Bridge. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
+
+---
+
+## 🎬 Quick Demo
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Claude Code (Agent 1)          Cursor (Agent 2)            │
+│  ┌─────────────────────┐        ┌─────────────────────┐     │
+│  │ swarm_task create    │        │ swarm_task list      │     │
+│  │ "Fix auth module"    │───────▶│ → picks up task      │     │
+│  │                      │        │                      │     │
+│  │ swarm_file reserve   │        │ swarm_file reserve   │     │
+│  │ auth.ts ✅ locked    │        │ utils.ts ✅ locked   │     │
+│  │                      │        │                      │     │
+│  │ swarm_chat broadcast │◄──────▶│ swarm_chat broadcast │     │
+│  │ "Auth fixed!"        │        │ "Utils updated!"     │     │
+│  └─────────────────────┘        └─────────────────────┘     │
+│                                                              │
+│  🌐 Hub (Cloudflare)  ←→  🐝 Companion (localhost:37373)   │
+│  Real-time sync            Web Dashboard + Bridge            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Open `http://localhost:37373` to see the live dashboard!**
 
 ---
 

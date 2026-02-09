@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "mcp-swarm": {
+            "command": "node",
+            "args": [
+                "./dist/serverSmart.js"
+            ],
+            "env": {
+                "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
+            }
+        }
+    }
+}

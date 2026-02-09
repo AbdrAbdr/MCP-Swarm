@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-02-09
+
+### 🐝 Web Dashboard + DX Improvements
+
+#### Added
+
+- **Web Dashboard** — Beautiful dark-themed dashboard at `http://localhost:37373` with auto-refresh every 5s. Shows agent name, role, bridge status, uptime, PID, and all API endpoints.
+- **PID file** — Companion now writes `~/.mcp-swarm/companion.pid` on startup and removes it on exit for process discovery.
+- **Graceful shutdown** — SIGTERM/SIGINT handlers with PID cleanup.
+- **`/health` endpoint** — Returns JSON with `{ ok, pid, uptime }` for monitoring.
+- **`examples/`** — Ready-to-use configs for Claude Code, Cursor, Windsurf, OpenCode, and local mode.
+- **Issue Templates** — Bug report, feature request, and question templates in `.github/ISSUE_TEMPLATE/`.
+- **Unit tests** — Tests for `normalizeGitRemote` and PID file management (`src/tests/projectId.test.ts`).
+- **New badges** — Node.js 18+, TypeScript 5.0, MCP Protocol added to README EN + RU.
+- **Quick Demo** — ASCII workflow diagram added to README EN + RU showing multi-agent coordination.
+
+#### Changed
+
+- **`smartTools.ts`** — Legacy monolith renamed to `smartTools.legacy.ts` (unused, server uses modular `smartTools/`).
+- **`--version` flag** — Added to `mcp-swarm-remote` CLI (`-v`, `-V`, `--version`).
+- **`readFileSync` import** — Added to `remote/index.ts` for version reading.
+
+---
+
 ## [1.0.11] - 2026-02-09
 
 ### 🎨 Flag Badges & Community CTA

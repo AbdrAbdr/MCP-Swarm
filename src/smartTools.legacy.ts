@@ -1,5 +1,5 @@
 /**
- * MCP Swarm v0.9.10 - Smart Tools
+ * MCP Swarm v1.1.0 - Smart Tools (Legacy)
  * 
  * Consolidates 168+ individual tools into 54 Smart Tools with `action` parameter.
  * Each Smart Tool groups related functionality for better UX.

@@ -1,0 +1,18 @@
+{
+    "mcpServers": {
+        "mcp-swarm": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "-p",
+                "mcp-swarm",
+                "mcp-swarm-remote",
+                "--url",
+                "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp"
+            ],
+            "env": {
+                "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
+            }
+        }
+    }
+}

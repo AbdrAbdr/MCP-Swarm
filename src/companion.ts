@@ -1,6 +1,8 @@
 import { createRequire } from "node:module";
 import http from "node:http";
 import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 
 import { gitTry } from "./workflows/git.js";
 import { getRepoRoot } from "./workflows/repo.js";
@@ -123,9 +125,33 @@ function log(level: "info" | "warn" | "error" | "success", message: string) {
   console.log(`${colorMap[level]}[${timestamp}] ${prefix[level]} ${message}${colors.reset}`);
 }
 
+// ============ PID FILE ============
+const PID_DIR = path.join(os.homedir(), ".mcp-swarm");
+const PID_FILE = path.join(PID_DIR, "companion.pid");
+
+function writePidFile(): void {
+  try {
+    if (!fs.existsSync(PID_DIR)) fs.mkdirSync(PID_DIR, { recursive: true });
+    fs.writeFileSync(PID_FILE, String(process.pid), "utf-8");
+  } catch {
+    // Non-critical — log and continue
+  }
+}
+
+function removePidFile(): void {
+  try {
+    if (fs.existsSync(PID_FILE)) fs.unlinkSync(PID_FILE);
+  } catch {
+    // ignore
+  }
+}
+
 async function run() {
   const cfg = getEnvConfig();
   const repoRoot = await getRepoRoot(cfg.repoPath);
+
+  // Write PID file for process discovery
+  writePidFile();
 
   // ============ SMART PROJECT ID ============
   const projectInfo = await getProjectIdSource(repoRoot);
@@ -338,6 +364,123 @@ async function run() {
       res.statusCode = 200;
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ ok: true, removed: projectPath }));
+      return;
+    }
+
+    // ============ WEB DASHBOARD ============
+    // GET / — Beautiful HTML dashboard
+    if (req.method === "GET" && (req.url === "/" || req.url === "/dashboard")) {
+      res.statusCode = 200;
+      res.setHeader("content-type", "text/html; charset=utf-8");
+      const bridgeStatus = bridgeManager?.getStatus() ?? null;
+      const uptimeSeconds = Math.floor(process.uptime());
+      const uptimeStr = `${Math.floor(uptimeSeconds / 3600)}h ${Math.floor((uptimeSeconds % 3600) / 60)}m ${uptimeSeconds % 60}s`;
+      res.end(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="5">
+  <title>🐝 MCP Swarm — Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; padding: 2rem; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    h1 span { color: #58a6ff; }
+    .subtitle { color: #8b949e; margin-bottom: 2rem; font-size: 0.95rem; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1.2rem; }
+    .card h3 { color: #8b949e; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .card .value { font-size: 1.4rem; font-weight: 600; }
+    .card .value.green { color: #3fb950; }
+    .card .value.blue { color: #58a6ff; }
+    .card .value.yellow { color: #d29922; }
+    .card .value.red { color: #f85149; }
+    .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+    .badge.orch { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
+    .badge.exec { background: #23863633; color: #3fb950; border: 1px solid #238636; }
+    .badge.running { background: #23863633; color: #3fb950; }
+    .badge.paused { background: #d2992233; color: #d29922; }
+    .badge.stopped { background: #f8514933; color: #f85149; }
+    .endpoints { margin-top: 1rem; }
+    .endpoints h2 { font-size: 1.1rem; margin-bottom: 0.8rem; color: #c9d1d9; }
+    .ep-list { list-style: none; }
+    .ep-list li { padding: 0.5rem 0.8rem; border-bottom: 1px solid #21262d; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85rem; display: flex; gap: 0.8rem; }
+    .ep-list .method { color: #3fb950; min-width: 3.5rem; font-weight: 600; }
+    .ep-list .path { color: #58a6ff; }
+    .ep-list .desc { color: #8b949e; margin-left: auto; }
+    .footer { margin-top: 2rem; color: #484f58; font-size: 0.8rem; text-align: center; }
+    .footer a { color: #58a6ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐝 MCP <span>Swarm</span></h1>
+    <p class="subtitle">Companion Dashboard — auto-refreshes every 5s</p>
+    <div class="cards">
+      <div class="card">
+        <h3>Agent</h3>
+        <div class="value blue">${agentName}</div>
+      </div>
+      <div class="card">
+        <h3>Role</h3>
+        <div class="value"><span class="badge ${isOrchestrator ? 'orch' : 'exec'}">${role.toUpperCase()}</span></div>
+      </div>
+      <div class="card">
+        <h3>Status</h3>
+        <div class="value"><span class="badge ${stop ? 'stopped' : paused ? 'paused' : 'running'}">${stop ? '⏹ STOPPED' : paused ? '⏸ PAUSED' : '▶ RUNNING'}</span></div>
+      </div>
+      <div class="card">
+        <h3>Bridge</h3>
+        <div class="value ${bridgeManager ? 'green' : 'yellow'}">${bridgeManager ? '🌉 Connected' : '⚠ Not enabled'}</div>
+      </div>
+      <div class="card">
+        <h3>Project ID</h3>
+        <div class="value" style="font-size:1rem;word-break:break-all;">${projectId}</div>
+      </div>
+      <div class="card">
+        <h3>Uptime</h3>
+        <div class="value green">${uptimeStr}</div>
+      </div>
+      <div class="card">
+        <h3>PID</h3>
+        <div class="value" style="font-size:1rem;">${process.pid}</div>
+      </div>
+      <div class="card">
+        <h3>Port</h3>
+        <div class="value">${controlPort}</div>
+      </div>
+    </div>
+    <div class="endpoints">
+      <h2>📡 API Endpoints</h2>
+      <ul class="ep-list">
+        <li><span class="method">GET</span><span class="path">/</span><span class="desc">This dashboard</span></li>
+        <li><span class="method">GET</span><span class="path">/status</span><span class="desc">JSON status</span></li>
+        <li><span class="method">GET</span><span class="path">/health</span><span class="desc">Health check</span></li>
+        <li><span class="method">GET</span><span class="path">/bridge/status</span><span class="desc">Bridge status</span></li>
+        <li><span class="method">POST</span><span class="path">/stop</span><span class="desc">Stop companion</span></li>
+        <li><span class="method">POST</span><span class="path">/pause</span><span class="desc">Pause companion</span></li>
+        <li><span class="method">POST</span><span class="path">/resume</span><span class="desc">Resume companion</span></li>
+        <li><span class="method">POST</span><span class="path">/shutdown</span><span class="desc">Shutdown companion</span></li>
+        <li><span class="method">POST</span><span class="path">/bridge/add?project=</span><span class="desc">Add project to bridge</span></li>
+        <li><span class="method">POST</span><span class="path">/bridge/remove?project=</span><span class="desc">Remove project</span></li>
+      </ul>
+    </div>
+    <div class="footer">
+      MCP Swarm v1.0 • <a href="https://github.com/AbdrAbdr/MCP-Swarm" target="_blank">GitHub</a> • <a href="https://www.npmjs.com/package/mcp-swarm" target="_blank">npm</a>
+    </div>
+  </div>
+</body>
+</html>`);
+      return;
+    }
+
+    // GET /health  
+    if (req.method === "GET" && req.url === "/health") {
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ ok: true, pid: process.pid, uptime: process.uptime() }));
       return;
     }
 
@@ -590,8 +733,20 @@ async function run() {
   log("info", `Companion stopped for agent ${agentName} (${role})`);
 }
 
+// ============ GRACEFUL SHUTDOWN ============
+function gracefulShutdown(signal: string) {
+  console.log(`\n[companion] Received ${signal}, shutting down gracefully...`);
+  removePidFile();
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("exit", () => removePidFile());
+
 run().catch(err => {
   // eslint-disable-next-line no-console
   console.error(err);
+  removePidFile();
   process.exit(1);
 });
