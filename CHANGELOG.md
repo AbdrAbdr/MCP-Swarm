@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2026-02-09
+
+### 🔭 Observability & Control
+
+#### Added
+
+- **File Logging** — All companion logs written to `~/.mcp-swarm/logs/companion-YYYY-MM-DD.log` with automatic 7-day rotation.
+- **`mcp-swarm-doctor`** — New CLI self-diagnostics tool. Checks Node.js, Git, companion status, port, logs, Hub URL, IDE configs, and npm version.
+- **Interactive Dashboard** — Buttons for Pause/Resume/Shutdown/Copy Project ID directly in the web dashboard at `http://localhost:37373`. Toast notifications for action feedback.
+- **Auto-Update Notifier** — On startup, companion checks npm registry and warns if a newer version is available.
+
+#### Changed
+
+- **Graceful shutdown** now properly closes file log streams before exit.
+- **Dashboard footer** updated to v1.1.
+
+---
+
 ## [1.1.0] - 2026-02-09
 
 ### 🐝 Web Dashboard + DX Improvements
