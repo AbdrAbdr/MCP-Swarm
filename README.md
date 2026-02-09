@@ -599,11 +599,7 @@ curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://mcp-swarm-te
 
 ### Step 4: Configure Your IDE
 
-**Option A: Remote (recommended)**
-
-```bash
-npm install -g mcp-swarm
-```
+**Option A: Remote (recommended) — v1.0.5**
 
 ```json
 {
@@ -611,16 +607,35 @@ npm install -g mcp-swarm
     "mcp-swarm": {
       "command": "npx",
       "args": [
-        "-y",
-        "-p", "mcp-swarm",
+        "-y", "-p", "mcp-swarm",
         "mcp-swarm-remote",
-        "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp",
-        "--telegram-user-id", "YOUR_TELEGRAM_ID"
-      ]
+        "--url", "https://mcp-swarm-server.YOUR-SUBDOMAIN.workers.dev/mcp"
+      ],
+      "env": {
+        "SWARM_HUB_URL": "wss://mcp-swarm-hub.YOUR-SUBDOMAIN.workers.dev/ws"
+      }
     }
   }
 }
 ```
+
+> 💡 `npx -y -p mcp-swarm` automatically downloads the **latest version** from npm (currently 1.0.5).
+
+**What happens when Remote starts:**
+
+```
+1. npx downloads mcp-swarm@latest from npm
+2. mcp-swarm-remote starts → checks if companion is running
+3. If not → starts companion with:
+   • MCP_SERVER_URL (from --url) → Bridge auto-connects to your Worker
+   • SWARM_HUB_URL (from env)   → WebSocket to Hub for coordination
+4. Companion starts:
+   • Bridge → WebSocket → MCP Server Worker (executes 26 tools locally)
+   • Hub    → WebSocket → Hub Worker (real-time agent sync)
+5. All 26 smart tools work! ✅
+```
+
+---
 
 **Option B: Local with Hub**
 
@@ -639,14 +654,26 @@ npm install -g mcp-swarm
 }
 ```
 
+**What happens when Local starts:**
+
+```
+1. Node.js runs serverSmart.js directly (no npm download)
+2. MCP server starts as stdio process → IDE connects via stdin/stdout
+3. All 26 tools execute locally — no bridge needed
+4. Hub connection (optional) → real-time sync between agents
+```
+
+---
+
 ### 🔄 Comparison
 
-| Feature | Remote | Local+Hub |
-|---------|--------|-----------|
-| Setup | `npm i -g mcp-swarm` | `git clone && npm build` |
-| Config | Short | Longer |
-| Data | Your Worker | Local |
-| Offline | ❌ | ✅ (with Hub fallback) |
+| Feature | Remote (A) | Local (B) |
+|---------|------------|-----------|
+| Install | `npx` auto-downloads latest | `git clone && npm build` |
+| Tools | 26 via Bridge | 26 directly |
+| Multi-PC | ✅ Works from any machine | ❌ Only where installed |
+| Updates | ✅ Auto (npx latest) | Manual (`git pull && build`) |
+| Offline | ❌ Needs internet | ✅ Works offline |
 | Latency | ~50–100ms | <10ms |
 
 ### ❓ What is YOUR-SUBDOMAIN?
