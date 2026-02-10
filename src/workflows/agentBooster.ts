@@ -163,7 +163,7 @@ async function loadStats(repoRoot: string): Promise<BoosterStats> {
       totalChanges: 0,
       totalTimeSavedMs: 0,
       totalCostSaved: 0,
-      byType: {} as any,
+      byType: {} as BoosterStats["byType"],
       lastUpdated: Date.now(),
     };
   }

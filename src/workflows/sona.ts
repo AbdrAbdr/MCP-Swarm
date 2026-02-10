@@ -273,7 +273,7 @@ function createDefaultModel(): SONAModel {
  * Create default agent profile
  */
 function createDefaultAgentProfile(agentName: string): AgentProfile {
-  const categories: Record<TaskCategory, AgentCategoryProfile> = {} as any;
+  const categories: Record<TaskCategory, AgentCategoryProfile> = {} as Record<TaskCategory, AgentCategoryProfile>;
   const allCategories: TaskCategory[] = [
     "frontend_ui", "backend_api", "database", "testing", "devops",
     "documentation", "refactoring", "bugfix", "feature", "security",
@@ -399,7 +399,7 @@ export async function classifyTask(input: {
   affectedFiles?: string[];
 }): Promise<TaskClassification> {
   const text = `${input.title} ${input.description}`.toLowerCase();
-  const scores: Record<TaskCategory, number> = {} as any;
+  const scores: Record<TaskCategory, number> = {} as Record<TaskCategory, number>;
   const keywords: string[] = [];
 
   // Score each category
@@ -1242,7 +1242,7 @@ export async function getStats(input: {
   const history = await getHistory({ repoPath: input.repoPath, limit: 1000 });
 
   // Count tasks per category
-  const categoryCounts: Record<TaskCategory, number> = {} as any;
+  const categoryCounts: Record<TaskCategory, number> = {} as Record<TaskCategory, number>;
   for (const h of history) {
     categoryCounts[h.category] = (categoryCounts[h.category] || 0) + 1;
   }

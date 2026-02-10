@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- MCP SDK handlers receive Zod-validated input but SDK doesn't propagate inferred types */
 /**
  * MCP Swarm v1.1.0 - Smart Tools: git
  * Consolidated: swarm_git + swarm_dependency → swarm_git
@@ -11,7 +12,7 @@ import { autoDeleteMergedBranch, cleanupAllMergedBranches } from "../workflows/r
 import { signalDependencyChange, syncDependencies } from "../workflows/dependencySync.js";
 
 // Helper to wrap results
-function wrapResult(result: any) {
+function wrapResult(result: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
 }
 

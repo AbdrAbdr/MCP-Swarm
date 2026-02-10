@@ -9,6 +9,136 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-02-10
+
+### What's New
+
+#### 🔐 Swarm Vault
+- **Encrypted secret storage** — AES-256-GCM encryption with PBKDF2 key derivation
+- **Session management** — Keys decrypted in memory during process, cleared on exit
+- **Cloud backup** — Export/import vault to Telegram, GitHub Gist, Google Drive, S3, or local file
+- **New Smart Tool** — `swarm_vault` with actions: init, unlock, get, set, delete, list, export, import, lock, status
+
+#### 🧙 Setup Wizard
+- **Interactive first-time setup** — Triggered on `swarm_agent init` if no config exists
+- **Multi-lingual** — Auto-detects system locale (Russian/English)
+- **Standard mode** — Skip all, v1.1.x compatible out of the box
+- **Configured mode** — Choose Vault, Vector DB, Embeddings, GitHub, Profiles, Plugins
+- **New Smart Tool** — `swarm_setup` with actions: wizard_prompt, wizard_run, config_get, config_exists
+
+#### 🧠 Embedding Cascade
+- **Provider cascade** — Ollama (free/local) → OpenAI (paid) → simpleEmbed v2 (offline)
+- **simpleEmbed v2** — Enhanced with bi-grams, char n-grams, TF-IDF weighting, positional encoding
+- **Semantic caching** — 5000-entry LRU cache, eliminates redundant API calls
+- **Rate limiting** — Per-provider request throttling
+- **Cost tracking** — Session-level token and USD tracking for OpenAI
+- **New Smart Tool** — `swarm_embeddings` with actions: embed, health, costs, reset_costs, backend_health, backend_migrate, backend_health_all
+
+#### 🗄️ Vector Backends
+- **6 adapters** — Local HNSW, ChromaDB, Supabase pgvector, Qdrant Cloud, Pinecone, Turso
+- **Backend migration** — Migrate all documents between any two backends
+- **Health-check & fallback** — Auto-fallback to local if external backend is unavailable
+- **TTL / data retention** — Automatic cleanup of old vectors by configurable TTL
+
+#### 🧲 Auto-Index & Smart Memory
+- **Auto-indexing** — Completed tasks, file changes, and code reviews are indexed automatically
+- **Smart context injection** — Searches memory before task assignment for relevant past solutions
+- **Self-correction loop** — Finds past error fixes and applies them to new similar errors
+- **Conflict resolution memory** — Remembers merge conflict resolution patterns for automated resolution
+- **New Smart Tool** — `swarm_memory` with 8 actions
+
+#### 📊 Analytics
+- **Local persistent storage** — Task history and agent metrics in JSON (`.swarm/analytics.json`)
+- **Agent performance** — Tasks completed, avg duration, specializations per agent
+- **New Smart Tool** — `swarm_analytics` with actions: log_task, log_event, get_tasks, get_events, get_metrics, summary, cleanup
+
+#### 👤 Agent Profiles
+- **6 specialist profiles** — frontend, backend, security, devops, fullstack, custom
+- **Context-aware instructions** — Each profile provides priorities and skill lists
+- **New Smart Tool** — `swarm_profiles` with actions: get, list, default, instructions
+
+#### ⏰ Scheduled Tasks
+- **Cron-like scheduler** — Define recurring tasks with standard cron syntax
+- **Due-check system** — Tasks checked on agent heartbeat
+- **New Smart Tool** — `swarm_scheduler` with actions: add, list, check_due, remove
+
+#### 🔌 Plugin System
+- **User extensions** — Load custom plugins from `~/.swarm/plugins/`
+- **Plugin types** — embedding, vectorBackend, hook, command
+- **Dynamic import** — Auto-discovers and loads `.js`/`.mjs` plugins
+- **New Smart Tool** — `swarm_plugins` with actions: discover, load, load_all, init_dir
+
+#### 🔄 GitHub Sync
+- **Auth auto-detection** — gh CLI → git credential → GITHUB_TOKEN env → Vault
+- **Two-way sync** — GitHub Issues ↔ Swarm Tasks with label filtering
+- **Issue CRUD** — Create, close, and comment on issues directly from agent
+- **New Smart Tool** — `swarm_github` with actions: auth_status, list_issues, create_issue, close_issue, sync_from_github
+
+### Changed
+- **Smart Tools: 27 → 35** — Eight new tools added for v1.2.0 features
+- **Tool index** — New `v120.ts` module houses all v1.2.0 tool definitions
+- **Full type safety in v120.ts** — All `any` types replaced with `z.infer` schemas and explicit type assertions
+
+### Improved (Round 2)
+
+#### 🔐 Vault Password Rotation
+- **`swarm_vault rotate`** — Re-encrypts vault with new password, preserves all keys
+- **Fresh salt** — New PBKDF2 salt generated on each rotation for maximum security
+
+#### ⏰ Scheduled Tasks Persistence
+- **`lastRun` persistence** — Task execution timestamps saved to `config.json`, survive restarts
+- **`check_missed` action** — Detects tasks that were due while Companion was offline
+- **Trailing space fix** — Generated task IDs no longer contain trailing spaces
+
+#### 🔌 Plugin Lifecycle
+- **`onUnload` hook** — Plugins can now clean up resources (timers, connections) on unload
+- **Cross-platform imports** — Fixed path normalization using `pathToFileURL` for safe dynamic imports
+
+#### 🗄️ Vector Backend Switch
+- **`backend_switch` action** — Change active backend via `swarm_embeddings`
+- **Migration suggestion** — Warns if old backend has data and suggests migration to prevent data loss
+
+### Improved (Round 3 — Type Safety & Code Quality)
+
+#### 🛡️ Full Type Safety
+- **`err: any` → `err: unknown`** — All ~15 catch blocks migrated to safe `unknown` error handling
+- **`getErrorMessage()` utility** — Centralized error-to-string conversion with stack trace support (`utils/errors.ts`)
+- **`as any` elimination** — 12 typed interfaces for vector backends (Qdrant, Supabase, Pinecone, Chroma, Turso, HNSW) replace all `as any` in `vectorBackend.ts`
+- **`wrapResult(unknown)`** — Changed from `any` to `unknown` in all 9 smartTools files
+- **Zod schema extraction** — Smart tool schemas moved to `const` objects for reuse and IDE autocomplete
+
+#### 🔐 Vault Audit & Auto-Lock
+- **Audit trail** — `swarm_vault({ action: "audit" })` returns last 500 operations with timestamps, agent names, and details
+- **Auto-lock timer** — Vault auto-locks after configurable idle timeout (`SWARM_VAULT_TIMEOUT`, default 30 min)
+- **`VaultAuditEntry` type** — Fully typed audit log entries
+
+#### ⏰ Scheduled Task Pause/Resume
+- **`pauseScheduledTask()`** — Pause individual scheduled tasks without removing them
+- **`resumeScheduledTask()`** — Resume paused tasks, preserving next execution time
+- **Per-task `enabled` field** — Tasks can be selectively disabled/enabled
+
+#### 🩺 Doctor JSON Output
+- **`mcp-swarm-doctor --json`** — Machine-readable diagnostic output for CI/CD pipelines
+- **`DoctorResult` type** — Structured check results: `{ name, status, message, details }`
+- **`runDoctorChecks()` export** — Programmatic access to all health checks
+
+#### 🔄 100% ESM Migration
+- **`require("node:crypto")` → `import { createHmac }`** — in `githubApi.ts`
+- **`require("node:os")` → `import os`** — in `briefings.ts`
+- **`require("ws")` → `import WebSocket`** — in `companion.ts` with safe `wsState` wrapper
+- **Zero `require()` calls remaining** — Project is now fully ESM-only
+
+#### 🧪 New Tests
+- **`companionBridge.test.ts`** — 18 tests covering BridgeManager, CompanionControl, verifyWebhookSignature, Briefings exports, and Bridge type safety
+- **HMAC verification tests** — Valid/invalid/wrong-secret/empty-payload scenarios
+
+#### 📝 Code Quality
+- **File-level `eslint-disable`** — Clean annotation for MCP SDK `input: any` limitation (10 smartTools files)
+- **Debug log cleanup** — Removed `console.log` artifacts from test files
+- **`companion.ts` WebSocket safety** — Extracted `wsState` object to prevent null-reference errors
+
+---
+
 ## [1.1.6] - 2026-02-10
 
 ### What's New

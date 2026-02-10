@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- MCP SDK handlers receive Zod-validated input but SDK doesn't propagate inferred types */
 /**
  * MCP Swarm v1.1.0 - Smart Tools: files
  * Consolidated: swarm_file + swarm_snapshot → swarm_file
@@ -14,9 +15,49 @@ import { createSnapshot, triggerRollback, listSnapshots } from "../workflows/sna
 import { installGuardHooks, uninstallGuardHooks, runGuardHooks, getGuardConfig, updateGuardHook, listGuardHooks } from "../workflows/guardHooks.js";
 
 // Helper to wrap results
-function wrapResult(result: any) {
+function wrapResult(result: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
 }
+
+// ===== schemas =====
+
+const swarmFileInput = z.object({
+  action: z.enum(["reserve", "release", "list", "forecast", "conflicts", "safety", "snap_create", "snap_rollback", "snap_list"]).describe("Action to perform"),
+  repoPath: z.string().optional(),
+  filePath: z.string().optional().describe("File path (for reserve, release, safety)"),
+  files: z.array(z.string()).optional().describe("Files (for forecast, conflicts, snap_create)"),
+  agent: z.string().optional().describe("Agent name"),
+  exclusive: z.boolean().optional().default(true).describe("Exclusive lock (for reserve)"),
+  ttlMs: z.number().optional().describe("TTL in ms (for reserve)"),
+  taskId: z.string().optional().describe("Task ID (for forecast, snap_create)"),
+  estimatedMinutesFromNow: z.number().optional().describe("Estimated minutes (for forecast)"),
+  confidence: z.enum(["low", "medium", "high"]).optional().describe("Confidence (for forecast)"),
+  excludeAgent: z.string().optional().describe("Exclude agent (for conflicts)"),
+  snapshotId: z.string().optional().describe("Snapshot ID (for snap_rollback)"),
+  reason: z.string().optional().describe("Reason (for snap_rollback)"),
+  commitMode: z.enum(["none", "local", "push"]).optional().default("push"),
+}).strict();
+
+
+const swarmWorktreeInput = z.object({
+  action: z.enum(["create", "list", "remove", "hook_install", "hook_uninstall", "hook_run", "hook_config", "hook_update", "hook_list"]).describe("Action to perform"),
+  repoPath: z.string().optional(),
+  agentName: z.string().optional().describe("Agent name (for create)"),
+  shortDesc: z.string().optional().describe("Short description (for create)"),
+  baseRef: z.string().optional().describe("Base ref (for create)"),
+  push: z.boolean().optional().describe("Push (for create)"),
+  worktreePath: z.string().optional().describe("Worktree path (for remove)"),
+  force: z.boolean().optional().describe("Force remove (for remove)"),
+  preCommitChecks: z.array(z.string()).optional().describe("Pre-commit checks (for hook_install)"),
+  prePushChecks: z.array(z.string()).optional().describe("Pre-push checks (for hook_install)"),
+  bypassKeyword: z.string().optional().describe("Bypass keyword (for hook_install)"),
+  hooks: z.array(z.string()).optional().describe("Hooks to uninstall (for hook_uninstall)"),
+  hook: z.string().optional().describe("Hook name (for hook_run, hook_update)"),
+  enabled: z.boolean().optional().describe("Enabled (for hook_update)"),
+  checks: z.array(z.string()).optional().describe("Checks (for hook_update)"),
+  commitMode: z.enum(["none", "local", "push"]).optional().default("push"),
+}).strict();
+
 
 /**
  * swarm_file - File locking, conflict management & snapshots
@@ -27,23 +68,7 @@ export const swarmFileTool = [
   {
     title: "Swarm File",
     description: "File locking, conflict management & snapshots. Actions: reserve, release, list, forecast, conflicts, safety, snap_create, snap_rollback, snap_list",
-    inputSchema: z.object({
-      action: z.enum(["reserve", "release", "list", "forecast", "conflicts", "safety", "snap_create", "snap_rollback", "snap_list"]).describe("Action to perform"),
-      repoPath: z.string().optional(),
-      filePath: z.string().optional().describe("File path (for reserve, release, safety)"),
-      files: z.array(z.string()).optional().describe("Files (for forecast, conflicts, snap_create)"),
-      agent: z.string().optional().describe("Agent name"),
-      exclusive: z.boolean().optional().default(true).describe("Exclusive lock (for reserve)"),
-      ttlMs: z.number().optional().describe("TTL in ms (for reserve)"),
-      taskId: z.string().optional().describe("Task ID (for forecast, snap_create)"),
-      estimatedMinutesFromNow: z.number().optional().describe("Estimated minutes (for forecast)"),
-      confidence: z.enum(["low", "medium", "high"]).optional().describe("Confidence (for forecast)"),
-      excludeAgent: z.string().optional().describe("Exclude agent (for conflicts)"),
-      // snapshot params
-      snapshotId: z.string().optional().describe("Snapshot ID (for snap_rollback)"),
-      reason: z.string().optional().describe("Reason (for snap_rollback)"),
-      commitMode: z.enum(["none", "local", "push"]).optional().default("push"),
-    }).strict(),
+    inputSchema: swarmFileInput,
     outputSchema: z.any(),
   },
   async (input: any) => {
@@ -126,26 +151,7 @@ export const swarmWorktreeTool = [
   {
     title: "Swarm Worktree",
     description: "Git worktree & guard hooks management. Actions: create, list, remove, hook_install, hook_uninstall, hook_run, hook_config, hook_update, hook_list",
-    inputSchema: z.object({
-      action: z.enum(["create", "list", "remove", "hook_install", "hook_uninstall", "hook_run", "hook_config", "hook_update", "hook_list"]).describe("Action to perform"),
-      repoPath: z.string().optional(),
-      // worktree params
-      agentName: z.string().optional().describe("Agent name (for create)"),
-      shortDesc: z.string().optional().describe("Short description (for create)"),
-      baseRef: z.string().optional().describe("Base ref (for create)"),
-      push: z.boolean().optional().describe("Push (for create)"),
-      worktreePath: z.string().optional().describe("Worktree path (for remove)"),
-      force: z.boolean().optional().describe("Force remove (for remove)"),
-      // hooks params
-      preCommitChecks: z.array(z.string()).optional().describe("Pre-commit checks (for hook_install)"),
-      prePushChecks: z.array(z.string()).optional().describe("Pre-push checks (for hook_install)"),
-      bypassKeyword: z.string().optional().describe("Bypass keyword (for hook_install)"),
-      hooks: z.array(z.string()).optional().describe("Hooks to uninstall (for hook_uninstall)"),
-      hook: z.string().optional().describe("Hook name (for hook_run, hook_update)"),
-      enabled: z.boolean().optional().describe("Enabled (for hook_update)"),
-      checks: z.array(z.string()).optional().describe("Checks (for hook_update)"),
-      commitMode: z.enum(["none", "local", "push"]).optional().default("push"),
-    }).strict(),
+    inputSchema: swarmWorktreeInput,
     outputSchema: z.any(),
   },
   async (input: any) => {

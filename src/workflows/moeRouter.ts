@@ -1060,8 +1060,8 @@ async function loadStats(repoRoot: string): Promise<MoEStats> {
     fallbacksUsed: 0,
     avgLatencyMs: 0,
     totalCost: 0,
-    byCategory: {} as any,
-    byExpert: {} as any,
+    byCategory: {} as MoEStats["byCategory"],
+    byExpert: {} as MoEStats["byExpert"],
     lastUpdated: Date.now(),
   });
 }
@@ -1608,8 +1608,8 @@ export async function resetStats(input: {
     fallbacksUsed: 0,
     avgLatencyMs: 0,
     totalCost: 0,
-    byCategory: {} as any,
-    byExpert: {} as any,
+    byCategory: {} as MoEStats["byCategory"],
+    byExpert: {} as MoEStats["byExpert"],
     lastUpdated: Date.now(),
   };
   await saveStats(repoRoot, stats);

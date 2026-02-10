@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- MCP SDK handlers receive Zod-validated input but SDK doesn't propagate inferred types */
 /**
  * MCP Swarm v1.1.0 - Smart Tools: security
  * Consolidated: swarm_defence + swarm_immune + swarm_consensus → swarm_defence
@@ -9,9 +10,10 @@ import { reportCiAlert, resolveAlert, getImmuneStatus, runLocalTests } from "../
 import { patrolMode } from "../workflows/ghostMode.js";
 import { handleDefenceTool } from "../workflows/aiDefence.js";
 import { handleConsensusTool } from "../workflows/consensus.js";
+import { handleVaultTool } from "../workflows/vault.js";
 
 // Helper to wrap results
-function wrapResult(result: any) {
+function wrapResult(result: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
 }
 
@@ -178,5 +180,37 @@ Actions (Consensus):
     }
 
     throw new Error(`Unknown action: ${input.action}`);
+  },
+] as const;
+
+// ================================================================
+// 2. swarm_vault — Encrypted secret storage
+// ================================================================
+export const swarmVaultTool = [
+  "swarm_vault",
+  {
+    title: "Swarm Vault",
+    description: `Encrypted secret storage for API keys.
+
+Actions: init, set, get, list, delete, has, status, lock, export, import, destroy
+
+Vault stores secrets locally in .swarm/vault.enc (AES-256-GCM).
+Password required to unlock. Session stays open until lock or process exit.`,
+    inputSchema: z.object({
+      action: z.enum([
+        "init", "set", "get", "list", "delete", "has",
+        "status", "lock", "export", "import", "destroy"
+      ]).describe("Action to perform"),
+      repoPath: z.string().optional().describe("Repository path"),
+      password: z.string().optional().describe("Vault password (for init/import)"),
+      key: z.string().optional().describe("Secret key name (for set/get/delete/has)"),
+      value: z.string().optional().describe("Secret value (for set)"),
+      file: z.string().optional().describe("Backup file path (for import)"),
+      outputPath: z.string().optional().describe("Output path (for export)"),
+    }).strict(),
+    outputSchema: z.any(),
+  },
+  async (input: any) => {
+    return wrapResult(await handleVaultTool(input));
   },
 ] as const;

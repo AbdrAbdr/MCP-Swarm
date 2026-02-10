@@ -1,4 +1,4 @@
-﻿import { createRequire } from "node:module";
+﻿import WebSocket from "ws";
 import http from "node:http";
 import path from "node:path";
 import fs from "node:fs";
@@ -67,9 +67,7 @@ type CompanionConfig = {
   forceOrchestratorMode?: boolean; // Always run as orchestrator (infinite loop)
 };
 
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const WS = require("ws") as any;
+
 
 function getEnvConfig(): CompanionConfig {
   const pollSeconds = Number(process.env.SWARM_POLL_SECONDS ?? "10");
@@ -223,7 +221,7 @@ async function run() {
   const controlPort = cfg.controlPort ?? 37373;
   const controlToken = cfg.controlToken;
 
-  let ws: any | null = null;
+  const wsState: { ws: WebSocket | null } = { ws: null };
   let stop = false;
   let paused = false;
 
@@ -453,20 +451,20 @@ async function run() {
     url.searchParams.set("project", projectId); // Use smart projectId instead of cfg.project
     url.searchParams.set("agent", agentName);
 
-    ws = new WS(url.toString());
+    wsState.ws = new WebSocket(url.toString());
 
-    ws.on("open", () => {
-      ws?.send(JSON.stringify({ kind: "hello", agent: agentName, role, ts: Date.now() }));
+    wsState.ws.on("open", () => {
+      wsState.ws?.send(JSON.stringify({ kind: "hello", agent: agentName, role, ts: Date.now() }));
       log("success", "Connected to WebSocket hub");
     });
 
-    ws.on("close", () => {
-      ws = null;
+    wsState.ws.on("close", () => {
+      wsState.ws = null;
       log("warn", "WebSocket connection closed");
     });
 
-    ws.on("message", (data: unknown) => {
-      const text = typeof data === "string" ? data : Buffer.from(data as any).toString();
+    wsState.ws.on("message", (data: WebSocket.RawData) => {
+      const text = typeof data === "string" ? data : Buffer.from(data as Buffer).toString();
       try {
         const msg = JSON.parse(text);
         if (msg?.kind === "stop") {
@@ -477,7 +475,7 @@ async function run() {
         }
 
         // ============ AUTO-DETECT PROJECTS ============
-        // Р•СЃР»Рё РїСЂРёС€С‘Р» event СЃ РЅРѕРІС‹Рј repoPath вЂ” Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїРѕРґРєР»СЋС‡Р°РµРј bridge
+        // Если пришёл event с новым repoPath — автоматически подключаем bridge
         if (bridgeManager && msg?.payload?.repoPath) {
           const eventRepoPath = msg.payload.repoPath as string;
           const status = bridgeManager.getStatus();
@@ -582,11 +580,12 @@ async function run() {
     }
 
     // ============ WEBSOCKET ============
-    wsConnected = ws && ws.readyState === 1;
+    const wsRef = wsState.ws;
+    wsConnected = wsRef !== null && wsRef.readyState === WebSocket.OPEN;
 
-    if (wsConnected) {
+    if (wsConnected && wsRef) {
       // WS is primary - just heartbeat
-      ws.send(JSON.stringify({ kind: "ping", agent: agentName, role, ts: Date.now() }));
+      wsRef.send(JSON.stringify({ kind: "ping", agent: agentName, role, ts: Date.now() }));
       wsFailCount = 0;
     } else if (hubUrl) {
       // Try to reconnect WS
@@ -603,7 +602,7 @@ async function run() {
         for (const ev of events) {
           // Process events from Git
           if (ev.type === "emergency_stop" || ev.type === "agent_frozen") {
-            const payload = ev.payload as any;
+            const payload = ev.payload as Record<string, unknown> | undefined;
             // Orchestrator ignores emergency stop unless specifically targeted
             if (!isOrchestrator && (!payload?.agent || payload.agent === agentName)) {
               stop = true;
@@ -613,7 +612,7 @@ async function run() {
           if (ev.type === "task_announced") {
             // Could auto-bid here in future
             if (!isOrchestrator) {
-              log("info", `рџ“ў New task announced: ${(ev.payload as any)?.taskId}`);
+              log("info", `📢 New task announced: ${(ev.payload as Record<string, unknown> | undefined)?.taskId}`);
             }
           }
           lastEventTs = Math.max(lastEventTs, ev.ts);
@@ -637,9 +636,9 @@ async function run() {
     log("info", "рџЊ‰ Bridge stopped");
   }
 
-  if (ws) {
+  if (wsState.ws) {
     try {
-      ws.close();
+      wsState.ws.close();
     } catch {
       // ignore
     }

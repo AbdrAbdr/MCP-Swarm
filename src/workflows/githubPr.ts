@@ -1,5 +1,6 @@
 import { git, gitTry, normalizeLineEndings } from "./git.js";
 import { getRepoRoot } from "./repo.js";
+import { getErrorMessage } from "../utils/errorUtils.js";
 
 export type CreatePrInput = {
   repoPath?: string;
@@ -51,8 +52,8 @@ export async function createGithubPr(input: CreatePrInput): Promise<CreatePrOutp
     const { stdout } = await execFileAsync("gh", ghArgs, { cwd: repoRoot, windowsHide: true });
     const prUrl = normalizeLineEndings(stdout).trim();
     return { repoRoot, branch, baseBranch, prUrl };
-  } catch (err: any) {
-    return { repoRoot, branch, baseBranch, error: err?.message || "gh CLI failed" };
+  } catch (err: unknown) {
+    return { repoRoot, branch, baseBranch, error: getErrorMessage(err) || "gh CLI failed" };
   }
 }
 

@@ -12,9 +12,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.1.6 — Универсальная Платформа Координации AI-Агентов
+# 🐝 MCP Swarm v1.2.0 — Универсальная Платформа Координации AI-Агентов
 
-> 🐝 **v1.1.6 — Архитектура и Безопасность:** Hub рефакторнут в модульные сервисы, Dashboard 2.0 с Chart.js графиками и WebSocket обновлениями, API безопасность (X-Swarm-Secret + Rate Limiting), E2E тесты, опциональная интеграция Ollama для swarm_booster. Обновитесь: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.2.0 — Расширение платформы:** 35 Smart Tools (9 новых), Vault с аудит-трейлом и авто-блокировкой, Setup Wizard, Analytics Store, Embeddings Cascade (много-провайдерные эмбеддинги), Vector Backends (6 адаптеров: Local, Chroma, Supabase, Qdrant, Pinecone, Turso), Auto-Index, Профили агентов, Планировщик с паузой/возобновлением, Plugin Loader, Doctor CLI (`--json`), 100% ESM, полная типобезопасность. Обновитесь: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** — это глобальная «нервная система» для ваших AI-помощников. Она превращает разрозненных агентов (Claude, Cursor, Windsurf, OpenCode) в слаженную команду, способную работать над огромными проектами без конфликтов и потери контекста.
 
@@ -58,9 +58,9 @@
 
 ---
 
-## 🛠 26 Smart Tools: Инструментарий Swarm
+## 🛠 35 Smart Tools: Инструментарий Swarm
 
-В v1.0.2 мы **консолидировали 54 инструмента в 26** — без потери функциональности, IDE загружает в 2× меньше слотов. Каждый инструмент использует параметр `action` для доступа к нескольким операциям.
+В v1.2.0 мы расширили набор до **35 Smart Tools** (с 26 в v1.1.x) — 9 новых инструментов для секретов, аналитики, эмбеддингов, векторных бэкендов, авто-индексации, профилей агентов, планировщика задач и плагинов. Каждый инструмент использует параметр `action` для доступа к нескольким операциям.
 
 ### 🚀 Ядро системы (2)
 
@@ -127,6 +127,20 @@
 | 24 | **swarm_session** | session + timeline + screenshot | `start`, `log`, `stop`, `replay`, `timeline_generate`, `screenshot_share` |
 | 25 | **swarm_clusters** | clusters + conflict | `init`, `list`, `find`, `conflict_predict`, `conflict_hotspots` |
 | 26 | **swarm_telegram** | telegram + qa | `setup`, `send`, `notify_*`, `qa_start`, `qa_iterate`, `qa_report` |
+
+### 🆕 Новое в v1.2.0 (8)
+
+| # | Инструмент | Описание | Основные действия |
+|---|-----------|----------|-------------------|
+| 27 | **swarm_vault** | Управление секретами (AES-256-GCM) | `init`, `unlock`, `set`, `get`, `delete`, `list`, `rotate`, `export`, `import`, `lock`, `status`, `audit` |
+| 28 | **swarm_analytics** | Метрики задач/событий | `log_task`, `log_event`, `get_tasks`, `get_events`, `get_metrics`, `summary`, `cleanup` |
+| 29 | **swarm_memory** | Авто-индексация и умный контекст | `index_task`, `index_file`, `index_review`, `smart_context`, `find_error_solution`, `record_error_fix` |
+| 30 | **swarm_embeddings** | Много-провайдерные эмбеддинги + бэкенды | `embed`, `health`, `costs`, `backend_status`, `backend_migrate`, `backend_switch`, `backend_health` |
+| 31 | **swarm_profiles** | Профили агентов и специализация | `get`, `list`, `default`, `instructions` |
+| 32 | **swarm_scheduler** | Cron-планировщик задач | `add`, `list`, `check_due`, `check_missed`, `remove` |
+| 33 | **swarm_plugins** | Загрузчик и обнаружение плагинов | `discover`, `load`, `load_all`, `init_dir` |
+| 34 | **swarm_github** | GitHub Issue ↔ Task синх. | `auth_status`, `list_issues`, `create_issue`, `close_issue`, `sync_from_github` |
+| 35 | **swarm_setup** | Мастер настройки и конфиг | `wizard_prompt`, `wizard_run`, `config_get`, `config_exists` |
 
 ---
 
@@ -895,6 +909,37 @@ cloudflare/
 
 ---
 
+## 🩺 Doctor — CLI диагностики
+
+```bash
+# Человекочитаемый вывод
+npx mcp-swarm-doctor
+
+# JSON-вывод для CI/CD пайплайнов
+npx mcp-swarm-doctor --json
+```
+
+**Пример вывода:**
+```
+🩺 MCP Swarm Doctor
+✅ Node.js version: v23.11.1 (>= 18.0.0)
+✅ Package installed: mcp-swarm@1.2.0
+✅ TypeScript compiled: dist/ exists
+✅ Hub URL configured: wss://mcp-swarm-hub.example.workers.dev/ws
+⚠️  Telegram not configured: TELEGRAM_USER_ID is missing
+```
+
+**JSON-режим** (`--json`) возвращает структурированные результаты:
+```json
+[
+  { "name": "node-version", "status": "pass", "message": "v23.11.1 (>= 18.0.0)" },
+  { "name": "package", "status": "pass", "message": "mcp-swarm@1.2.0" },
+  { "name": "telegram", "status": "warn", "message": "TELEGRAM_USER_ID is missing" }
+]
+```
+
+---
+
 ## 📝 Changelog
 
 См. [CHANGELOG.md](./CHANGELOG.md)
@@ -926,4 +971,5 @@ PRs welcome! Основные принципы:
 
 ## 📜 License
 
-MIT © 2025
+MIT © 2025–2026
+

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- MCP SDK handlers receive Zod-validated input but SDK doesn't propagate inferred types */
 /**
  * MCP Swarm v1.1.0 - Smart Tools: infra
  * Consolidated (17→7):
@@ -31,7 +32,7 @@ import { startQALoop, runQAIteration, logQAFix, getQALoop, listQALoops, getQAFix
 import { initToolClusters, listToolClusters, getClusterTools, findToolCluster, addToolToCluster, createToolCluster, getToolClusterSummary } from "../workflows/toolClusters.js";
 
 // Helper to wrap results
-function wrapResult(result: any) {
+function wrapResult(result: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
 }
 

@@ -24,16 +24,16 @@ export interface BrainstormSession {
   status: "gathering" | "exploring" | "designing" | "validating" | "completed";
   createdAt: string;
   updatedAt: string;
-  
+
   // Gathered context
   projectContext?: ProjectContext;
-  
+
   // Questions and answers
   questions: BrainstormQuestion[];
-  
+
   // Design sections
   designSections: DesignSection[];
-  
+
   // Final design document path
   designDocPath?: string;
 }
@@ -139,15 +139,15 @@ export function startBrainstorm(params: {
   suggestedQuestions: BrainstormQuestion[];
 } {
   const { agentId, taskId, taskDescription, repoPath } = params;
-  
+
   const sessionId = `brainstorm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  
+
   // Analyze project context
   const projectContext = analyzeProjectContext(repoPath);
-  
+
   // Generate initial questions based on task description
   const suggestedQuestions = generateInitialQuestions(taskDescription, projectContext);
-  
+
   const session: BrainstormSession = {
     id: sessionId,
     taskId,
@@ -159,9 +159,9 @@ export function startBrainstorm(params: {
     questions: [],
     designSections: [],
   };
-  
+
   saveSession(session, repoPath);
-  
+
   return {
     session,
     nextStep: "Ask the first question to understand the user's intent. Use ask_brainstorm_question with the suggested question.",
@@ -186,13 +186,13 @@ export function askBrainstormQuestion(params: {
   waitingForAnswer: boolean;
 } {
   const { sessionId, question, type = "multiple_choice", options, category = "purpose", repoPath } = params;
-  
+
   const session = loadSession(sessionId, repoPath);
   if (!session) throw new Error(`Session not found: ${sessionId}`);
-  
+
   const questionId = `q-${session.questions.length + 1}`;
   const questionNumber = session.questions.length + 1;
-  
+
   const newQuestion: BrainstormQuestion = {
     id: questionId,
     questionNumber,
@@ -201,14 +201,14 @@ export function askBrainstormQuestion(params: {
     options,
     category,
   };
-  
+
   session.questions.push(newQuestion);
   session.status = "gathering";
   saveSession(session, repoPath);
-  
+
   // Format question for display
   let formattedQuestion = `**Question ${questionNumber}:** ${question}\n\n`;
-  
+
   if (options && options.length > 0) {
     options.forEach((opt, i) => {
       const letter = String.fromCharCode(65 + i); // A, B, C, ...
@@ -219,7 +219,7 @@ export function askBrainstormQuestion(params: {
       }
     });
   }
-  
+
   return {
     questionId,
     formattedQuestion,
@@ -244,34 +244,34 @@ export function answerBrainstormQuestion(params: {
   readyForDesign: boolean;
 } {
   const { sessionId, questionId, answer, repoPath } = params;
-  
+
   const session = loadSession(sessionId, repoPath);
   if (!session) throw new Error(`Session not found: ${sessionId}`);
-  
+
   const question = session.questions.find(q => q.id === questionId);
   if (!question) throw new Error(`Question not found: ${questionId}`);
-  
+
   question.answer = answer;
   question.answeredAt = new Date().toISOString();
   saveSession(session, repoPath);
-  
+
   const questionsAnswered = session.questions.filter(q => q.answer).length;
   const questionsTotal = session.questions.length;
-  
+
   // Check if we have enough information to proceed to design
   const categoriesCovered = new Set(session.questions.filter(q => q.answer).map(q => q.category));
   const requiredCategories = ["purpose", "constraints", "success_criteria"];
-  const readyForDesign = requiredCategories.every(c => categoriesCovered.has(c as any));
-  
+  const readyForDesign = requiredCategories.every(c => categoriesCovered.has(c as BrainstormQuestion["category"]));
+
   // Suggest next question if not ready
   let nextQuestionSuggestion: BrainstormQuestion | undefined;
   if (!readyForDesign) {
-    const missingCategory = requiredCategories.find(c => !categoriesCovered.has(c as any));
+    const missingCategory = requiredCategories.find(c => !categoriesCovered.has(c as BrainstormQuestion["category"]));
     if (missingCategory) {
-      nextQuestionSuggestion = generateQuestionForCategory(missingCategory as any, session);
+      nextQuestionSuggestion = generateQuestionForCategory(missingCategory as BrainstormQuestion["category"], session);
     }
   }
-  
+
   return {
     recorded: true,
     questionsAnswered,
@@ -294,45 +294,45 @@ export function proposeApproaches(params: {
   waitingForSelection: boolean;
 } {
   const { sessionId, approaches, repoPath } = params;
-  
+
   const session = loadSession(sessionId, repoPath);
   if (!session) throw new Error(`Session not found: ${sessionId}`);
-  
+
   session.status = "exploring";
   saveSession(session, repoPath);
-  
+
   let formatted = "## Proposed Approaches\n\n";
-  
+
   // Put recommended first
   const sortedApproaches = [...approaches].sort((a, b) => {
     if (a.recommended && !b.recommended) return -1;
     if (!a.recommended && b.recommended) return 1;
     return 0;
   });
-  
+
   sortedApproaches.forEach((approach, i) => {
     const num = i + 1;
     const recommended = approach.recommended ? " ⭐ *Recommended*" : "";
-    
+
     formatted += `### ${num}. ${approach.name}${recommended}\n\n`;
     formatted += `${approach.description}\n\n`;
     formatted += `**Effort:** ${approach.effort} | **Risk:** ${approach.risk}\n\n`;
-    
+
     formatted += "**Pros:**\n";
     approach.pros.forEach(pro => {
       formatted += `- ✅ ${pro}\n`;
     });
-    
+
     formatted += "\n**Cons:**\n";
     approach.cons.forEach(con => {
       formatted += `- ⚠️ ${con}\n`;
     });
-    
+
     formatted += "\n---\n\n";
   });
-  
+
   formatted += "\nWhich approach would you like to proceed with?";
-  
+
   return {
     formatted,
     waitingForSelection: true,
@@ -355,19 +355,19 @@ export function presentDesignSection(params: {
   waitingForValidation: boolean;
 } {
   const { sessionId, title, content, category, repoPath } = params;
-  
+
   const session = loadSession(sessionId, repoPath);
   if (!session) throw new Error(`Session not found: ${sessionId}`);
-  
+
   const sectionId = `section-${session.designSections.length + 1}`;
   const sectionNumber = session.designSections.length + 1;
-  
+
   // Word count check
   const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
   if (wordCount > 350) {
     console.warn(`Design section exceeds recommended length: ${wordCount} words (max 300)`);
   }
-  
+
   const section: DesignSection = {
     id: sectionId,
     sectionNumber,
@@ -376,13 +376,13 @@ export function presentDesignSection(params: {
     category,
     validated: false,
   };
-  
+
   session.designSections.push(section);
   session.status = "designing";
   saveSession(session, repoPath);
-  
+
   const formatted = `## Section ${sectionNumber}: ${title}\n\n${content}\n\n---\n\n**Does this look right so far?** If not, please share what needs to be clarified or changed.`;
-  
+
   return {
     sectionId,
     formatted,
@@ -407,28 +407,28 @@ export function validateDesignSection(params: {
   allSectionsValidated: boolean;
 } {
   const { sessionId, sectionId, approved, feedback, repoPath } = params;
-  
+
   const session = loadSession(sessionId, repoPath);
   if (!session) throw new Error(`Session not found: ${sessionId}`);
-  
+
   const section = session.designSections.find(s => s.id === sectionId);
   if (!section) throw new Error(`Section not found: ${sectionId}`);
-  
+
   section.validated = approved;
   section.validatedAt = new Date().toISOString();
   if (feedback) section.feedback = feedback;
-  
+
   saveSession(session, repoPath);
-  
+
   const sectionsValidated = session.designSections.filter(s => s.validated).length;
   const sectionsTotal = session.designSections.length;
   const allSectionsValidated = sectionsValidated === sectionsTotal && sectionsTotal > 0;
-  
+
   if (allSectionsValidated) {
     session.status = "validating";
     saveSession(session, repoPath);
   }
-  
+
   return {
     validated: approved,
     sectionsValidated,
@@ -450,30 +450,30 @@ export function saveDesignDocument(params: {
   content: string;
 } {
   const { sessionId, title, summary, repoPath } = params;
-  
+
   const session = loadSession(sessionId, repoPath);
   if (!session) throw new Error(`Session not found: ${sessionId}`);
-  
+
   ensureDir(getDesignDocsDir(repoPath));
-  
+
   // Generate filename: YYYY-MM-DD-<topic>-design.md
   const date = new Date().toISOString().split("T")[0];
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   const filename = `${date}-${slug}-design.md`;
   const documentPath = path.join(getDesignDocsDir(repoPath), filename);
-  
+
   // Build document content
   let content = `# ${title} - Design Document\n\n`;
   content += `> Generated: ${new Date().toISOString()}\n`;
   content += `> Session: ${sessionId}\n`;
   content += `> Agent: ${session.agentId}\n\n`;
-  
+
   if (summary) {
     content += `## Summary\n\n${summary}\n\n`;
   }
-  
+
   content += `---\n\n`;
-  
+
   // Add Q&A section
   if (session.questions.length > 0) {
     content += `## Requirements Discovery\n\n`;
@@ -483,7 +483,7 @@ export function saveDesignDocument(params: {
     });
     content += `---\n\n`;
   }
-  
+
   // Add design sections
   if (session.designSections.length > 0) {
     content += `## Design\n\n`;
@@ -495,20 +495,20 @@ export function saveDesignDocument(params: {
       }
     });
   }
-  
+
   // Add next steps
   content += `---\n\n## Next Steps\n\n`;
   content += `1. Review this design document\n`;
   content += `2. Create implementation plan using \`create_implementation_plan\`\n`;
   content += `3. Set up git worktree for isolated development\n`;
   content += `4. Execute plan with TDD approach\n`;
-  
+
   fs.writeFileSync(documentPath, content);
-  
+
   session.designDocPath = documentPath;
   session.status = "completed";
   saveSession(session, repoPath);
-  
+
   return {
     documentPath,
     content,
@@ -533,13 +533,13 @@ export function listBrainstormSessions(params: {
   repoPath?: string;
 }): BrainstormSession[] {
   const { status, repoPath } = params;
-  
+
   const dir = getBrainstormDir(repoPath);
   if (!fs.existsSync(dir)) return [];
-  
+
   const files = fs.readdirSync(dir).filter(f => f.endsWith(".json"));
   const sessions: BrainstormSession[] = [];
-  
+
   for (const file of files) {
     try {
       const session = JSON.parse(fs.readFileSync(path.join(dir, file), "utf-8")) as BrainstormSession;
@@ -550,8 +550,8 @@ export function listBrainstormSessions(params: {
       // Skip invalid files
     }
   }
-  
-  return sessions.sort((a, b) => 
+
+  return sessions.sort((a, b) =>
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 }
@@ -562,21 +562,21 @@ export function listBrainstormSessions(params: {
 
 function analyzeProjectContext(repoPath?: string): ProjectContext {
   const root = repoPath || process.cwd();
-  
+
   const context: ProjectContext = {
     recentCommits: [],
     mainFiles: [],
     techStack: [],
     existingPatterns: [],
   };
-  
+
   // Detect tech stack from package.json or other config files
   const packageJsonPath = path.join(root, "package.json");
   if (fs.existsSync(packageJsonPath)) {
     try {
       const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
       const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-      
+
       if (deps.react) context.techStack.push("React");
       if (deps.vue) context.techStack.push("Vue");
       if (deps.angular) context.techStack.push("Angular");
@@ -589,13 +589,13 @@ function analyzeProjectContext(repoPath?: string): ProjectContext {
       // Ignore parse errors
     }
   }
-  
+
   // Check for Python
   const pyprojectPath = path.join(root, "pyproject.toml");
   if (fs.existsSync(pyprojectPath)) {
     context.techStack.push("Python");
   }
-  
+
   // Identify main files
   const mainFiles = ["src/index.ts", "src/main.ts", "src/app.ts", "src/server.ts", "main.py", "app.py"];
   for (const file of mainFiles) {
@@ -603,13 +603,13 @@ function analyzeProjectContext(repoPath?: string): ProjectContext {
       context.mainFiles.push(file);
     }
   }
-  
+
   return context;
 }
 
 function generateInitialQuestions(taskDescription?: string, context?: ProjectContext): BrainstormQuestion[] {
   const questions: BrainstormQuestion[] = [];
-  
+
   // Purpose question
   questions.push({
     id: "suggested-1",
@@ -618,7 +618,7 @@ function generateInitialQuestions(taskDescription?: string, context?: ProjectCon
     question: "What problem are you trying to solve? What should users be able to do when this is complete?",
     category: "purpose",
   });
-  
+
   // Constraints question
   questions.push({
     id: "suggested-2",
@@ -633,7 +633,7 @@ function generateInitialQuestions(taskDescription?: string, context?: ProjectCon
       { id: "security", label: "Security-first", description: "Must be hardened against attacks" },
     ],
   });
-  
+
   // Success criteria
   questions.push({
     id: "suggested-3",
@@ -642,7 +642,7 @@ function generateInitialQuestions(taskDescription?: string, context?: ProjectCon
     question: "How will we know this feature is successful? What are the acceptance criteria?",
     category: "success_criteria",
   });
-  
+
   return questions;
 }
 
@@ -651,7 +651,7 @@ function generateQuestionForCategory(
   session: BrainstormSession
 ): BrainstormQuestion {
   const questionNumber = session.questions.length + 1;
-  
+
   switch (category) {
     case "purpose":
       return {

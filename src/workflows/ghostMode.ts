@@ -25,15 +25,16 @@ async function runLinter(repoRoot: string): Promise<{ errors: number; fixed: num
 
     if (pkg?.scripts?.lint) {
       try {
-        await execFileAsync("npm", ["run", "lint", "--", "--fix"], { 
-          cwd: repoRoot, 
+        await execFileAsync("npm", ["run", "lint", "--", "--fix"], {
+          cwd: repoRoot,
           windowsHide: true,
-          timeout: 60000 
+          timeout: 60000
         });
         return { errors: 0, fixed: 0 };
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Parse eslint output for error count
-        const output = err?.stdout || err?.stderr || "";
+        const e = err as Record<string, unknown> | undefined;
+        const output = String(e?.stdout || e?.stderr || "");
         const errorMatch = output.match(/(\d+)\s*error/);
         const errors = errorMatch ? parseInt(errorMatch[1], 10) : 1;
         return { errors, fixed: 0 };

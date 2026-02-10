@@ -49,7 +49,7 @@ export type ConsensusMode = "raft" | "bft" | "simple_majority";
 /**
  * Proposal status
  */
-export type ProposalStatus = 
+export type ProposalStatus =
   | "pending"      // Waiting for votes
   | "approved"     // Got enough votes
   | "rejected"     // Failed to get votes
@@ -356,10 +356,10 @@ export async function joinCluster(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const nodes = await loadNodes(repoRoot);
   const election = await loadElection(repoRoot);
-  
+
   // Check if already exists
   let node = nodes.find(n => n.id === input.nodeId);
-  
+
   if (node) {
     // Update heartbeat
     node.lastHeartbeat = Date.now();
@@ -380,9 +380,9 @@ export async function joinCluster(input: {
     };
     nodes.push(node);
   }
-  
+
   await saveNodes(repoRoot, nodes);
-  
+
   return {
     success: true,
     node,
@@ -400,15 +400,15 @@ export async function leaveCluster(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const nodes = await loadNodes(repoRoot);
   const election = await loadElection(repoRoot);
-  
+
   const index = nodes.findIndex(n => n.id === input.nodeId);
   if (index === -1) {
     return { success: false, message: "Node not found in cluster" };
   }
-  
+
   const node = nodes[index];
   nodes.splice(index, 1);
-  
+
   // If leader left, trigger new election
   if (election.leaderId === input.nodeId) {
     election.leaderId = null;
@@ -416,9 +416,9 @@ export async function leaveCluster(input: {
     election.term++;
     await saveElection(repoRoot, election);
   }
-  
+
   await saveNodes(repoRoot, nodes);
-  
+
   return {
     success: true,
     message: `Node ${node.name} left cluster. ${nodes.length} nodes remaining.`,
@@ -437,19 +437,19 @@ export async function heartbeat(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const nodes = await loadNodes(repoRoot);
   const election = await loadElection(repoRoot);
-  
+
   const node = nodes.find(n => n.id === input.nodeId);
   if (!node) {
     return { success: false, term: election.term, leaderId: election.leaderId };
   }
-  
+
   node.lastHeartbeat = Date.now();
   node.term = election.term;
   if (input.commitIndex !== undefined) node.commitIndex = input.commitIndex;
   if (input.logLength !== undefined) node.logLength = input.logLength;
-  
+
   await saveNodes(repoRoot, nodes);
-  
+
   return {
     success: true,
     term: election.term,
@@ -474,19 +474,19 @@ export async function getClusterStatus(input: {
   const nodes = await loadNodes(repoRoot);
   const election = await loadElection(repoRoot);
   const config = await loadConfig(repoRoot);
-  
+
   const now = Date.now();
   const timeout = config.electionTimeout * 2;
-  
+
   // Mark nodes as active/inactive
   const activeNodes = nodes.filter(n => (now - n.lastHeartbeat) < timeout);
   const leader = nodes.find(n => n.id === election.leaderId) || null;
-  
+
   return {
     nodes: nodes.map(n => ({
       ...n,
-      state: n.id === election.leaderId ? "leader" : 
-             (now - n.lastHeartbeat) < timeout ? "follower" : "candidate",
+      state: n.id === election.leaderId ? "leader" :
+        (now - n.lastHeartbeat) < timeout ? "follower" : "candidate",
     })),
     activeNodes: activeNodes.length,
     leader,
@@ -516,9 +516,9 @@ export async function startElection(input: {
   const election = await loadElection(repoRoot);
   const config = await loadConfig(repoRoot);
   const stats = await loadStats(repoRoot);
-  
+
   const now = Date.now();
-  
+
   // Check if current leader is still alive
   if (election.leaderId) {
     const leader = nodes.find(n => n.id === election.leaderId);
@@ -531,17 +531,17 @@ export async function startElection(input: {
       };
     }
   }
-  
+
   // Increment term
   election.term++;
   election.votesReceived = [input.candidateId];
   election.lastElection = now;
-  
+
   // Get active nodes
-  const activeNodes = nodes.filter(n => 
+  const activeNodes = nodes.filter(n =>
     (now - n.lastHeartbeat) < config.electionTimeout * 2
   );
-  
+
   // Check quorum
   if (activeNodes.length < config.minNodes) {
     await saveElection(repoRoot, election);
@@ -552,10 +552,10 @@ export async function startElection(input: {
       message: `Not enough active nodes. Need ${config.minNodes}, have ${activeNodes.length}`,
     };
   }
-  
+
   // In simple mode, first candidate wins if they have quorum
   const requiredVotes = Math.ceil(activeNodes.length * config.defaultMajority);
-  
+
   // Auto-grant votes from other nodes (simplified for file-based system)
   // In real Raft, each node would vote independently
   for (const node of activeNodes) {
@@ -564,9 +564,9 @@ export async function startElection(input: {
       election.votesReceived.push(node.id);
     }
   }
-  
+
   const elected = election.votesReceived.length >= requiredVotes;
-  
+
   if (elected) {
     election.leaderId = input.candidateId;
     election.leaderName = input.candidateName;
@@ -575,23 +575,23 @@ export async function startElection(input: {
     stats.currentTerm = election.term;
     stats.currentLeader = input.candidateName;
   }
-  
+
   // Update node states
   for (const node of nodes) {
     node.term = election.term;
     node.votedFor = null;
     node.state = node.id === input.candidateId && elected ? "leader" : "follower";
   }
-  
+
   await saveNodes(repoRoot, nodes);
   await saveElection(repoRoot, election);
   await saveStats(repoRoot, stats);
-  
+
   return {
     success: true,
     elected,
     term: election.term,
-    message: elected 
+    message: elected
       ? `${input.candidateName} elected as leader for term ${election.term}`
       : `Election failed. Got ${election.votesReceived.length}/${requiredVotes} votes`,
   };
@@ -613,11 +613,11 @@ export async function getLeader(input: {
   const nodes = await loadNodes(repoRoot);
   const election = await loadElection(repoRoot);
   const config = await loadConfig(repoRoot);
-  
+
   const leader = nodes.find(n => n.id === election.leaderId) || null;
   const now = Date.now();
   const isAlive = leader ? (now - leader.lastHeartbeat) < config.electionTimeout : false;
-  
+
   return {
     hasLeader: !!leader,
     leader,
@@ -648,16 +648,16 @@ export async function propose(input: {
   const nodes = await loadNodes(repoRoot);
   const config = await loadConfig(repoRoot);
   const stats = await loadStats(repoRoot);
-  
+
   const now = Date.now();
-  const activeNodes = nodes.filter(n => 
+  const activeNodes = nodes.filter(n =>
     (now - n.lastHeartbeat) < config.electionTimeout * 2
   );
-  
+
   // Calculate quorum based on mode
   let requiredQuorum: number;
   let requiredMajority = input.requiredMajority ?? config.defaultMajority;
-  
+
   switch (config.mode) {
     case "bft":
       // BFT: Need 2/3 + 1 for Byzantine tolerance
@@ -673,7 +673,7 @@ export async function propose(input: {
       requiredQuorum = Math.ceil(activeNodes.length / 2);
       break;
   }
-  
+
   const proposal: Proposal = {
     id: generateId(),
     title: input.title,
@@ -688,13 +688,13 @@ export async function propose(input: {
     requiredQuorum,
     requiredMajority,
   };
-  
+
   proposals.push(proposal);
   stats.totalProposals++;
-  
+
   await saveProposals(repoRoot, proposals);
   await saveStats(repoRoot, stats);
-  
+
   return { success: true, proposal };
 }
 
@@ -717,14 +717,14 @@ export async function vote(input: {
   const proposals = await loadProposals(repoRoot);
   const config = await loadConfig(repoRoot);
   const stats = await loadStats(repoRoot);
-  
+
   const proposal = proposals.find(p => p.id === input.proposalId);
   if (!proposal) {
-    return { success: false, proposal: null as any, message: "Proposal not found" };
+    throw new Error("Proposal not found");
   }
-  
+
   const now = Date.now();
-  
+
   // Check if expired
   if (now > proposal.expiresAt) {
     proposal.status = "expired";
@@ -733,12 +733,12 @@ export async function vote(input: {
     await saveStats(repoRoot, stats);
     return { success: false, proposal, message: "Proposal has expired" };
   }
-  
+
   // Check if already voted
   if (proposal.votes.some(v => v.nodeId === input.nodeId)) {
     return { success: false, proposal, message: "Already voted on this proposal" };
   }
-  
+
   // Add vote
   const voteEntry: ProposalVote = {
     nodeId: input.nodeId,
@@ -747,7 +747,7 @@ export async function vote(input: {
     reason: input.reason,
     timestamp: now,
   };
-  
+
   // Add signature for BFT mode
   if (config.requireSignatures) {
     voteEntry.signature = generateSignature(
@@ -755,19 +755,19 @@ export async function vote(input: {
       input.nodeId
     );
   }
-  
+
   proposal.votes.push(voteEntry);
-  
+
   // Calculate results
   const approved = proposal.votes.filter(v => v.vote === "approve").length;
   const rejected = proposal.votes.filter(v => v.vote === "reject").length;
   const abstained = proposal.votes.filter(v => v.vote === "abstain").length;
   const totalVotes = approved + rejected; // Abstains don't count toward majority
-  
+
   const quorumReached = proposal.votes.length >= proposal.requiredQuorum;
-  const majorityReached = totalVotes > 0 && 
+  const majorityReached = totalVotes > 0 &&
     (approved / totalVotes) >= proposal.requiredMajority;
-  
+
   proposal.result = {
     approved,
     rejected,
@@ -775,7 +775,7 @@ export async function vote(input: {
     quorumReached,
     majorityReached,
   };
-  
+
   // Determine final status
   if (quorumReached) {
     if (majorityReached) {
@@ -786,14 +786,14 @@ export async function vote(input: {
       stats.rejectedProposals++;
     }
   }
-  
+
   await saveProposals(repoRoot, proposals);
   await saveStats(repoRoot, stats);
-  
+
   return {
     success: true,
     proposal,
-    message: proposal.status === "pending" 
+    message: proposal.status === "pending"
       ? `Vote recorded. ${approved}/${proposal.requiredQuorum} votes needed`
       : `Proposal ${proposal.status}`,
   };
@@ -821,7 +821,7 @@ export async function listProposals(input: {
 }): Promise<Proposal[]> {
   const repoRoot = await getRepoRoot(input.repoPath);
   let proposals = await loadProposals(repoRoot);
-  
+
   // Check for expired proposals
   const now = Date.now();
   for (const p of proposals) {
@@ -830,11 +830,11 @@ export async function listProposals(input: {
     }
   }
   await saveProposals(repoRoot, proposals);
-  
+
   if (input.status) {
     proposals = proposals.filter(p => p.status === input.status);
   }
-  
+
   return proposals
     .sort((a, b) => b.proposedAt - a.proposedAt)
     .slice(0, input.limit ?? 50);
@@ -852,21 +852,21 @@ export async function executeProposal(input: {
   const proposals = await loadProposals(repoRoot);
   const log = await loadLog(repoRoot);
   const election = await loadElection(repoRoot);
-  
+
   const proposal = proposals.find(p => p.id === input.proposalId);
   if (!proposal) {
     return { success: false, message: "Proposal not found" };
   }
-  
+
   if (proposal.status !== "approved") {
     return { success: false, message: `Cannot execute proposal with status: ${proposal.status}` };
   }
-  
+
   // Only leader can execute in Raft mode
   if (election.leaderId && election.leaderId !== input.executorId) {
     return { success: false, message: "Only leader can execute proposals" };
   }
-  
+
   // Create log entry
   const logEntry: LogEntry = {
     index: log.length,
@@ -882,13 +882,13 @@ export async function executeProposal(input: {
     committed: true,
     appliedAt: Date.now(),
   };
-  
+
   log.push(logEntry);
   proposal.status = "executed";
-  
+
   await saveLog(repoRoot, log);
   await saveProposals(repoRoot, proposals);
-  
+
   return {
     success: true,
     logEntry,
@@ -910,12 +910,12 @@ export async function appendLog(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const election = await loadElection(repoRoot);
   const log = await loadLog(repoRoot);
-  
+
   // Verify leader
   if (election.leaderId !== input.leaderId) {
     return { success: false, message: "Only leader can append to log" };
   }
-  
+
   const entry: LogEntry = {
     index: log.length,
     term: election.term,
@@ -925,10 +925,10 @@ export async function appendLog(input: {
     proposedBy: input.leaderId,
     committed: false,
   };
-  
+
   log.push(entry);
   await saveLog(repoRoot, log);
-  
+
   return {
     success: true,
     entry,
@@ -946,7 +946,7 @@ export async function commitLog(input: {
   const repoRoot = await getRepoRoot(input.repoPath);
   const log = await loadLog(repoRoot);
   const stats = await loadStats(repoRoot);
-  
+
   let committedCount = 0;
   for (const entry of log) {
     if (entry.index <= input.upToIndex && !entry.committed) {
@@ -955,13 +955,13 @@ export async function commitLog(input: {
       committedCount++;
     }
   }
-  
+
   stats.logLength = log.length;
   stats.lastCommitIndex = input.upToIndex;
-  
+
   await saveLog(repoRoot, log);
   await saveStats(repoRoot, stats);
-  
+
   return { success: true, committedCount };
 }
 
@@ -975,10 +975,10 @@ export async function getLog(input: {
 }): Promise<LogEntry[]> {
   const repoRoot = await getRepoRoot(input.repoPath);
   const log = await loadLog(repoRoot);
-  
+
   const from = input.fromIndex ?? 0;
   const limit = input.limit ?? 100;
-  
+
   return log.slice(from, from + limit);
 }
 
@@ -1019,12 +1019,12 @@ export async function getStats(input: {
   const nodes = await loadNodes(repoRoot);
   const log = await loadLog(repoRoot);
   const config = await loadConfig(repoRoot);
-  
+
   const now = Date.now();
-  const activeNodes = nodes.filter(n => 
+  const activeNodes = nodes.filter(n =>
     (now - n.lastHeartbeat) < config.electionTimeout * 2
   ).length;
-  
+
   return {
     ...stats,
     activeNodes,

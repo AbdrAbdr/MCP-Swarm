@@ -24,6 +24,7 @@ const server = new McpServer({
 // Register all Smart Tools
 for (const tool of allSmartTools) {
   const [name, config, handler] = tool;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MCP SDK server.tool() has 6 overloads; readonly tuples can't match mutable params
   server.tool(name, config, handler as any);
 }
 

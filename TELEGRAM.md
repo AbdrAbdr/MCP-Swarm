@@ -150,6 +150,19 @@ IDE starts → Companion reads TELEGRAM_USER_ID + TELEGRAM_BOT_URL from env
 
 ---
 
+## Hub Auto-Notifications (v1.1.6)
+
+Hub automatically sends real-time alerts to your Telegram:
+
+- `task_created` — New task added
+- `task_completed` — Task finished
+- `swarm_stopped` — Swarm paused/stopped
+- `swarm_resumed` — Swarm resumed
+- `urgent` — Urgent preemption triggered
+- `agent_died` — Agent disconnected unexpectedly
+
+---
+
 ## Deploy Your Own Bot (Optional)
 
 If you want your own Telegram bot instance, follow these steps:
@@ -372,6 +385,19 @@ IDE запускается → Companion читает TELEGRAM_USER_ID + TELEGRA
                → Бот привязывает ваш Telegram к проекту
                → Вы получаете уведомления и можете мониторить через команды бота
 ```
+
+---
+
+## Авто-уведомления Hub (v1.1.6)
+
+Hub автоматически шлёт уведомления в Telegram о критических событиях:
+
+- `task_created` — Новая задача
+- `task_completed` — Задача завершена
+- `swarm_stopped` — Рой остановлен/на паузе
+- `swarm_resumed` — Рой возобновил работу
+- `urgent` — Срочное переназначение
+- `agent_died` — Агент неожиданно отключился
 
 ---
 

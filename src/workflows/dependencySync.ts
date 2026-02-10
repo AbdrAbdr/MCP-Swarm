@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 
 import { git } from "./git.js";
 import { getRepoRoot } from "./repo.js";
+import { getErrorMessage, isNodeError } from "../utils/errorUtils.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -70,9 +71,9 @@ export async function syncDependencies(repoPath?: string): Promise<{ synced: str
     await fs.access(pkgPath);
     await execFileAsync("npm", ["install"], { cwd: repoRoot, windowsHide: true, timeout: 300000 });
     synced.push("npm");
-  } catch (err: any) {
-    if (err?.code !== "ENOENT") {
-      errors.push(`npm: ${err?.message || "failed"}`);
+  } catch (err: unknown) {
+    if (!isNodeError(err) || err.code !== "ENOENT") {
+      errors.push(`npm: ${getErrorMessage(err)}`);
     }
   }
 
@@ -82,9 +83,9 @@ export async function syncDependencies(repoPath?: string): Promise<{ synced: str
     await fs.access(reqPath);
     await execFileAsync("pip", ["install", "-r", "requirements.txt"], { cwd: repoRoot, windowsHide: true, timeout: 300000 });
     synced.push("pip");
-  } catch (err: any) {
-    if (err?.code !== "ENOENT") {
-      errors.push(`pip: ${err?.message || "failed"}`);
+  } catch (err: unknown) {
+    if (!isNodeError(err) || err.code !== "ENOENT") {
+      errors.push(`pip: ${getErrorMessage(err)}`);
     }
   }
 

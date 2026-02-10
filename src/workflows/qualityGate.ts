@@ -4,6 +4,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 
 import { getRepoRoot } from "./repo.js";
+import { getErrorMessage } from "../utils/errorUtils.js";
 
 const execAsync = promisify(exec);
 
@@ -101,17 +102,17 @@ export async function runQualityGate(input: {
         timeout: 120000,
       });
       const output = stdout + stderr;
-      
+
       // Парсим количество ошибок из вывода ESLint
       const errorMatch = output.match(/(\d+)\s+error/);
       const warningMatch = output.match(/(\d+)\s+warning/);
-      
+
       lintErrors = errorMatch ? parseInt(errorMatch[1], 10) : 0;
       lintWarnings = warningMatch ? parseInt(warningMatch[1], 10) : 0;
-      
+
       details.push(`Lint: ${lintErrors} errors, ${lintWarnings} warnings`);
-    } catch (err: any) {
-      details.push(`Lint failed: ${err.message}`);
+    } catch (err: unknown) {
+      details.push(`Lint failed: ${getErrorMessage(err)}`);
       lintErrors = 999;
     }
   }
@@ -124,15 +125,15 @@ export async function runQualityGate(input: {
         timeout: 120000,
       });
       const output = stdout + stderr;
-      
+
       // Считаем строки с ошибками
       const errorLines = output.split("\n").filter((l) => l.includes("error TS"));
       typeCheckErrors = errorLines.length;
       typeCheckPassed = typeCheckErrors === 0;
-      
+
       details.push(`TypeCheck: ${typeCheckPassed ? "PASSED" : `FAILED (${typeCheckErrors} errors)`}`);
-    } catch (err: any) {
-      details.push(`TypeCheck failed: ${err.message}`);
+    } catch (err: unknown) {
+      details.push(`TypeCheck failed: ${getErrorMessage(err)}`);
       typeCheckPassed = false;
       typeCheckErrors = 999;
     }
@@ -146,20 +147,20 @@ export async function runQualityGate(input: {
         timeout: 300000,
       });
       const output = stdout + stderr;
-      
+
       // Парсим результаты Jest/Vitest
       const passedMatch = output.match(/(\d+)\s+passed/);
       const failedMatch = output.match(/(\d+)\s+failed/);
       const skippedMatch = output.match(/(\d+)\s+skipped/);
-      
+
       testsPassed = passedMatch ? parseInt(passedMatch[1], 10) : 0;
       testsFailed = failedMatch ? parseInt(failedMatch[1], 10) : 0;
       testsSkipped = skippedMatch ? parseInt(skippedMatch[1], 10) : 0;
       testsTotal = testsPassed + testsFailed + testsSkipped;
-      
+
       details.push(`Tests: ${testsPassed}/${testsTotal} passed, ${testsFailed} failed`);
-    } catch (err: any) {
-      details.push(`Tests failed: ${err.message}`);
+    } catch (err: unknown) {
+      details.push(`Tests failed: ${getErrorMessage(err)}`);
       testsFailed = 999;
     }
   }

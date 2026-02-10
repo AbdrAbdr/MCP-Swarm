@@ -101,11 +101,11 @@ function getConfigPath(repoPath: string): string {
 
 export function loadTelegramConfig(repoPath: string): TelegramConfig {
   const configPath = getConfigPath(repoPath);
-  
+
   // Check environment variables first
   const envToken = process.env.TELEGRAM_BOT_TOKEN;
   const envChatId = process.env.TELEGRAM_CHAT_ID;
-  
+
   if (fs.existsSync(configPath)) {
     try {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -119,25 +119,25 @@ export function loadTelegramConfig(repoPath: string): TelegramConfig {
       return { ...DEFAULT_CONFIG, botToken: envToken || '', chatId: envChatId || '' };
     }
   }
-  
+
   return { ...DEFAULT_CONFIG, botToken: envToken || '', chatId: envChatId || '' };
 }
 
 export function saveTelegramConfig(repoPath: string, config: Partial<TelegramConfig>): TelegramConfig {
   const configPath = getConfigPath(repoPath);
   const swarmDir = path.dirname(configPath);
-  
+
   if (!fs.existsSync(swarmDir)) {
     fs.mkdirSync(swarmDir, { recursive: true });
   }
-  
+
   const currentConfig = loadTelegramConfig(repoPath);
   const newConfig = { ...currentConfig, ...config };
-  
+
   // Don't save token to file for security - use env vars
   const configToSave = { ...newConfig };
-  delete (configToSave as any).botToken; // Keep token in env only
-  
+  delete (configToSave as Partial<TelegramConfig>).botToken; // Keep token in env only
+
   fs.writeFileSync(configPath, JSON.stringify(configToSave, null, 2));
   return newConfig;
 }
@@ -153,7 +153,7 @@ async function callTelegramApi(
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(params);
-    
+
     const options = {
       hostname: 'api.telegram.org',
       port: 443,
@@ -164,7 +164,7 @@ async function callTelegramApi(
         'Content-Length': Buffer.byteLength(data),
       },
     };
-    
+
     const req = https.request(options, (res) => {
       let body = '';
       res.on('data', (chunk) => (body += chunk));
@@ -181,7 +181,7 @@ async function callTelegramApi(
         }
       });
     });
-    
+
     req.on('error', reject);
     req.write(data);
     req.end();
@@ -198,22 +198,22 @@ export async function sendMessage(
   keyboard?: InlineButton[][]
 ): Promise<{ success: boolean; messageId?: number; error?: string }> {
   const config = loadTelegramConfig(repoPath);
-  
+
   if (!config.enabled || !config.botToken || !config.chatId) {
     return { success: false, error: 'Telegram not configured or disabled' };
   }
-  
+
   try {
     const message: TelegramMessage = {
       chat_id: config.chatId,
       text,
       parse_mode: 'HTML',
     };
-    
+
     if (keyboard) {
       message.reply_markup = { inline_keyboard: keyboard };
     }
-    
+
     const result = await callTelegramApi(config.botToken, 'sendMessage', message);
     return { success: true, messageId: result.message_id };
   } catch (error: any) {
@@ -234,9 +234,9 @@ export async function notifyTaskCreated(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.taskCreated) return;
-  
+
   const priorityEmoji = priority === 'critical' ? '🔴' : priority === 'high' ? '🟠' : priority === 'medium' ? '🟡' : '🟢';
-  
+
   await sendMessage(
     repoPath,
     `📋 <b>New Task Created</b>\n\n` +
@@ -261,7 +261,7 @@ export async function notifyTaskCompleted(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.taskCompleted) return;
-  
+
   await sendMessage(
     repoPath,
     `✅ <b>Task Completed</b>\n\n` +
@@ -284,7 +284,7 @@ export async function notifyTaskFailed(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.taskFailed) return;
-  
+
   await sendMessage(
     repoPath,
     `❌ <b>Task Failed</b>\n\n` +
@@ -308,7 +308,7 @@ export async function notifyAgentJoined(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.agentJoined) return;
-  
+
   await sendMessage(
     repoPath,
     `🤖 <b>Agent Joined</b>\n\n` +
@@ -328,7 +328,7 @@ export async function notifyAgentDied(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.agentDied) return;
-  
+
   await sendMessage(
     repoPath,
     `💀 <b>Agent Dead</b>\n\n` +
@@ -352,7 +352,7 @@ export async function notifyCIError(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.ciError) return;
-  
+
   await sendMessage(
     repoPath,
     `🚨 <b>CI/CD Error</b>\n\n` +
@@ -377,7 +377,7 @@ export async function notifyReviewRequested(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.reviewRequested) return;
-  
+
   await sendMessage(
     repoPath,
     `👀 <b>Review Requested</b>\n\n` +
@@ -402,11 +402,11 @@ export async function notifyVotingStarted(
 ): Promise<void> {
   const config = loadTelegramConfig(repoPath);
   if (!config.notifyOn.votingStarted) return;
-  
+
   const buttons: InlineButton[][] = options.map((opt, i) => [
     { text: opt, callback_data: `vote:${votingId}:${i}` },
   ]);
-  
+
   await sendMessage(
     repoPath,
     `🗳 <b>Voting Started</b>\n\n` +
@@ -520,27 +520,27 @@ async function getSwarmStatus(repoPath: string): Promise<CommandResult> {
   try {
     const orchestratorPath = path.join(repoPath, '.swarm', 'ORCHESTRATOR.json');
     const controlPath = path.join(repoPath, '.swarm', 'CONTROL.json');
-    
+
     let orchestrator = null;
     let control = { stopped: false };
-    
+
     if (fs.existsSync(orchestratorPath)) {
       orchestrator = JSON.parse(fs.readFileSync(orchestratorPath, 'utf-8'));
     }
     if (fs.existsSync(controlPath)) {
       control = JSON.parse(fs.readFileSync(controlPath, 'utf-8'));
     }
-    
+
     const status = control.stopped ? '🔴 Stopped' : '🟢 Running';
     const orch = orchestrator ? `${orchestrator.agent} (${orchestrator.client || 'unknown'})` : 'None';
-    
+
     // Count agents
     const agentsDir = path.join(repoPath, 'swarm', 'agents');
     let agentCount = 0;
     if (fs.existsSync(agentsDir)) {
       agentCount = fs.readdirSync(agentsDir).filter(f => f.endsWith('.json')).length;
     }
-    
+
     // Count tasks
     const tasksPath = path.join(repoPath, 'swarm', 'TASKS.json');
     let taskStats = { total: 0, pending: 0, inProgress: 0, done: 0 };
@@ -551,7 +551,7 @@ async function getSwarmStatus(repoPath: string): Promise<CommandResult> {
       taskStats.inProgress = tasks.filter((t: any) => t.status === 'in_progress').length;
       taskStats.done = tasks.filter((t: any) => t.status === 'done').length;
     }
-    
+
     return {
       text:
         `📊 <b>Swarm Status</b>\n\n` +
@@ -581,35 +581,35 @@ async function getSwarmStatus(repoPath: string): Promise<CommandResult> {
 async function getAgentsList(repoPath: string): Promise<CommandResult> {
   try {
     const agentsDir = path.join(repoPath, 'swarm', 'agents');
-    
+
     if (!fs.existsSync(agentsDir)) {
       return { text: '🤖 <b>Agents</b>\n\nNo agents registered yet.' };
     }
-    
+
     const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.json'));
-    
+
     if (files.length === 0) {
       return { text: '🤖 <b>Agents</b>\n\nNo agents registered yet.' };
     }
-    
+
     const now = Date.now();
     let text = '🤖 <b>Agents</b>\n\n';
-    
+
     for (const file of files.slice(0, 10)) {
       const agent = JSON.parse(fs.readFileSync(path.join(agentsDir, file), 'utf-8'));
       const lastSeen = now - (agent.lastHeartbeat || agent.registeredAt || 0);
       const isAlive = lastSeen < 120000; // 2 minutes
       const status = isAlive ? '🟢' : '🔴';
       const lastSeenStr = lastSeen < 60000 ? 'now' : `${Math.floor(lastSeen / 60000)}m ago`;
-      
+
       text += `${status} <b>${agent.name}</b>\n`;
       text += `   ${agent.client || 'unknown'} • ${lastSeenStr}\n`;
     }
-    
+
     if (files.length > 10) {
       text += `\n... and ${files.length - 10} more`;
     }
-    
+
     return {
       text,
       keyboard: [[{ text: '🔄 Refresh', callback_data: 'list_agents' }]],
@@ -622,26 +622,26 @@ async function getAgentsList(repoPath: string): Promise<CommandResult> {
 async function getTasksList(repoPath: string): Promise<CommandResult> {
   try {
     const tasksPath = path.join(repoPath, 'swarm', 'TASKS.json');
-    
+
     if (!fs.existsSync(tasksPath)) {
       return { text: '📋 <b>Tasks</b>\n\nNo tasks yet.' };
     }
-    
+
     const tasks = JSON.parse(fs.readFileSync(tasksPath, 'utf-8'));
-    
+
     if (tasks.length === 0) {
       return {
         text: '📋 <b>Tasks</b>\n\nNo tasks yet.',
         keyboard: [[{ text: '➕ Create Task', callback_data: 'create_task' }]],
       };
     }
-    
+
     // Group by status
     const pending = tasks.filter((t: any) => t.status === 'pending');
     const inProgress = tasks.filter((t: any) => t.status === 'in_progress');
-    
+
     let text = '📋 <b>Tasks</b>\n\n';
-    
+
     if (inProgress.length > 0) {
       text += '<b>🔄 In Progress:</b>\n';
       for (const task of inProgress.slice(0, 5)) {
@@ -649,7 +649,7 @@ async function getTasksList(repoPath: string): Promise<CommandResult> {
       }
       text += '\n';
     }
-    
+
     if (pending.length > 0) {
       text += '<b>⏳ Pending:</b>\n';
       for (const task of pending.slice(0, 5)) {
@@ -657,16 +657,16 @@ async function getTasksList(repoPath: string): Promise<CommandResult> {
         text += `${priority} ${task.title}\n`;
       }
     }
-    
+
     const buttons: InlineButton[][] = pending.slice(0, 3).map((task: any) => [
       { text: `✋ Claim: ${task.title.substring(0, 20)}`, callback_data: `claim_task:${task.id}` },
     ]);
-    
+
     buttons.push([
       { text: '🔄 Refresh', callback_data: 'list_tasks' },
       { text: '➕ New', callback_data: 'create_task' },
     ]);
-    
+
     return { text, keyboard: buttons };
   } catch (error: any) {
     return { text: `Error listing tasks: ${error.message}` };
@@ -677,18 +677,18 @@ async function createTask(repoPath: string, title: string): Promise<CommandResul
   try {
     const tasksPath = path.join(repoPath, 'swarm', 'TASKS.json');
     const swarmDir = path.dirname(tasksPath);
-    
+
     if (!fs.existsSync(swarmDir)) {
       fs.mkdirSync(swarmDir, { recursive: true });
     }
-    
+
     let tasks: any[] = [];
     if (fs.existsSync(tasksPath)) {
       tasks = JSON.parse(fs.readFileSync(tasksPath, 'utf-8'));
     }
-    
+
     const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-    
+
     const newTask = {
       id: taskId,
       title,
@@ -697,10 +697,10 @@ async function createTask(repoPath: string, title: string): Promise<CommandResul
       createdAt: new Date().toISOString(),
       createdBy: 'telegram',
     };
-    
+
     tasks.push(newTask);
     fs.writeFileSync(tasksPath, JSON.stringify(tasks, null, 2));
-    
+
     return {
       text:
         `✅ <b>Task Created</b>\n\n` +
@@ -724,13 +724,13 @@ async function stopSwarm(repoPath: string): Promise<CommandResult> {
   try {
     const controlPath = path.join(repoPath, '.swarm', 'CONTROL.json');
     const swarmDir = path.dirname(controlPath);
-    
+
     if (!fs.existsSync(swarmDir)) {
       fs.mkdirSync(swarmDir, { recursive: true });
     }
-    
+
     fs.writeFileSync(controlPath, JSON.stringify({ stopped: true, stoppedAt: new Date().toISOString(), stoppedBy: 'telegram' }, null, 2));
-    
+
     return {
       text: '⏹ <b>Swarm Stopped</b>\n\nAll agents will pause their work.',
       keyboard: [[{ text: '▶️ Resume', callback_data: 'resume_swarm' }]],
@@ -743,11 +743,11 @@ async function stopSwarm(repoPath: string): Promise<CommandResult> {
 async function resumeSwarm(repoPath: string): Promise<CommandResult> {
   try {
     const controlPath = path.join(repoPath, '.swarm', 'CONTROL.json');
-    
+
     if (fs.existsSync(controlPath)) {
       fs.writeFileSync(controlPath, JSON.stringify({ stopped: false, resumedAt: new Date().toISOString(), resumedBy: 'telegram' }, null, 2));
     }
-    
+
     return {
       text: '▶️ <b>Swarm Resumed</b>\n\nAgents will continue their work.',
       keyboard: [[{ text: '📊 Status', callback_data: 'swarm_status' }]],
@@ -759,11 +759,11 @@ async function resumeSwarm(repoPath: string): Promise<CommandResult> {
 
 async function getConfig(repoPath: string): Promise<CommandResult> {
   const config = loadTelegramConfig(repoPath);
-  
+
   const notifyList = Object.entries(config.notifyOn)
     .map(([key, value]) => `${value ? '✅' : '❌'} ${key}`)
     .join('\n');
-  
+
   return {
     text:
       `⚙️ <b>Telegram Bot Config</b>\n\n` +
@@ -786,51 +786,51 @@ async function getConfig(repoPath: string): Promise<CommandResult> {
 async function getReviewsList(repoPath: string): Promise<CommandResult> {
   try {
     const reviewsPath = path.join(repoPath, '.swarm', 'reviews', 'INDEX.json');
-    
+
     if (!fs.existsSync(reviewsPath)) {
-      return { 
+      return {
         text: '👀 <b>Reviews</b>\n\nNo reviews yet.',
         keyboard: [[{ text: '📊 Status', callback_data: 'swarm_status' }]],
       };
     }
-    
+
     const index = JSON.parse(fs.readFileSync(reviewsPath, 'utf-8'));
-    const reviews = Object.values(index.reviews || {}) as any[];
-    
+    const reviews = Object.values(index.reviews || {}) as Array<Record<string, unknown>>;
+
     if (reviews.length === 0) {
-      return { 
+      return {
         text: '👀 <b>Reviews</b>\n\nNo reviews yet.',
         keyboard: [[{ text: '📊 Status', callback_data: 'swarm_status' }]],
       };
     }
-    
+
     // Filter pending reviews
     const pending = reviews.filter((r: any) => r.status === 'pending' || r.status === 'in_progress');
     const approved = reviews.filter((r: any) => r.status === 'approved').length;
     const rejected = reviews.filter((r: any) => r.status === 'rejected').length;
-    
+
     let text = '👀 <b>Reviews</b>\n\n';
     text += `📊 Total: ${reviews.length} | ✅ ${approved} | ❌ ${rejected}\n\n`;
-    
+
     if (pending.length > 0) {
       text += '<b>⏳ Pending Reviews:</b>\n';
       for (const review of pending.slice(0, 5)) {
         text += `• <code>${review.id}</code>\n`;
         text += `  ${review.taskTitle || 'Untitled'}\n`;
-        text += `  By: ${review.codeAuthor} | Files: ${review.changedFiles?.length || 0}\n\n`;
+        text += `  By: ${review.codeAuthor} | Files: ${Array.isArray(review.changedFiles) ? review.changedFiles.length : 0}\n\n`;
       }
     } else {
       text += 'No pending reviews.\n';
     }
-    
+
     // Create buttons for pending reviews
     const buttons: InlineButton[][] = pending.slice(0, 3).map((review: any) => [
       { text: `✅ Approve ${review.id.substring(0, 10)}`, callback_data: `approve_review:${review.id}` },
       { text: `❌ Reject`, callback_data: `reject_review:${review.id}` },
     ]);
-    
+
     buttons.push([{ text: '🔄 Refresh', callback_data: 'list_reviews' }]);
-    
+
     return { text, keyboard: buttons };
   } catch (error: any) {
     return { text: `Error listing reviews: ${error.message}` };
@@ -840,26 +840,26 @@ async function getReviewsList(repoPath: string): Promise<CommandResult> {
 async function approveReview(repoPath: string, reviewId: string): Promise<CommandResult> {
   try {
     const reviewsPath = path.join(repoPath, '.swarm', 'reviews', 'INDEX.json');
-    
+
     if (!fs.existsSync(reviewsPath)) {
       return { text: `Review ${reviewId} not found` };
     }
-    
+
     const index = JSON.parse(fs.readFileSync(reviewsPath, 'utf-8'));
     const review = index.reviews?.[reviewId];
-    
+
     if (!review) {
       return { text: `Review ${reviewId} not found` };
     }
-    
+
     review.status = 'approved';
     review.approvedAt = new Date().toISOString();
     review.approvedBy = 'telegram';
-    
+
     fs.writeFileSync(reviewsPath, JSON.stringify(index, null, 2));
-    
+
     return {
-      text: 
+      text:
         `✅ <b>Review Approved</b>\n\n` +
         `ID: <code>${reviewId}</code>\n` +
         `Task: ${review.taskTitle || 'Untitled'}\n` +
@@ -874,27 +874,27 @@ async function approveReview(repoPath: string, reviewId: string): Promise<Comman
 async function rejectReview(repoPath: string, reviewId: string, reason?: string): Promise<CommandResult> {
   try {
     const reviewsPath = path.join(repoPath, '.swarm', 'reviews', 'INDEX.json');
-    
+
     if (!fs.existsSync(reviewsPath)) {
       return { text: `Review ${reviewId} not found` };
     }
-    
+
     const index = JSON.parse(fs.readFileSync(reviewsPath, 'utf-8'));
     const review = index.reviews?.[reviewId];
-    
+
     if (!review) {
       return { text: `Review ${reviewId} not found` };
     }
-    
+
     review.status = 'rejected';
     review.rejectedAt = new Date().toISOString();
     review.rejectedBy = 'telegram';
     review.rejectionReason = reason || 'Rejected via Telegram';
-    
+
     fs.writeFileSync(reviewsPath, JSON.stringify(index, null, 2));
-    
+
     return {
-      text: 
+      text:
         `❌ <b>Review Rejected</b>\n\n` +
         `ID: <code>${reviewId}</code>\n` +
         `Task: ${review.taskTitle || 'Untitled'}\n` +
@@ -915,53 +915,53 @@ export async function handleCallback(
   callbackData: string
 ): Promise<CommandResult> {
   const [action, ...params] = callbackData.split(':');
-  
+
   switch (action) {
     case 'swarm_status':
       return await getSwarmStatus(repoPath);
-    
+
     case 'list_agents':
       return await getAgentsList(repoPath);
-    
+
     case 'list_tasks':
       return await getTasksList(repoPath);
-    
+
     case 'list_reviews':
       return await getReviewsList(repoPath);
-    
+
     case 'approve_review':
       return await approveReview(repoPath, params[0]);
-    
+
     case 'reject_review':
       return await rejectReview(repoPath, params[0]);
-    
+
     case 'create_task':
       return {
         text: '📋 <b>Create Task</b>\n\nSend a message with the task title:\n\n<code>/create_task Fix the login bug</code>',
       };
-    
+
     case 'stop_swarm':
       return await stopSwarm(repoPath);
-    
+
     case 'resume_swarm':
       return await resumeSwarm(repoPath);
-    
+
     case 'claim_task':
       return {
         text: `✋ Task ${params[0]} claimed!\n\nNote: This needs to be assigned to an actual agent via MCP Swarm tools.`,
       };
-    
+
     case 'view_task':
       return { text: `📋 Task details for ${params[0]}\n\n(Task view coming soon)` };
-    
+
     case 'set_priority':
       return await setPriority(repoPath, params[0], params[1]);
-    
+
     case 'toggle_enabled':
       const config = loadTelegramConfig(repoPath);
       saveTelegramConfig(repoPath, { enabled: !config.enabled });
       return await getConfig(repoPath);
-    
+
     case 'notify_all_on':
       saveTelegramConfig(repoPath, {
         notifyOn: {
@@ -976,7 +976,7 @@ export async function handleCallback(
         },
       });
       return await getConfig(repoPath);
-    
+
     case 'notify_all_off':
       saveTelegramConfig(repoPath, {
         notifyOn: {
@@ -991,7 +991,7 @@ export async function handleCallback(
         },
       });
       return await getConfig(repoPath);
-    
+
     default:
       return { text: `Unknown action: ${action}` };
   }
@@ -1000,23 +1000,23 @@ export async function handleCallback(
 async function setPriority(repoPath: string, taskId: string, priority: string): Promise<CommandResult> {
   try {
     const tasksPath = path.join(repoPath, 'swarm', 'TASKS.json');
-    
+
     if (!fs.existsSync(tasksPath)) {
       return { text: 'No tasks file found' };
     }
-    
+
     const tasks = JSON.parse(fs.readFileSync(tasksPath, 'utf-8'));
     const task = tasks.find((t: any) => t.id === taskId);
-    
+
     if (!task) {
       return { text: `Task ${taskId} not found` };
     }
-    
+
     task.priority = priority;
     fs.writeFileSync(tasksPath, JSON.stringify(tasks, null, 2));
-    
+
     const emoji = priority === 'critical' ? '🔴' : priority === 'high' ? '🟠' : '🟡';
-    
+
     return {
       text: `${emoji} Priority set to <b>${priority}</b>\n\nTask: ${task.title}`,
       keyboard: [[{ text: '📋 View Tasks', callback_data: 'list_tasks' }]],
@@ -1035,28 +1035,28 @@ let lastUpdateId = 0;
 
 export async function startPolling(repoPath: string, intervalMs: number = 2000): Promise<void> {
   const config = loadTelegramConfig(repoPath);
-  
+
   if (!config.botToken) {
     console.error('Telegram bot token not set');
     return;
   }
-  
+
   console.log('Starting Telegram bot polling...');
-  
+
   pollingInterval = setInterval(async () => {
     try {
       const updates = await callTelegramApi(config.botToken, 'getUpdates', {
         offset: lastUpdateId + 1,
         timeout: 1,
       });
-      
+
       for (const update of updates as TelegramUpdate[]) {
         lastUpdateId = update.update_id;
-        
+
         if (update.message?.text) {
           const text = update.message.text;
           const [command, ...args] = text.split(' ');
-          
+
           if (command.startsWith('/')) {
             const result = await handleCommand(repoPath, command, args);
             await callTelegramApi(config.botToken, 'sendMessage', {
@@ -1067,15 +1067,15 @@ export async function startPolling(repoPath: string, intervalMs: number = 2000):
             });
           }
         }
-        
+
         if (update.callback_query) {
           const result = await handleCallback(repoPath, update.callback_query.data);
-          
+
           // Answer callback query
           await callTelegramApi(config.botToken, 'answerCallbackQuery', {
             callback_query_id: update.callback_query.id,
           });
-          
+
           // Edit message
           await callTelegramApi(config.botToken, 'editMessageText', {
             chat_id: update.callback_query.message.chat.id,
@@ -1125,7 +1125,7 @@ export interface TelegramToolParams {
 
 export async function handleTelegramTool(params: TelegramToolParams): Promise<any> {
   const { action, repoPath } = params;
-  
+
   switch (action) {
     // Config
     case 'setup':
@@ -1134,54 +1134,54 @@ export async function handleTelegramTool(params: TelegramToolParams): Promise<an
         chatId: params.chatId,
         enabled: params.enabled ?? true,
       });
-    
+
     case 'config':
       return loadTelegramConfig(repoPath);
-    
+
     case 'enable':
       return saveTelegramConfig(repoPath, { enabled: true });
-    
+
     case 'disable':
       return saveTelegramConfig(repoPath, { enabled: false });
-    
+
     // Send
     case 'send':
       return await sendMessage(repoPath, params.message || '');
-    
+
     // Notify
     case 'notify_task_created':
       await notifyTaskCreated(repoPath, params.taskId!, params.title!, params.priority || 'medium', params.agent);
       return { success: true };
-    
+
     case 'notify_task_completed':
       await notifyTaskCompleted(repoPath, params.taskId!, params.title!, params.agent!);
       return { success: true };
-    
+
     case 'notify_task_failed':
       await notifyTaskFailed(repoPath, params.taskId!, params.title!, params.agent!);
       return { success: true };
-    
+
     case 'notify_agent_joined':
       await notifyAgentJoined(repoPath, params.agent!, params.message || 'unknown');
       return { success: true };
-    
+
     case 'notify_agent_died':
       await notifyAgentDied(repoPath, params.agent!, 'recently', 0);
       return { success: true };
-    
+
     // Polling
     case 'start_polling':
       await startPolling(repoPath);
       return { success: true, message: 'Polling started' };
-    
+
     case 'stop_polling':
       stopPolling();
       return { success: true, message: 'Polling stopped' };
-    
+
     // Command
     case 'command':
       return await handleCommand(repoPath, params.command!, params.args || []);
-    
+
     default:
       return { error: `Unknown action: ${action}` };
   }

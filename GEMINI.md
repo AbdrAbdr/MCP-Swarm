@@ -1,4 +1,4 @@
-# MCP Swarm Agent Rules (v1.1.3) - Antigravity/Gemini Edition
+# MCP Swarm Agent Rules (v1.2.0) - Antigravity/Gemini Edition
 
 ## CRITICAL: repoPath Parameter
 
@@ -88,9 +88,9 @@ When no tasks are assigned:
 - Help review other agents' code
 - Optimize imports and formatting
 
-## 26 Smart Tools (v1.1.3)
+## 35 Smart Tools (v1.2.0)
 
-Consolidated from 54 tools — zero feature loss, 2× fewer IDE slots. Each tool uses an `action` parameter.
+Consolidated from 54+ tools — zero feature loss, fewer IDE slots. Each tool uses an `action` parameter.
 
 | Tool | Key Actions |
 |------|-------------|
@@ -120,6 +120,15 @@ Consolidated from 54 tools — zero feature loss, 2× fewer IDE slots. Each tool
 | **swarm_vector** | init, add, search, delete, stats, duplicates |
 | **swarm_clusters** | init, list, tools, find, conflict_predict, conflict_analyze |
 | **swarm_booster** | execute, can_boost, stats, history |
+| **swarm_vault** | set, get, list, delete, rotate, export, audit |
+| **swarm_setup** | wizard, validate, status, reset, import, export |
+| **swarm_analytics** | log, query, metrics, report, cleanup, export |
+| **swarm_embeddings** | embed, batch_embed, providers, configure, test |
+| **swarm_backends** | list, switch, migrate, health, configure, benchmark |
+| **swarm_autoindex** | index_task, index_file, index_review, search, config, status |
+| **swarm_profiles** | create, get, update, list, recommend, export |
+| **swarm_scheduled** | create, list, update, delete, run, history, status |
+| **swarm_plugins** | load, unload, list, discover, info, configure |
 
 ## Quick Reference
 

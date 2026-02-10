@@ -5,12 +5,9 @@
  * Поддерживает несколько проектов одновременно.
  */
 
-import { createRequire } from "node:module";
+import WebSocket from "ws";
 import { getRepoRoot } from "./workflows/repo.js";
-
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const WS = require("ws") as any;
+import { getErrorMessage } from "./utils/errorUtils.js";
 
 // ============ TYPES ============
 
@@ -88,7 +85,7 @@ export class BridgeManager {
         if (connection) {
             if (connection.ws) {
                 try {
-                    (connection.ws as any).close();
+                    connection.ws.close();
                 } catch {
                     // ignore
                 }
@@ -103,7 +100,7 @@ export class BridgeManager {
         for (const [path, connection] of this.connections) {
             if (connection.ws) {
                 try {
-                    (connection.ws as any).close();
+                    connection.ws.close();
                 } catch {
                     // ignore
                 }
@@ -123,7 +120,7 @@ export class BridgeManager {
             url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
             url.searchParams.set("repoPath", repoPath);
 
-            const ws = new WS(url.toString());
+            const ws = new WebSocket(url.toString());
             connection.ws = ws;
 
             ws.on("open", () => {
@@ -133,8 +130,8 @@ export class BridgeManager {
                 console.log(`✅ Bridge connected: ${repoPath}`);
             });
 
-            ws.on("message", async (data: unknown) => {
-                const text = typeof data === "string" ? data : Buffer.from(data as any).toString();
+            ws.on("message", async (data: WebSocket.RawData) => {
+                const text = typeof data === "string" ? data : Buffer.from(data as Buffer).toString();
                 try {
                     const msg = JSON.parse(text);
                     if (msg.kind === "hello") {
@@ -187,7 +184,7 @@ export class BridgeManager {
         }, delay);
     }
 
-    private async handleToolExecution(ws: any, request: ToolRequest, repoPath: string) {
+    private async handleToolExecution(ws: WebSocket, request: ToolRequest, repoPath: string) {
         const { requestId, tool, args } = request;
         console.log(`🔧 Executing ${tool} for ${repoPath}`);
 
@@ -198,10 +195,10 @@ export class BridgeManager {
                 requestId,
                 result: { bridgeConnected: true, ...(resultData as Record<string, unknown>) },
             }));
-        } catch (err: any) {
+        } catch (err: unknown) {
             ws.send(JSON.stringify({
                 requestId,
-                result: { bridgeConnected: true, error: err.message },
+                result: { bridgeConnected: true, error: getErrorMessage(err) },
             }));
         }
     }
@@ -227,22 +224,24 @@ export class BridgeManager {
             // Smart tools return { content: [...], structuredContent: ... }
             // Bridge needs the structured data, not the MCP wrapper
             if (result && typeof result === "object" && "structuredContent" in result) {
-                return (result as any).structuredContent;
+                return (result as { structuredContent: unknown }).structuredContent;
             }
             return result;
-        } catch (err: any) {
-            return { ok: false, error: err.message || String(err) };
+        } catch (err: unknown) {
+            return { ok: false, error: getErrorMessage(err) };
         }
     }
 
-    private toolHandlers: Map<string, (input: any) => Promise<any>> | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private toolHandlers: Map<string, (input: any) => Promise<unknown>> | null = null;
 
     private async buildToolHandlers() {
         const { allSmartTools } = await import("./smartTools/index.js");
         this.toolHandlers = new Map();
         for (const tool of allSmartTools) {
             // Each smart tool is [name, schema, handler]
-            const [name, , handler] = tool as unknown as [string, unknown, (input: any) => Promise<any>];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const [name, , handler] = tool as unknown as [string, unknown, (input: any) => Promise<unknown>];
             this.toolHandlers.set(name, handler);
         }
         console.log(`🔧 Loaded ${this.toolHandlers.size} smart tool handlers for bridge`);
@@ -259,7 +258,7 @@ export class BridgeManager {
                 console.log(`⚠️ Connection stale for ${repoPath}, reconnecting...`);
                 if (connection.ws) {
                     try {
-                        (connection.ws as any).close();
+                        connection.ws.close();
                     } catch {
                         // ignore
                     }

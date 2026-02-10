@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- MCP SDK handlers receive Zod-validated input but SDK doesn't propagate inferred types */
 /**
  * MCP Swarm v1.1.0 - Smart Tools: analytics
  * Consolidated:
@@ -16,7 +17,7 @@ import { logApiUsage, getAgentCosts, getProjectCosts, setBudgetLimit, checkBudge
 import { saveBaseline, checkRegression, listRegressions, resolveRegression, listBaselines } from "../workflows/regressionDetector.js";
 
 // Helper to wrap results
-function wrapResult(result: any) {
+function wrapResult(result: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
 }
 

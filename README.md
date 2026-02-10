@@ -12,9 +12,9 @@
   <img src="./assets/banner.png" alt="MCP Swarm Banner" width="800" />
 </p>
 
-# 🐝 MCP Swarm v1.1.6 — Universal AI Agent Coordination Platform
+# 🐝 MCP Swarm v1.2.0 — Universal AI Agent Coordination Platform
 
-> 🐝 **v1.1.6 — Architecture & Security:** Hub refactored into modular services, Dashboard 2.0 with Chart.js graphs and WebSocket live updates, API security (X-Swarm-Secret + Rate Limiting), E2E tests, optional Ollama integration for swarm_booster. Update: `npm install -g mcp-swarm@latest`
+> 🐝 **v1.2.0 — Platform Expansion:** 35 Smart Tools (9 new), Vault with audit trail & auto-lock, Setup Wizard, Analytics Store, Embeddings Cascade (multi-provider), Vector Backends (6 adapters: Local, Chroma, Supabase, Qdrant, Pinecone, Turso), Auto-Index, Agent Profiles, Scheduled Tasks with pause/resume, Plugin Loader, Doctor CLI (`--json`), 100% ESM, full type safety. Update: `npm install -g mcp-swarm@latest`
 
 **MCP Swarm** is a global "nervous system" for your AI assistants. It turns separate agents (Claude, Cursor, Windsurf, OpenCode) into a coordinated team that can work on massive projects without conflicts or context loss.
 
@@ -57,9 +57,9 @@ When you use multiple AI tools simultaneously, they often collide: editing the s
 
 ---
 
-## 🛠 26 Smart Tools: The Swarm Toolkit
+## 🛠 35 Smart Tools: The Swarm Toolkit
 
-In v1.0.2, we **consolidated 54 tools into 26** — zero feature loss, 2× fewer IDE tool slots used. Each tool uses an `action` parameter to expose multiple operations.
+In v1.2.0, we expanded to **35 Smart Tools** (from 26 in v1.1.x) — 9 new tools for secrets, analytics, embeddings, vector backends, auto-indexing, agent profiles, scheduled tasks, and plugins. Each tool uses an `action` parameter to expose multiple operations.
 
 ### 🚀 Core System (2)
 
@@ -126,6 +126,20 @@ In v1.0.2, we **consolidated 54 tools into 26** — zero feature loss, 2× fewer
 | 24 | **swarm_session** | session + timeline + screenshot | `start`, `log`, `stop`, `replay`, `timeline_generate`, `screenshot_share` |
 | 25 | **swarm_clusters** | clusters + conflict | `init`, `list`, `find`, `conflict_predict`, `conflict_hotspots` |
 | 26 | **swarm_telegram** | telegram + qa | `setup`, `send`, `notify_*`, `qa_start`, `qa_iterate`, `qa_report` |
+
+### 🆕 New in v1.2.0 (8)
+
+| # | Tool | Description | Key Actions |
+|---|------|-------------|-------------|
+| 27 | **swarm_vault** | Secret management (AES-256-GCM) | `init`, `unlock`, `set`, `get`, `delete`, `list`, `rotate`, `export`, `import`, `lock`, `status`, `audit` |
+| 28 | **swarm_analytics** | Task/event metrics & storage | `log_task`, `log_event`, `get_tasks`, `get_events`, `get_metrics`, `summary`, `cleanup` |
+| 29 | **swarm_memory** | Auto-index & smart context | `index_task`, `index_file`, `index_review`, `smart_context`, `find_error_solution`, `record_error_fix` |
+| 30 | **swarm_embeddings** | Multi-provider embeddings + backends | `embed`, `health`, `costs`, `backend_status`, `backend_migrate`, `backend_switch`, `backend_health` |
+| 31 | **swarm_profiles** | Agent profiles & specialization | `get`, `list`, `default`, `instructions` |
+| 32 | **swarm_scheduler** | Cron-based task scheduler | `add`, `list`, `check_due`, `check_missed`, `remove` |
+| 33 | **swarm_plugins** | Plugin loader & discovery | `discover`, `load`, `load_all`, `init_dir` |
+| 34 | **swarm_github** | GitHub Issue ↔ Task sync | `auth_status`, `list_issues`, `create_issue`, `close_issue`, `sync_from_github` |
+| 35 | **swarm_setup** | Setup wizard & config | `wizard_prompt`, `wizard_run`, `config_get`, `config_exists` |
 
 ---
 
@@ -1094,6 +1108,37 @@ cloudflare/
 
 ---
 
+## 🩺 Doctor — Health Check CLI
+
+```bash
+# Human-readable output
+npx mcp-swarm-doctor
+
+# JSON output for CI/CD pipelines
+npx mcp-swarm-doctor --json
+```
+
+**Example output:**
+```
+🩺 MCP Swarm Doctor
+✅ Node.js version: v23.11.1 (>= 18.0.0)
+✅ Package installed: mcp-swarm@1.2.0
+✅ TypeScript compiled: dist/ exists
+✅ Hub URL configured: wss://mcp-swarm-hub.example.workers.dev/ws
+⚠️  Telegram not configured: TELEGRAM_USER_ID is missing
+```
+
+**JSON mode** (`--json`) returns structured results:
+```json
+[
+  { "name": "node-version", "status": "pass", "message": "v23.11.1 (>= 18.0.0)" },
+  { "name": "package", "status": "pass", "message": "mcp-swarm@1.2.0" },
+  { "name": "telegram", "status": "warn", "message": "TELEGRAM_USER_ID is missing" }
+]
+```
+
+---
+
 ## 📝 Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md)
@@ -1126,4 +1171,5 @@ Your feedback shapes the future of the project:
 
 ## 📜 License
 
-MIT © 2025
+MIT © 2025–2026
+

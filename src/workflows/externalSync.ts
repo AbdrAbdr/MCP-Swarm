@@ -7,6 +7,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getErrorMessage } from "../utils/errorUtils.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -100,8 +101,8 @@ async function ghCommand(args: string[], cwd: string): Promise<{ ok: boolean; st
   try {
     const { stdout, stderr } = await execFileAsync("gh", args, { cwd, windowsHide: true });
     return { ok: true, stdout, stderr };
-  } catch (err: any) {
-    return { ok: false, stdout: "", stderr: err?.message || "gh command failed" };
+  } catch (err: unknown) {
+    return { ok: false, stdout: "", stderr: getErrorMessage(err) };
   }
 }
 
@@ -113,7 +114,7 @@ export async function fetchGitHubIssues(repoPath: string): Promise<ExternalIssue
 
   // Build gh command
   const args = ["issue", "list", "--repo", `${owner}/${repo}`, "--json", "number,title,body,state,labels,assignees,url,createdAt,updatedAt", "--limit", "100"];
-  
+
   if (labelFilter && labelFilter.length > 0) {
     args.push("--label", labelFilter.join(","));
   }
@@ -159,7 +160,7 @@ export async function createGitHubIssue(
 
   const { owner, repo } = config.github;
   const args = ["issue", "create", "--repo", `${owner}/${repo}`, "--title", title, "--body", body];
-  
+
   if (labels && labels.length > 0) {
     args.push("--label", labels.join(","));
   }
@@ -216,7 +217,7 @@ export async function addGitHubComment(
 
   const { owner, repo } = config.github;
   const result = await ghCommand(["issue", "comment", issueNumber, "--repo", `${owner}/${repo}`, "--body", comment], repoPath);
-  
+
   return { ok: result.ok, error: result.ok ? undefined : result.stderr };
 }
 
@@ -247,8 +248,8 @@ async function linearRequest(
     }
 
     return { ok: true, data: result.data };
-  } catch (err: any) {
-    return { ok: false, error: err?.message || "Network error" };
+  } catch (err: unknown) {
+    return { ok: false, error: getErrorMessage(err) || "Network error" };
   }
 }
 
@@ -384,12 +385,12 @@ export async function updateLinearIssueState(
 
 function extractPriority(labels: string[]): ExternalIssue["priority"] {
   const lowercaseLabels = labels.map((l) => l.toLowerCase());
-  
+
   if (lowercaseLabels.some((l) => l.includes("urgent") || l.includes("critical"))) return "urgent";
   if (lowercaseLabels.some((l) => l.includes("high") || l.includes("important"))) return "high";
   if (lowercaseLabels.some((l) => l.includes("medium"))) return "medium";
   if (lowercaseLabels.some((l) => l.includes("low"))) return "low";
-  
+
   return "none";
 }
 
@@ -486,7 +487,7 @@ async function listSwarmTasks(repoPath: string): Promise<SwarmTask[]> {
   try {
     const files = await fs.readdir(tasksDir);
     const tasks: SwarmTask[] = [];
-    
+
     for (const file of files) {
       if (file.endsWith(".md")) {
         const content = await fs.readFile(path.join(tasksDir, file), "utf8");
@@ -494,7 +495,7 @@ async function listSwarmTasks(repoPath: string): Promise<SwarmTask[]> {
         if (task) tasks.push(task);
       }
     }
-    
+
     return tasks;
   } catch {
     return [];
@@ -552,7 +553,7 @@ ${issue.labels.map((l) => `- ${l}`).join("\n") || "- none"}
 
 export async function syncFromGitHub(repoPath: string): Promise<SyncResult> {
   const result: SyncResult = { source: "github", imported: 0, updated: 0, closed: 0, errors: [] };
-  
+
   const config = await getSyncConfig(repoPath);
   if (!config.github?.enabled) {
     result.errors.push("GitHub sync not enabled");
@@ -586,8 +587,8 @@ export async function syncFromGitHub(repoPath: string): Promise<SyncResult> {
     await setCachedIssues(repoPath, updatedCache);
 
     result.updated = ghIssues.length;
-  } catch (err: any) {
-    result.errors.push(err?.message || "Sync failed");
+  } catch (err: unknown) {
+    result.errors.push(getErrorMessage(err) || "Sync failed");
   }
 
   return result;
@@ -595,7 +596,7 @@ export async function syncFromGitHub(repoPath: string): Promise<SyncResult> {
 
 export async function syncFromLinear(repoPath: string): Promise<SyncResult> {
   const result: SyncResult = { source: "linear", imported: 0, updated: 0, closed: 0, errors: [] };
-  
+
   const config = await getSyncConfig(repoPath);
   if (!config.linear?.enabled) {
     result.errors.push("Linear sync not enabled");
@@ -625,8 +626,8 @@ export async function syncFromLinear(repoPath: string): Promise<SyncResult> {
     await setCachedIssues(repoPath, updatedCache);
 
     result.updated = linearIssues.length;
-  } catch (err: any) {
-    result.errors.push(err?.message || "Sync failed");
+  } catch (err: unknown) {
+    result.errors.push(getErrorMessage(err) || "Sync failed");
   }
 
   return result;
@@ -634,7 +635,7 @@ export async function syncFromLinear(repoPath: string): Promise<SyncResult> {
 
 export async function syncToGitHub(repoPath: string): Promise<SyncResult> {
   const result: SyncResult = { source: "github", imported: 0, updated: 0, closed: 0, errors: [] };
-  
+
   const config = await getSyncConfig(repoPath);
   if (!config.github?.enabled || !config.github.autoClose) {
     return result;
@@ -671,8 +672,8 @@ export async function syncToGitHub(repoPath: string): Promise<SyncResult> {
     }
 
     await setCachedIssues(repoPath, cachedIssues);
-  } catch (err: any) {
-    result.errors.push(err?.message || "Sync failed");
+  } catch (err: unknown) {
+    result.errors.push(getErrorMessage(err) || "Sync failed");
   }
 
   return result;
@@ -707,7 +708,7 @@ export async function exportTaskToGitHub(
 ): Promise<{ ok: boolean; issueNumber?: string; url?: string; error?: string }> {
   const tasks = await listSwarmTasks(repoPath);
   const task = tasks.find((t) => t.id === taskId);
-  
+
   if (!task) {
     return { ok: false, error: `Task ${taskId} not found` };
   }
@@ -728,7 +729,7 @@ export async function exportTaskToLinear(
 ): Promise<{ ok: boolean; issueId?: string; url?: string; error?: string }> {
   const tasks = await listSwarmTasks(repoPath);
   const task = tasks.find((t) => t.id === taskId);
-  
+
   if (!task) {
     return { ok: false, error: `Task ${taskId} not found` };
   }

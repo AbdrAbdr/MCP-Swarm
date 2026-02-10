@@ -38,6 +38,21 @@ function fail(msg: string) { console.log(`  ${c.red}❌${c.reset} ${msg}`); }
 function info(msg: string) { console.log(`  ${c.blue}ℹ${c.reset}  ${msg}`); }
 function header(msg: string) { console.log(`\n${c.bright}${msg}${c.reset}`); }
 
+// ============ DOCTOR RESULT TYPE ============
+
+interface DoctorCheckResult {
+    name: string;
+    status: "ok" | "warn" | "fail" | "info";
+    message: string;
+}
+
+interface DoctorResult {
+    version: string;
+    ts: string;
+    checks: DoctorCheckResult[];
+    summary: { ok: number; warn: number; fail: number; info: number };
+}
+
 // ============ VERSION ============
 function getVersion(): string {
     try {
@@ -50,25 +65,28 @@ function getVersion(): string {
 }
 
 // ============ CHECKS ============
-function checkNode(): boolean {
+function checkNode(results?: DoctorCheckResult[]): boolean {
     const version = process.version;
     const major = parseInt(version.slice(1).split(".")[0], 10);
     if (major >= 18) {
-        ok(`Node.js ${version} (>= 18 required)`);
+        const msg = `Node.js ${version} (>= 18 required)`;
+        if (results) results.push({ name: "node", status: "ok", message: msg }); else ok(msg);
         return true;
     } else {
-        fail(`Node.js ${version} — requires >= 18.0.0`);
+        const msg = `Node.js ${version} — requires >= 18.0.0`;
+        if (results) results.push({ name: "node", status: "fail", message: msg }); else fail(msg);
         return false;
     }
 }
 
-function checkGit(): boolean {
+function checkGit(results?: DoctorCheckResult[]): boolean {
     try {
         const version = execSync("git --version", { encoding: "utf-8" }).trim();
-        ok(`${version}`);
+        if (results) results.push({ name: "git", status: "ok", message: version }); else ok(`${version}`);
         return true;
     } catch {
-        fail("Git not found — install from https://git-scm.com");
+        const msg = "Git not found — install from https://git-scm.com";
+        if (results) results.push({ name: "git", status: "fail", message: msg }); else fail(msg);
         return false;
     }
 }
@@ -218,8 +236,104 @@ async function checkLatestVersion(currentVersion: string): Promise<void> {
     });
 }
 
+// ============ SWARM CONFIG ============
+async function checkSwarmConfig(): Promise<void> {
+    // Try common config locations
+    const candidates = [
+        process.cwd(),
+        path.join(os.homedir(), ".mcp-swarm"),
+    ];
+
+    for (const base of candidates) {
+        const configPath = path.join(base, ".swarm", "config.json");
+        try {
+            const raw = fs.readFileSync(configPath, "utf-8");
+            const config = JSON.parse(raw);
+            ok(`Config found: ${configPath}`);
+            info(`  Mode: ${config.mode || "standard"}`);
+            if (config.vector) {
+                info(`  Vector Backend: ${config.vector.backend || "local"}`);
+                info(`  Embedding Provider: ${config.vector.embeddingProvider || "builtin"}`);
+                if (config.vector.ttlDays) info(`  TTL: ${config.vector.ttlDays} days`);
+                info(`  Semantic Cache: ${config.vector.semanticCachingEnabled ? "✅" : "❌"}`);
+                info(`  Global Memory: ${config.vector.globalMemoryEnabled ? "✅" : "❌"}`);
+            }
+            if (config.vault) {
+                info(`  Vault: ${config.vault.enabled ? "✅ enabled" : "❌ disabled"}`);
+                if (config.vault.autoBackup) info(`  Vault Backup: ${config.vault.backupTarget || "local"}`);
+            }
+            if (config.github) {
+                info(`  GitHub Sync: ${config.github.enabled ? "✅" : "❌"}`);
+            }
+            if (config.profiles) {
+                info(`  Profiles: ${config.profiles.enabled ? `✅ (${config.profiles.defaultProfile || "fullstack"})` : "❌"}`);
+            }
+            if (config.scheduledTasks) {
+                const taskCount = config.scheduledTasks.tasks?.length || 0;
+                info(`  Scheduler: ${config.scheduledTasks.enabled ? `✅ (${taskCount} tasks)` : "❌"}`);
+            }
+            if (config.plugins) {
+                info(`  Plugins: ${config.plugins.enabled ? "✅" : "❌"}`);
+            }
+            return;
+        } catch {
+            // Try next
+        }
+    }
+    info("No config.json found (run swarm_setup wizard to create)");
+}
+
+function checkVaultFile(): void {
+    const candidates = [
+        path.join(process.cwd(), ".swarm", "vault.enc"),
+        path.join(os.homedir(), ".mcp-swarm", "vault.enc"),
+    ];
+
+    for (const vaultPath of candidates) {
+        if (fs.existsSync(vaultPath)) {
+            const stat = fs.statSync(vaultPath);
+            const sizeKb = (stat.size / 1024).toFixed(1);
+            ok(`Vault file: ${vaultPath} (${sizeKb} KB)`);
+            return;
+        }
+    }
+    info("No vault.enc found (vault not initialized)");
+}
+
+/**
+ * Run all doctor checks and return structured results
+ */
+export async function runDoctorChecks(): Promise<DoctorResult> {
+    const version = getVersion();
+    const checks: DoctorCheckResult[] = [];
+
+    checkNode(checks);
+    checkGit(checks);
+    checkPidFile();
+    await checkPort(37373);
+    checkLogDir();
+    checkHubUrl();
+
+    const summary = {
+        ok: checks.filter(c => c.status === "ok").length,
+        warn: checks.filter(c => c.status === "warn").length,
+        fail: checks.filter(c => c.status === "fail").length,
+        info: checks.filter(c => c.status === "info").length,
+    };
+
+    return { version, ts: new Date().toISOString(), checks, summary };
+}
+
 // ============ MAIN ============
 async function main() {
+    const isJson = process.argv.includes("--json");
+
+    if (isJson) {
+        const result = await runDoctorChecks();
+        console.log(JSON.stringify(result, null, 2));
+        return;
+    }
+
     const version = getVersion();
 
     console.log(`
@@ -238,6 +352,10 @@ ${c.dim}${"─".repeat(40)}${c.reset}`);
     header("🌐 Network");
     checkHubUrl();
     await checkLatestVersion(version);
+
+    header("⚙️ Swarm Config");
+    await checkSwarmConfig();
+    checkVaultFile();
 
     header("🔧 IDE Configs");
     checkIdeConfigs();

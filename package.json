@@ -1,9 +1,9 @@
 {
   "name": "mcp-swarm",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "private": false,
   "type": "module",
-  "description": "Universal AI agent coordination platform with 26 consolidated smart tools, 21 AI models (Kimi K2.5, GPT-5.3, Opus 4.6), EWC++ self-learning, semantic caching, and Q-Learning routing",
+  "description": "Universal AI agent coordination platform with 35 smart tools, encrypted Vault, embedding cascade (Ollama/OpenAI/builtin), 6 vector backends, agent profiles, scheduled tasks, plugin system, and GitHub sync",
   "keywords": [
     "mcp",
     "ai",

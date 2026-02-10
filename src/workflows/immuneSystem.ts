@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { git } from "./git.js";
 import { getRepoRoot } from "./repo.js";
 import { appendEvent } from "./auction.js";
+import { getErrorMessage } from "../utils/errorUtils.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -165,7 +166,8 @@ export async function runLocalTests(repoPath?: string): Promise<{ passed: boolea
     }
 
     return { passed: true, output: "No test script found" };
-  } catch (err: any) {
-    return { passed: false, output: err?.stdout || err?.stderr || err?.message || "Test failed" };
+  } catch (err: unknown) {
+    const e = err as Record<string, unknown> | undefined;
+    return { passed: false, output: String(e?.stdout || e?.stderr || getErrorMessage(err) || "Test failed") };
   }
 }

@@ -14,6 +14,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { getErrorMessage } from "../utils/errorUtils.js";
 
 // ============================================================================
 // TYPES
@@ -91,7 +92,7 @@ const DEFAULT_CONFIG: BatchConfig = {
 
 export async function getBatchConfig(repoPath: string): Promise<BatchConfig> {
   const configPath = path.join(repoPath, ".swarm", "batch-config.json");
-  
+
   try {
     const data = await fs.readFile(configPath, "utf-8");
     return { ...DEFAULT_CONFIG, ...JSON.parse(data) };
@@ -104,10 +105,10 @@ export async function setBatchConfig(repoPath: string, config: Partial<BatchConf
   const configPath = path.join(repoPath, ".swarm", "batch-config.json");
   const current = await getBatchConfig(repoPath);
   const updated = { ...current, ...config };
-  
+
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(updated, null, 2));
-  
+
   return updated;
 }
 
@@ -123,28 +124,28 @@ export async function queueRequest(
   request: Omit<BatchRequest, "id" | "createdAt">
 ): Promise<string> {
   const config = await getBatchConfig(repoPath);
-  
+
   if (!config.enabled) {
     // If batching disabled, return immediately with request ID
     return `direct-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
   }
-  
+
   const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
   const batchRequest: BatchRequest = {
     ...request,
     id: requestId,
     createdAt: new Date().toISOString(),
   };
-  
+
   const queueKey = `${request.provider}:${request.model}`;
-  
+
   if (!pendingRequests.has(queueKey)) {
     pendingRequests.set(queueKey, []);
   }
-  
+
   const queue = pendingRequests.get(queueKey)!;
   queue.push(batchRequest);
-  
+
   // Check if we should send batch now
   if (queue.length >= config.maxBatchSize) {
     await flushQueue(repoPath, queueKey);
@@ -155,7 +156,7 @@ export async function queueRequest(
     }, config.maxWaitMs);
     batchTimers.set(queueKey, timer);
   }
-  
+
   return requestId;
 }
 
@@ -164,22 +165,22 @@ export async function queueRequest(
  */
 async function flushQueue(repoPath: string, queueKey: string): Promise<BatchJob | null> {
   const queue = pendingRequests.get(queueKey);
-  
+
   if (!queue || queue.length === 0) {
     return null;
   }
-  
+
   // Clear timer
   const timer = batchTimers.get(queueKey);
   if (timer) {
     clearTimeout(timer);
     batchTimers.delete(queueKey);
   }
-  
+
   // Take all requests
   const requests = [...queue];
   pendingRequests.set(queueKey, []);
-  
+
   // Create batch job
   const [provider] = queueKey.split(":") as [BatchProvider];
   const job: BatchJob = {
@@ -189,13 +190,13 @@ async function flushQueue(repoPath: string, queueKey: string): Promise<BatchJob 
     requests,
     createdAt: new Date().toISOString(),
   };
-  
+
   // Save job
   await saveBatchJob(repoPath, job);
-  
+
   // Send batch (async)
   sendBatch(repoPath, job).catch(console.error);
-  
+
   return job;
 }
 
@@ -208,11 +209,11 @@ async function flushQueue(repoPath: string, queueKey: string): Promise<BatchJob 
  */
 async function sendBatch(repoPath: string, job: BatchJob): Promise<void> {
   const config = await getBatchConfig(repoPath);
-  
+
   job.status = "processing";
   job.startedAt = new Date().toISOString();
   await saveBatchJob(repoPath, job);
-  
+
   try {
     switch (job.provider) {
       case "anthropic":
@@ -224,15 +225,15 @@ async function sendBatch(repoPath: string, job: BatchJob): Promise<void> {
       default:
         throw new Error(`Unsupported provider: ${job.provider}`);
     }
-    
+
     job.status = "completed";
     job.completedAt = new Date().toISOString();
-  } catch (error: any) {
+  } catch (error: unknown) {
     job.status = "failed";
-    job.error = error.message;
+    job.error = getErrorMessage(error);
     job.completedAt = new Date().toISOString();
   }
-  
+
   await saveBatchJob(repoPath, job);
 }
 
@@ -242,13 +243,13 @@ async function sendBatch(repoPath: string, job: BatchJob): Promise<void> {
  */
 async function sendAnthropicBatch(config: BatchConfig, job: BatchJob): Promise<void> {
   const apiKey = config.providers.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("Anthropic API key not configured");
   }
-  
+
   const endpoint = config.providers.anthropic?.endpoint || "https://api.anthropic.com/v1/messages/batches";
-  
+
   // Format requests for Anthropic Batch API
   const requests = job.requests.map((req, i) => ({
     custom_id: req.id,
@@ -258,7 +259,7 @@ async function sendAnthropicBatch(config: BatchConfig, job: BatchJob): Promise<v
       messages: req.messages,
     },
   }));
-  
+
   // Create batch
   const createResponse = await fetch(endpoint, {
     method: "POST",
@@ -270,22 +271,22 @@ async function sendAnthropicBatch(config: BatchConfig, job: BatchJob): Promise<v
     },
     body: JSON.stringify({ requests }),
   });
-  
+
   if (!createResponse.ok) {
     const error = await createResponse.text();
     throw new Error(`Anthropic batch creation failed: ${error}`);
   }
-  
+
   const batch = await createResponse.json() as { id: string };
   job.externalId = batch.id;
-  
+
   // Poll for completion (simplified - in production use webhooks)
   let attempts = 0;
   const maxAttempts = 60; // 5 minutes max
-  
+
   while (attempts < maxAttempts) {
     await new Promise((r) => setTimeout(r, 5000)); // Wait 5 seconds
-    
+
     const statusResponse = await fetch(`${endpoint}/${batch.id}`, {
       headers: {
         "x-api-key": apiKey,
@@ -293,29 +294,29 @@ async function sendAnthropicBatch(config: BatchConfig, job: BatchJob): Promise<v
         "anthropic-beta": "message-batches-2024-09-24",
       },
     });
-    
+
     if (!statusResponse.ok) {
       throw new Error(`Failed to check batch status`);
     }
-    
+
     const status = await statusResponse.json() as {
       processing_status: string;
       results_url?: string;
     };
-    
+
     if (status.processing_status === "ended") {
       // Fetch results
       if (status.results_url) {
         const resultsResponse = await fetch(status.results_url, {
           headers: { "x-api-key": apiKey },
         });
-        
+
         if (resultsResponse.ok) {
           const resultsText = await resultsResponse.text();
           const results = resultsText.split("\n")
             .filter(Boolean)
             .map((line) => JSON.parse(line));
-          
+
           job.results = results.map((r: any) => ({
             requestId: r.custom_id,
             success: r.result?.type === "succeeded",
@@ -323,19 +324,19 @@ async function sendAnthropicBatch(config: BatchConfig, job: BatchJob): Promise<v
             error: r.result?.error?.message,
             usage: r.result?.message?.usage
               ? {
-                  inputTokens: r.result.message.usage.input_tokens,
-                  outputTokens: r.result.message.usage.output_tokens,
-                }
+                inputTokens: r.result.message.usage.input_tokens,
+                outputTokens: r.result.message.usage.output_tokens,
+              }
               : undefined,
           }));
         }
       }
       break;
     }
-    
+
     attempts++;
   }
-  
+
   if (attempts >= maxAttempts) {
     throw new Error("Batch processing timeout");
   }
@@ -347,13 +348,13 @@ async function sendAnthropicBatch(config: BatchConfig, job: BatchJob): Promise<v
  */
 async function sendOpenAIBatch(config: BatchConfig, job: BatchJob): Promise<void> {
   const apiKey = config.providers.openai?.apiKey || process.env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("OpenAI API key not configured");
   }
-  
+
   const baseUrl = config.providers.openai?.endpoint || "https://api.openai.com/v1";
-  
+
   // Create JSONL file content
   const jsonlContent = job.requests
     .map((req) =>
@@ -369,24 +370,24 @@ async function sendOpenAIBatch(config: BatchConfig, job: BatchJob): Promise<void
       })
     )
     .join("\n");
-  
+
   // Upload file
   const formData = new FormData();
   formData.append("purpose", "batch");
   formData.append("file", new Blob([jsonlContent], { type: "application/jsonl" }), "batch.jsonl");
-  
+
   const uploadResponse = await fetch(`${baseUrl}/files`, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}` },
     body: formData,
   });
-  
+
   if (!uploadResponse.ok) {
     throw new Error("Failed to upload batch file");
   }
-  
+
   const file = await uploadResponse.json() as { id: string };
-  
+
   // Create batch
   const createResponse = await fetch(`${baseUrl}/batches`, {
     method: "POST",
@@ -400,44 +401,44 @@ async function sendOpenAIBatch(config: BatchConfig, job: BatchJob): Promise<void
       completion_window: "24h",
     }),
   });
-  
+
   if (!createResponse.ok) {
     throw new Error("Failed to create batch");
   }
-  
+
   const batch = await createResponse.json() as { id: string };
   job.externalId = batch.id;
-  
+
   // Poll for completion
   let attempts = 0;
   const maxAttempts = 60;
-  
+
   while (attempts < maxAttempts) {
     await new Promise((r) => setTimeout(r, 5000));
-    
+
     const statusResponse = await fetch(`${baseUrl}/batches/${batch.id}`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
-    
+
     if (!statusResponse.ok) continue;
-    
+
     const status = await statusResponse.json() as {
       status: string;
       output_file_id?: string;
     };
-    
+
     if (status.status === "completed" && status.output_file_id) {
       // Fetch results
       const resultsResponse = await fetch(`${baseUrl}/files/${status.output_file_id}/content`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
-      
+
       if (resultsResponse.ok) {
         const resultsText = await resultsResponse.text();
         const results = resultsText.split("\n")
           .filter(Boolean)
           .map((line) => JSON.parse(line));
-        
+
         job.results = results.map((r: any) => ({
           requestId: r.custom_id,
           success: !r.error,
@@ -445,19 +446,19 @@ async function sendOpenAIBatch(config: BatchConfig, job: BatchJob): Promise<void
           error: r.error?.message,
           usage: r.response?.body?.usage
             ? {
-                inputTokens: r.response.body.usage.prompt_tokens,
-                outputTokens: r.response.body.usage.completion_tokens,
-              }
+              inputTokens: r.response.body.usage.prompt_tokens,
+              outputTokens: r.response.body.usage.completion_tokens,
+            }
             : undefined,
         }));
       }
       break;
     }
-    
+
     if (status.status === "failed" || status.status === "expired") {
       throw new Error(`Batch ${status.status}`);
     }
-    
+
     attempts++;
   }
 }
@@ -469,14 +470,14 @@ async function sendOpenAIBatch(config: BatchConfig, job: BatchJob): Promise<void
 async function saveBatchJob(repoPath: string, job: BatchJob): Promise<void> {
   const jobsDir = path.join(repoPath, ".swarm", "batches");
   await fs.mkdir(jobsDir, { recursive: true });
-  
+
   const jobPath = path.join(jobsDir, `${job.id}.json`);
   await fs.writeFile(jobPath, JSON.stringify(job, null, 2));
 }
 
 export async function getBatchJob(repoPath: string, jobId: string): Promise<BatchJob | null> {
   const jobPath = path.join(repoPath, ".swarm", "batches", `${jobId}.json`);
-  
+
   try {
     const data = await fs.readFile(jobPath, "utf-8");
     return JSON.parse(data);
@@ -490,21 +491,21 @@ export async function listBatchJobs(
   status?: BatchJob["status"]
 ): Promise<BatchJob[]> {
   const jobsDir = path.join(repoPath, ".swarm", "batches");
-  
+
   try {
     const files = await fs.readdir(jobsDir);
     const jobs: BatchJob[] = [];
-    
+
     for (const file of files.filter((f) => f.endsWith(".json"))) {
       const data = await fs.readFile(path.join(jobsDir, file), "utf-8");
       const job = JSON.parse(data) as BatchJob;
-      
+
       if (!status || job.status === status) {
         jobs.push(job);
       }
     }
-    
-    return jobs.sort((a, b) => 
+
+    return jobs.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch {
@@ -525,20 +526,20 @@ export async function waitForResult(
   timeoutMs: number = 300000
 ): Promise<BatchResult | null> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeoutMs) {
     const jobs = await listBatchJobs(repoPath);
-    
+
     for (const job of jobs) {
       if (job.results) {
         const result = job.results.find((r) => r.requestId === requestId);
         if (result) return result;
       }
     }
-    
+
     await new Promise((r) => setTimeout(r, 1000));
   }
-  
+
   return null;
 }
 
@@ -554,13 +555,13 @@ export async function getBatchStats(repoPath: string): Promise<{
   estimatedSavings: number;
 }> {
   const jobs = await listBatchJobs(repoPath);
-  
+
   let totalRequests = 0;
   let totalTokens = 0;
-  
+
   for (const job of jobs) {
     totalRequests += job.requests.length;
-    
+
     if (job.results) {
       for (const result of job.results) {
         if (result.usage) {
@@ -569,16 +570,16 @@ export async function getBatchStats(repoPath: string): Promise<{
       }
     }
   }
-  
+
   // Pending requests in queues
   let pendingInQueue = 0;
   for (const [, queue] of pendingRequests) {
     pendingInQueue += queue.length;
   }
-  
+
   // Estimate 50% savings on batch requests
   const estimatedSavings = totalTokens * 0.000002 * 0.5; // Rough estimate
-  
+
   return {
     totalJobs: jobs.length,
     totalRequests,
@@ -613,7 +614,7 @@ export interface BatchToolParams {
 
 export async function handleBatchTool(params: BatchToolParams): Promise<any> {
   const { action, repoPath } = params;
-  
+
   switch (action) {
     case "queue":
       if (!params.provider || !params.model || !params.messages) {

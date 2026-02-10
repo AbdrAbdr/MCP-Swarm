@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getErrorMessage } from "../utils/errorUtils.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -22,9 +23,10 @@ export async function gitTry(
   try {
     const { stdout, stderr } = await git(args, opts);
     return { ok: true, stdout, stderr };
-  } catch (err: any) {
-    const stdout = String(err?.stdout ?? "");
-    const stderr = String(err?.stderr ?? err?.message ?? "");
+  } catch (err: unknown) {
+    const e = err as Record<string, unknown> | undefined;
+    const stdout = String(e?.stdout ?? "");
+    const stderr = String(e?.stderr ?? getErrorMessage(err));
     return { ok: false, stdout, stderr };
   }
 }

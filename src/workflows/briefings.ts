@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import { git } from "./git.js";
@@ -33,7 +34,6 @@ async function ensureBriefingsDir(repoRoot: string): Promise<string> {
 }
 
 function getCurrentPlatform(): string {
-  const os = require("node:os");
   const platform = os.platform();
   const hostname = os.hostname();
   return `${platform === "win32" ? "Windows" : platform === "darwin" ? "macOS" : "Linux"}-${hostname}`;
